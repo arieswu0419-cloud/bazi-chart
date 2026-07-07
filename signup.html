@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>申請帳號 - Aries 八字分析</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <div class="brand">
+      <img src="assets/logo.png" alt="Aries logo">
+      <span>Aries 八字分析</span>
+    </div>
+  </div>
+</header>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>申請學員帳號</h1>
+    <div class="form-msg" id="su-msg"></div>
+    <form id="signup-form" onsubmit="handleSignup(event)">
+      <div class="field">
+        <label for="su-name">姓名</label>
+        <input type="text" id="su-name" required>
+      </div>
+      <div class="field">
+        <label for="su-email">Email</label>
+        <input type="email" id="su-email" required>
+      </div>
+      <div class="field">
+        <label for="su-password">密碼</label>
+        <input type="password" id="su-password" required minlength="6">
+      </div>
+      <div class="field">
+        <label for="su-password2">確認密碼</label>
+        <input type="password" id="su-password2" required minlength="6">
+      </div>
+      <button type="submit" class="btn">送出申請</button>
+    </form>
+    <p class="auth-switch">已經有帳號？<a href="login.html">前往登入</a></p>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>

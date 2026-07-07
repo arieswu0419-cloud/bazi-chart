@@ -1,0 +1,422 @@
+:root {
+  /* 比照 https://www.event.meta-academy.biz/metagroup-bazi-ming-juan 實際取樣的顏色 */
+  --gold: #C9B872;
+  --gold-dark: #A6935A;
+  --gold-darker: #8A7943;
+  --highlight: #E0D8AE;
+  /* 取樣自 LOGO/AriesLogo300X300.png 圓形底色 */
+  --logo-green: #9ACF16;
+
+  --wood-bg: #EAF3DE; --wood-text: #3B5D1D; --wood-mid: #3B6D11;
+  --fire-bg: #FCEBEB; --fire-text: #501313; --fire-mid: #A32D2D;
+  --earth-bg: #FAEEDA; --earth-text: #412402; --earth-mid: #854F0B;
+  --metal-bg: #FBF3D9; --metal-text: #6B4E00; --metal-mid: #B8860B;
+  --water-bg: #E6F1FB; --water-text: #042C53; --water-mid: #185FA5;
+
+  --surface: #ffffff;
+  --page-bg: #EBE7DB;
+  --card-bg: #ffffff;
+  --text-primary: #212529;
+  --text-secondary: #5F5E5A;
+  --text-muted: #888780;
+  --border: #DEE2E6;
+  --radius: 10px;
+  --radius-lg: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background: var(--page-bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+a { color: var(--gold-darker); }
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* header：底色跟 LOGO 圓形底色同一個綠色 */
+.site-header {
+  background: var(--logo-green);
+  padding: 12px 0;
+}
+.site-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+}
+.brand span {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 600;
+}
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.nav-links a, .nav-links button {
+  color: var(--text-primary);
+  font-size: 14px;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* auth pages */
+.auth-wrap {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  width: 100%;
+  max-width: 400px;
+}
+.auth-card h1 {
+  font-size: 20px;
+  margin: 0 0 20px;
+  color: var(--gold-darker);
+  text-align: center;
+}
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 15px;
+  background: #fff;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 184, 114, 0.3);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--gold-darker);
+  background: var(--gold-darker);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+}
+.btn:hover { background: var(--gold-dark); }
+.btn.secondary {
+  background: transparent;
+  color: var(--gold-darker);
+}
+.btn.secondary:hover { background: var(--highlight); }
+.auth-switch {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 16px;
+}
+.form-msg {
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  display: none;
+}
+.form-msg.show { display: block; }
+.form-msg.error { background: var(--fire-bg); color: var(--fire-text); }
+.form-msg.success { background: var(--wood-bg); color: var(--wood-text); }
+.form-msg.info { background: var(--water-bg); color: var(--water-text); }
+
+/* main app layout */
+main.app {
+  padding: 20px 0 48px;
+}
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.card h2 {
+  font-size: 16px;
+  color: var(--text-primary);
+  margin: 0 0 16px;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.card-head h2 { margin: 0; }
+
+/* input form grid：整塊金色底，比照參考網站的輸入區塊 */
+.card:has(#baziForm) {
+  background: var(--gold);
+  border-color: var(--gold-darker);
+}
+.card:has(#baziForm) h2 { color: var(--text-primary); }
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.form-grid .full { grid-column: 1 / -1; }
+
+/* info panel: 姓名/性別/生辰/生肖/命格 文字列表。原本這裡上面有「八字命卷」標題，
+   現在標題拿掉了，改讓這幾行資訊套用原本標題的字級樣式頂上去 */
+.info-panel {
+  font-size: 16px;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.info-panel p { margin: 3px 0; }
+
+/* four pillars: 時／日／月／年 橫向欄位，比照參考網站的欄位順序與列結構 */
+.pillars-wrap {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+.pillars-table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.pillars-table td {
+  border: 1px solid var(--border);
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.pillars-table .label-cell {
+  width: 52px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  white-space: nowrap;
+}
+.pillars-table .col-head { font-weight: 600; color: var(--text-primary); }
+.p-char { display: inline-block; font-size: 24px; font-weight: 600; line-height: 1.2; }
+.p-sign { display: block; font-size: 11px; font-weight: 400; margin-top: 2px; }
+.xunkong { display: block; font-size: 10px; color: var(--text-muted); }
+.hide-col { display: inline-flex; flex-direction: column; align-items: center; font-size: 15px; font-weight: 600; margin: 0 4px; }
+.hide-col .hg-ss { font-size: 10px; font-weight: 400; color: var(--text-secondary); margin-top: 2px; }
+.pillars-table .muted { color: var(--text-muted); }
+
+/* 四柱表格文字比大運/流年表格大一號並加粗（大運/流年欄位多，維持原本較小字級） */
+.pillars-table .p-char { font-size: 26px; font-weight: 700; }
+.pillars-table .p-sign { font-size: 12px; font-weight: 500; }
+.pillars-table .hide-col { font-size: 16px; font-weight: 700; }
+.pillars-table .hide-col .hg-ss { font-size: 11px; font-weight: 500; }
+
+.wood { color: var(--wood-mid); }
+.fire { color: var(--fire-mid); }
+.earth { color: var(--earth-mid); }
+.metal { color: var(--metal-mid); }
+.water { color: var(--water-mid); }
+
+/* 五行強弱表 / 十神比重表：並排兩張表，標題列用金色橫條，比照參考網站 */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.summary-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.summary-box h3 {
+  font-size: 13px;
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--gold);
+  color: var(--text-primary);
+  text-align: center;
+}
+.summary-box .box-body { padding: 12px 14px; }
+
+/* wuxing bars */
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.bar-row .name {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  font-size: 12px;
+  color: #fff;
+}
+.bar-track {
+  flex: 1;
+  background: var(--border);
+  border-radius: 4px;
+  height: 10px;
+  overflow: hidden;
+}
+.bar-fill { height: 10px; border-radius: 4px; }
+.bar-row .pct { width: 44px; text-align: right; color: var(--text-secondary); }
+
+/* shishen table: 兩欄配對，比照參考網站排列順序 */
+.shishen-grid { font-size: 13px; }
+.ss-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: 4px 10px;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.ss-pair .ss-val { color: var(--text-secondary); text-align: right; }
+
+/* 大運／流年：跟四柱一樣的寬表格樣式，欄位是每一組大運／流年，點選欄位標題整欄反白 */
+.strip-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 16px 0 8px;
+}
+.strip-label:first-child { margin-top: 0; }
+.dayun-wrap {
+  overflow-x: auto;
+  margin-bottom: 8px;
+}
+.dayun-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.dayun-table td {
+  border: 1px solid var(--border);
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 11px;
+  vertical-align: middle;
+}
+.dayun-table .label-cell {
+  width: 46px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  white-space: nowrap;
+}
+.dayun-table .col-head {
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.dayun-table .col-head:hover { background: var(--highlight); }
+.dayun-table .age-label { display: block; font-size: 10px; color: var(--text-muted); }
+.dayun-table td.col-selected { background: var(--highlight); }
+.dayun-table .p-char { font-size: 18px; }
+.dayun-table .hide-col { font-size: 12px; margin: 0 2px; }
+
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--highlight);
+  color: var(--gold-darker);
+  margin: 2px 4px 0 0;
+}
+
+.detail-box {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.detail-box .sel-label {
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.detail-box .sel-label b { color: var(--text-primary); font-weight: 600; }
+
+.note-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.note-table td {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+}
+.note-table td:first-child {
+  width: 60px;
+  text-align: center;
+  color: var(--text-secondary);
+  background: var(--surface);
+}
+
+footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 24px 0;
+}
+
+/* tablet */
+@media (max-width: 900px) {
+  .form-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* mobile */
+@media (max-width: 560px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .summary-grid { grid-template-columns: 1fr; }
+  .card { padding: 16px; }
+}

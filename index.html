@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aries 八字分析</title>
+<link rel="icon" href="assets/logo.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <div class="brand">
+      <img src="assets/logo.png" alt="Aries logo">
+      <span>Aries9419 八字報告</span>
+    </div>
+    <nav class="nav-links">
+      <button onclick="handleLogout()">登出</button>
+    </nav>
+  </div>
+</header>
+
+<main class="app">
+  <div class="container">
+
+    <div class="card">
+      <h2>請輸入個人資料，西元國曆出生年月日時</h2>
+      <form id="baziForm">
+        <div class="form-grid">
+          <div class="field">
+            <label for="f-name">姓名</label>
+            <input type="text" id="f-name" placeholder="王小明" required>
+          </div>
+          <div class="field">
+            <label for="f-gender">性別</label>
+            <select id="f-gender">
+              <option value="male">男</option>
+              <option value="female">女</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-date">出生日期（國曆）</label>
+            <input type="date" id="f-date" required>
+          </div>
+          <div class="field">
+            <label for="f-time">出生時間</label>
+            <input type="time" id="f-time" required>
+          </div>
+        </div>
+        <button type="submit" class="btn" style="margin-top:6px;max-width:200px">產生八字報告</button>
+      </form>
+    </div>
+
+    <div id="printArea">
+    <div class="card" id="resultCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end">
+        <button class="btn secondary" id="exportPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+
+      <div class="info-panel" id="infoPanel"></div>
+
+      <div class="pillars-wrap">
+        <div class="pillars" id="pillarsGrid"></div>
+      </div>
+
+      <table class="note-table" id="noteTable">
+        <tr><td>天干</td><td id="ganNote"></td></tr>
+        <tr><td>地支</td><td id="zhiNote"></td></tr>
+      </table>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h3>五行強弱表</h3>
+          <div class="box-body" id="wuxingBars"></div>
+        </div>
+        <div class="summary-box">
+          <h3>十神比重表</h3>
+          <div class="box-body shishen-grid" id="shishenGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="dayunCard" style="display:none">
+      <h2>大運與流年<span data-html2canvas-ignore="true">（點選欄位標題查看，由老到少排列）</span></h2>
+      <p class="strip-label" style="margin-top:0">大運</p>
+      <div class="dayun-wrap">
+        <div id="dayunTable"></div>
+      </div>
+      <p class="strip-label" id="liunianLabel">流年</p>
+      <div class="dayun-wrap">
+        <div id="liunianTable"></div>
+      </div>
+    </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>&copy; Aries. 僅供已核准學員使用。</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
+<script src="js/bazi-engine.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
