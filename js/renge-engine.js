@@ -75,8 +75,15 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
   const { chain: talentChain, final: mainNumber } = reduceChainExcludingFinal(talentRaw);
   const talentDisplay = talentChain.length ? talentChain.join("/") : String(mainNumber);
 
-  // 年/月/日數能量是對稱的一組公式：各自把「生日的另外兩個部分」化到個位數＋對應的擇日部分化到個位數，加總後再化到個位數
-  const yearEnergy = reduceToSingle(reduceToSingle(month) + reduceToSingle(day) + reduceToSingle(qYear));
+  // 年數能量用的是「實歲」概念的擇日年，不是選單上選的西元年本身：如果擇日的月/日還沒到生日的月/日，
+  // 要當作還沒過生日，年份要減 1 才算對（跟真實年齡「還沒過生日不算長一歲」是同一個道理）。
+  // 這是拿同一筆生日、只改擇日的月/日/年分別測試（10 筆以上組合）才抓出來的規則——原本以為年數能量只看
+  // 擇日年份本身，用固定生日+固定擇日=2021-11-29（3 份 PDF 剛好都是生日在擇日之前，測不出這個規則）驗證，
+  // 換一組生日在擇日之後的資料測試才發現對不上，改成「實歲年」才跟參考網站一致。
+  // 月/日數能量沒有這個問題，已用大範圍調整擇日月/日/年分別測試過，兩者都只跟各自對應的擇日分量有關。
+  const birthdayPassed = qMonth * 100 + qDay >= month * 100 + day;
+  const effectiveQYear = birthdayPassed ? qYear : qYear - 1;
+  const yearEnergy = reduceToSingle(reduceToSingle(month) + reduceToSingle(day) + reduceToSingle(effectiveQYear));
   const monthEnergy = reduceToSingle(reduceToSingle(year) + reduceToSingle(day) + reduceToSingle(qMonth));
   const dayEnergy = reduceToSingle(reduceToSingle(year) + reduceToSingle(month) + reduceToSingle(qDay));
 
@@ -98,15 +105,36 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
       : { label: "0-19", value: null, unconfirmed: true, needsHour: true }
   ];
 
-  // 「數字池」：生日年/月/日本身的數字＋年月日各自的 digitSum＋天賦數的完整化簡過程＋年數能量。
-  // 用現場測試（固定生日、改變擇日／時辰）證實 60-79／40-59 欄跟月/日數能量、0-19 欄都不影響這個池子，
-  // 但 Yraw/Mraw/Draw 這三個中間值（不是天賦數本身，是年/月/日各自單獨的 digitSum）必須算進去，才能跟 3 份 PDF 逐一對上。
+  // 「目前歲數對應的階段欄」：用實歲（effectiveQYear－生日年）判斷落在哪個階段區間，
+  // 0-19 用 0-19 欄（沒有時辰就用時辰＝0 計算，跟時辰無關的地方一律這樣處理），20-39 用 20-39 欄，
+  // 40-59 用 40-59 欄，60-79 用 60-79 欄，80-99 跟 20-39 同一欄。
+  // 這一欄同時是「空缺數／九宮連線密碼」數字池的一部分，也是「九宮能量圖」橘色（階段數）疊色的依據——
+  // 用吳慧琳（實歲45，40-59 欄）、姜兆源（實歲16，0-19 欄）、姜筱郡（實歲20，20-39 欄）三筆資料，
+  // 加上一筆實歲55（40-59 欄）的新資料交叉驗證，證實兩個地方用的是同一個「目前歲數對應欄」，
+  // 不是固定用 20-39/80-99 那一欄。
+  const currentAge = effectiveQYear - year;
+  const stage4RawForAge = talentRaw + digitSum(hasHour ? hour : 0);
+  let currentBracketRaw;
+  if (currentAge < 20) currentBracketRaw = stage4RawForAge;
+  else if (currentAge < 40) currentBracketRaw = stage3Raw;
+  else if (currentAge < 60) currentBracketRaw = stage2Raw;
+  else if (currentAge < 80) currentBracketRaw = stage1Raw;
+  else currentBracketRaw = stage3Raw;
+
+  // 「數字池」：生日年/月/日本身的數字＋日的 digitSum（Draw，只有日，不含年/月自己的 digitSum）
+  // ＋天賦數的完整化簡過程（天賦數本身是個位數、沒有化簡過程可顯示時，改用主命數本身頂替）
+  // ＋目前歲數對應的階段欄＋年數能量。
+  // 用現場測試（固定生日、改變擇日／時辰／生日本身，含一筆天賦數剛好是個位數「5」的資料）證實：
+  // 年/月各自的 digitSum（Yraw/Mraw）不能算進池子——只有 Draw（日的 digitSum）才要算，這是唯一
+  // 讓「靈巧線24」這種生日本身沒有 4 但要算命中的案例成立、同時不會誤把 Yraw/Mraw 引入的多餘數字也算進去的組合。
   // 空缺數＝1~9 之中不在這個池子裡的數字；九宮連線密碼的 12 條線（含 4 條兩格連線）也是用同一個池子判斷是否命中——
-  // 現場測試 3 筆資料、12 條線逐一核對（36 格）全部吻合，包含「靈巧線24」這種生日本身沒有 4、但 Draw（日的 digitSum）算出 4 而命中的案例。
+  // 現場測試 5 筆資料、12 條線逐一核對全部吻合。
+  const talentChainOrMain = talentChain.length ? talentChain : [mainNumber];
   const digitSet = new Set();
   [year, month, day].forEach((n) => numberDigits(n).forEach((d) => digitSet.add(d)));
-  [Yraw, Mraw, Draw].forEach((v) => numberDigits(v).forEach((d) => digitSet.add(d)));
-  stageSeq(stage3Raw).forEach((v) => numberDigits(v).forEach((d) => digitSet.add(d)));
+  numberDigits(Draw).forEach((d) => digitSet.add(d));
+  talentChainOrMain.forEach((v) => numberDigits(v).forEach((d) => digitSet.add(d)));
+  stageSeq(currentBracketRaw).forEach((v) => numberDigits(v).forEach((d) => digitSet.add(d)));
   numberDigits(yearEnergy).forEach((d) => digitSet.add(d));
   const gapNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((d) => !digitSet.has(d));
 
@@ -118,12 +146,10 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
   }));
 
   // 九宮能量圖：1-9 每格一個「電池」，依 5 個類別疊加色塊，每個類別的數字裡每出現一次某個位數就疊一格。
-  // 現場測試 3 筆資料、5 類別×9 位數全部核對一致：
-  // 藍(主命數)=mainNumber 本身；紫(年數能量)=yearEnergy 本身；粉(天賦數)=天賦數化簡過程（不含主命數，即 talentChain）；
+  // 藍(主命數)=mainNumber 本身；紫(年數能量)=yearEnergy 本身；
+  // 粉(天賦數)=天賦數化簡過程（跟上面數字池用的是同一個 talentChainOrMain，天賦數是個位數時改用主命數頂替）；
   // 綠(生日數)=生日年/月/日原始數字＋「日」化簡到個位數過程中的中間值（dayReductionExtra，這是用吳慧琳這筆日=19 兩步化簡的資料才抓出來的）；
-  // 橘(階段數)=擇日年份對照生日算出的目前歲數所在的那個階段欄（0-19/20-39/40-59/60-79/80-99，80-99 跟 20-39 同一欄），
-  // 只疊「目前歲數對應的那一欄」，不是全部 4 欄都疊——這點是拿吳慧琳（現場歲數落在 40-59）跟姜筱郡（落在 20-39）兩筆矛盾的資料才比對出來的。
-  // 0-19 那一欄即使沒填時辰，這裡疊色塊時一律當時辰＝0 計算（現場測試姜兆源歲數落在 0-19 區間、時辰留白時仍然有疊色塊，看得出來是這樣算的）。
+  // 橘(階段數)=目前歲數對應的階段欄（跟上面數字池用的是同一個 currentBracketRaw）。
   const energyCounts = { blue: {}, pink: {}, green: {}, orange: {}, purple: {} };
   const addDigits = (bucket, n) => {
     numberDigits(n).forEach((d) => {
@@ -132,18 +158,10 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
   };
   addDigits(energyCounts.blue, mainNumber);
   addDigits(energyCounts.purple, yearEnergy);
-  talentChain.forEach((v) => addDigits(energyCounts.pink, v));
+  talentChainOrMain.forEach((v) => addDigits(energyCounts.pink, v));
   [year, month, day].forEach((n) => addDigits(energyCounts.green, n));
   dayReductionExtra(day).forEach((v) => addDigits(energyCounts.green, v));
-  const currentAge = qYear - year;
-  const stage4RawForGrid = talentRaw + digitSum(hasHour ? hour : 0);
-  let orangeRaw;
-  if (currentAge < 20) orangeRaw = stage4RawForGrid;
-  else if (currentAge < 40) orangeRaw = stage3Raw;
-  else if (currentAge < 60) orangeRaw = stage2Raw;
-  else if (currentAge < 80) orangeRaw = stage1Raw;
-  else orangeRaw = stage3Raw;
-  stageSeq(orangeRaw).forEach((v) => addDigits(energyCounts.orange, v));
+  stageSeq(currentBracketRaw).forEach((v) => addDigits(energyCounts.orange, v));
 
   const energyGrid = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => ({
     digit: d,
