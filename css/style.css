@@ -591,12 +591,14 @@ main.app {
   color: var(--text-secondary);
 }
 .renge-energy-legend span { display: inline-flex; align-items: center; gap: 4px; }
-.renge-energy-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.renge-energy-legend .dot.blue { background: var(--eg-blue); }
-.renge-energy-legend .dot.pink { background: var(--eg-pink); }
-.renge-energy-legend .dot.green { background: var(--eg-green); }
-.renge-energy-legend .dot.orange { background: var(--eg-orange); }
-.renge-energy-legend .dot.purple { background: var(--eg-purple); }
+
+/* 色點：比照參考網站在生日數/天賦數/主命數/階段數/年數能量標籤旁邊標示對應的九宮能量圖類別顏色 */
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 4px; vertical-align: middle; }
+.dot.blue { background: var(--eg-blue); }
+.dot.pink { background: var(--eg-pink); }
+.dot.green { background: var(--eg-green); }
+.dot.orange { background: var(--eg-orange); }
+.dot.purple { background: var(--eg-purple); }
 
 .tag {
   display: inline-block;

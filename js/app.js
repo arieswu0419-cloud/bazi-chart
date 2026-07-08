@@ -338,7 +338,7 @@ function renderRenge(data) {
   data.stages.forEach((s) => {
     stageHtml += "<td>" + s.label.replace("\n", "<br>") + "</td>";
   });
-  stageHtml += '</tr><tr><td class="renge-stage-label">階段數</td>';
+  stageHtml += '</tr><tr><td class="renge-stage-label">階段數<span class="dot orange"></span></td>';
   data.stages.forEach((s) => {
     let cell;
     if (s.needsHour) cell = '<span class="renge-unconfirmed">需填出生時間</span>';
@@ -366,12 +366,12 @@ function renderRenge(data) {
   document.getElementById("rengeCodeTable").innerHTML = codeHtml;
 
   document.getElementById("rengeNumberBoxes").innerHTML =
-    '<div class="renge-number-box"><div class="label">生日數</div><div class="value">' + data.birthDisplay + "</div></div>" +
-    '<div class="renge-number-box dark"><div class="label">天賦數</div><div class="value">' + data.talentDisplay + "</div></div>" +
-    '<div class="renge-number-box dark"><div class="label">主命數</div><div class="value">' + data.mainNumber + "</div></div>";
+    '<div class="renge-number-box"><div class="label">生日數<span class="dot green"></span></div><div class="value">' + data.birthDisplay + "</div></div>" +
+    '<div class="renge-number-box dark"><div class="label">天賦數<span class="dot pink"></span></div><div class="value">' + data.talentDisplay + "</div></div>" +
+    '<div class="renge-number-box dark"><div class="label">主命數<span class="dot blue"></span></div><div class="value">' + data.mainNumber + "</div></div>";
 
   document.getElementById("rengeEnergyRow").innerHTML =
-    '<div class="renge-energy-box"><div class="label">年數能量</div><div class="value">' + data.yearEnergy + "</div></div>" +
+    '<div class="renge-energy-box"><div class="label">年數能量<span class="dot purple"></span></div><div class="value">' + data.yearEnergy + "</div></div>" +
     '<div class="renge-energy-box"><div class="label">月數能量</div><div class="value">' + data.monthEnergy + "</div></div>" +
     '<div class="renge-energy-box"><div class="label">日數能量</div><div class="value">' + data.dayEnergy + "</div></div>" +
     '<div class="renge-energy-box"><div class="label">空缺數</div><div class="value">' + (data.gapNumbers.length ? data.gapNumbers.join(",") : "無") + "</div></div>";
