@@ -196,11 +196,11 @@ function getShenShaForPillar(pillarRole, targetGan, targetZhi, ctx) {
     }
     // 天德貴人：月支查，值可能是天干也可能是地支
     if (TIAN_DE[monthZhi] === targetZhi) push("天德貴人");
-    // 天醫：月支查，只對照日支。實測發現至少一個案例（年支才符合、日支不符合）跟這條規則對不上，
-    // 但拿掉「只查日柱」限制會在其他案例造成新的誤判（例如日柱不含目標地支、其他柱卻剛好符合的情況，
-    // 參考網站並未把天醫算進去），所以暫時保留原本限制，天醫規則本身可能還有更細節的條件待釐清
-    if (pillarRole === "day" && TIAN_YI_MONTH[monthZhi] === targetZhi) push("天醫");
   }
+
+  // 天醫：判斷條件是「月支查表對照日支」，但命中時星曜是標在年柱上，不是日柱（原本誤標在日柱，
+  // 用 20 筆資料交叉驗證，其中固定年柱、逐月測試 12 組完全吻合，加上之前幾輪測到的案例也都吻合，沒有例外）
+  if (pillarRole === "year" && TIAN_YI_MONTH[monthZhi] === dayZhi) push("天醫");
 
   if (targetGan) {
     // 天德貴人、月德貴人：值若剛好是天干，對照四柱天干
