@@ -426,11 +426,23 @@ main.app {
   margin-bottom: 16px;
 }
 .renge-info p { margin: 3px 0; }
-.renge-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
+/* 用 flexbox 而不是 CSS grid：html2canvas（匯出 PDF 用）對 grid 版面的支援不穩定，
+   常常跟網頁實際顯示的比例對不上，改用 flexbox 固定各佔 50% 寬度，PDF 跟網頁才會一致。
+   左右各自成對（人生階段能量／年月日空缺數，九宮連線密碼／九宮能量圖），
+   用 align-items:stretch（flexbox 預設值）讓同一對的左右兩塊高度一致，
+   這樣九宮連線密碼跟九宮能量圖才會剛好對齊在同一個水平位置開始 */
+.renge-row-pair {
+  display: flex;
+  align-items: stretch;
   gap: 16px;
 }
+.renge-row-pair > * {
+  flex: 0 0 calc(50% - 8px);
+  max-width: calc(50% - 8px);
+  min-width: 0;
+}
+.renge-row-pair > .renge-panel { margin-bottom: 0; }
+.renge-energy-row-wrap { display: flex; }
 .renge-box-title {
   background: var(--renge-border);
   color: var(--text-primary);
@@ -471,7 +483,7 @@ main.app {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 .renge-number-box {
   background: var(--renge-box);
@@ -488,8 +500,10 @@ main.app {
 .renge-number-box.dark .label { color: rgba(255,255,255,0.85); }
 .renge-number-box .value { font-size: 20px; font-weight: 700; }
 .renge-energy-row {
+  flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
   gap: 10px;
 }
 .renge-energy-box {
@@ -498,6 +512,10 @@ main.app {
   border-radius: var(--radius);
   padding: 10px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 .renge-energy-box .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
 .renge-energy-box .value { font-size: 18px; font-weight: 700; color: var(--text-primary); }
@@ -635,7 +653,7 @@ footer {
   .form-grid { grid-template-columns: 1fr; }
   .summary-grid { grid-template-columns: 1fr; }
   .card { padding: 16px; }
-  .renge-grid { grid-template-columns: 1fr; }
+  .renge-row-pair { flex-direction: column; }
+  .renge-row-pair > * { flex-basis: auto; max-width: none; }
   .renge-number-boxes { grid-template-columns: repeat(3, 1fr); }
-  .renge-energy-row { grid-template-columns: repeat(2, 1fr); }
 }
