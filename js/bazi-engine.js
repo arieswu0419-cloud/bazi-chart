@@ -55,6 +55,17 @@ function getShiShen(dayGan, otherGan) {
   return null;
 }
 
+// 六十甲子納音五行：標準對照表（每兩個甲子一組），用來判斷詞館貴人的年柱納音
+const NAYIN_WUXING = [
+  "金", "火", "木", "土", "金", "火", "水", "土", "金", "木",
+  "水", "土", "火", "木", "水", "金", "火", "木", "土", "金",
+  "火", "水", "土", "金", "木", "水", "土", "火", "木", "水"
+];
+function getNaYinWuxing(gan, zhi) {
+  const idx = getJiaZiIndex(gan, zhi);
+  return idx < 0 ? null : NAYIN_WUXING[Math.floor(idx / 2)];
+}
+
 // 三合局：申子辰 / 亥卯未 / 寅午戌 / 巳酉丑，各自對應桃花／驛馬／華蓋／將星／劫煞／亡神
 // （以下神煞表全部來自課程講義《八字解鎖篇》第十六、十七章逐頁核對抄錄，不是猜測或坊間泛用版本）
 const TRIADS = {
@@ -74,6 +85,8 @@ const TIANYI_GUIREN = { 甲: ["丑", "未"], 戊: ["丑", "未"], 庚: ["丑", "
 const TAIJI_GUIREN = { 甲: ["子", "午"], 乙: ["子", "午"], 丙: ["卯", "酉"], 丁: ["卯", "酉"], 戊: ["辰", "戌", "丑", "未"], 己: ["辰", "戌", "丑", "未"], 庚: ["寅", "亥"], 辛: ["寅", "亥"], 壬: ["巳", "申"], 癸: ["巳", "申"] };
 // 日干查地支（單值）：祿神、羊刃、飛刃、文昌貴人、國印貴人、天廚貴人、紅艷煞、流霞、金輿祿、福星貴人
 const LU_SHEN = { 甲: "寅", 乙: "卯", 丙: "巳", 丁: "午", 戊: "巳", 己: "午", 庚: "申", 辛: "酉", 壬: "亥", 癸: "子" };
+// 詞館貴人：年柱納音五行查固定地支（金命見申、木命見寅、水命見亥、火命見巳、土命見亥）
+const CI_GUAN_TARGET = { 金: "申", 木: "寅", 水: "亥", 火: "巳", 土: "亥" };
 const YANG_REN = { 甲: "卯", 乙: "辰", 丙: "午", 丁: "未", 戊: "午", 己: "未", 庚: "酉", 辛: "戌", 壬: "子", 癸: "丑" };
 const FEI_REN = { 甲: "酉", 乙: "戌", 丙: "子", 丁: "丑", 戊: "子", 己: "丑", 庚: "卯", 辛: "辰", 壬: "午", 癸: "未" };
 const WEN_CHANG = { 甲: "巳", 乙: "午", 丙: "申", 丁: "酉", 戊: "申", 己: "酉", 庚: "亥", 辛: "子", 壬: "寅", 癸: "卯" };
@@ -154,6 +167,18 @@ function getShenShaForPillar(pillarRole, targetGan, targetZhi, ctx) {
       const stars = TRIAD_STAR[triad];
       Object.keys(stars).forEach((name) => { if (stars[name] === targetZhi) push(name); });
     });
+    // 金匱貴人：只以年支查三合局，取值同將星（寅午戌見午、巳酉丑見酉、申子辰見子、亥卯未見卯）。
+    // 實測比對發現只用年支查才準，加上日支查會多出參考網站沒有的金匱，所以不像桃花／驛馬等同時查年支、日支；
+    // 年柱本身永遠不算目標
+    if (pillarRole !== "year") {
+      const triad = TRIADS[yearZhi];
+      if (triad && TRIAD_STAR[triad].將星 === targetZhi) push("金匱");
+    }
+    // 詞館貴人：課程講義規則是「年柱納音五行查固定地支（金見申／木見寅／水見亥／火見巳／土見亥），
+    // 結合日柱或時柱的天干地支，且地支需處於臨官」，但實測比對後這個地支查出來實際命中的位置常常
+    // 不是日柱也不是時柱（例如某案例落在月柱、另一案例落在年柱，兩個案例的年柱納音查表都對，
+    // 但命中位置的規律還沒找出來），代表規則裡「結合日柱或時柱」這句話還有沒抓到的細節，
+    // 暫時不實作，避免顯示錯誤位置，見 README 已知限制（NAYIN_WUXING／CI_GUAN_TARGET 保留供之後參考）
     // 天乙貴人、太極貴人：日干、年干查
     if (includesZhi(TIANYI_GUIREN[dayGan], targetZhi) || (yearGan && includesZhi(TIANYI_GUIREN[yearGan], targetZhi))) push("天乙貴人");
     if (includesZhi(TAIJI_GUIREN[dayGan], targetZhi) || (yearGan && includesZhi(TAIJI_GUIREN[yearGan], targetZhi))) push("太極貴人");
