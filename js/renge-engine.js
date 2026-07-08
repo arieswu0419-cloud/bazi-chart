@@ -115,11 +115,13 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
   const currentAge = effectiveQYear - year;
   const stage4RawForAge = talentRaw + digitSum(hasHour ? hour : 0);
   let currentBracketRaw;
-  if (currentAge < 20) currentBracketRaw = stage4RawForAge;
-  else if (currentAge < 40) currentBracketRaw = stage3Raw;
-  else if (currentAge < 60) currentBracketRaw = stage2Raw;
-  else if (currentAge < 80) currentBracketRaw = stage1Raw;
-  else currentBracketRaw = stage3Raw;
+  let currentBracketIndex;
+  if (currentAge < 20) { currentBracketRaw = stage4RawForAge; currentBracketIndex = 3; }
+  else if (currentAge < 40) { currentBracketRaw = stage3Raw; currentBracketIndex = 2; }
+  else if (currentAge < 60) { currentBracketRaw = stage2Raw; currentBracketIndex = 1; }
+  else if (currentAge < 80) { currentBracketRaw = stage1Raw; currentBracketIndex = 0; }
+  else { currentBracketRaw = stage3Raw; currentBracketIndex = 2; }
+  stages[currentBracketIndex].current = true;
 
   // 「數字池」：生日年/月/日本身的數字＋日的 digitSum（Draw，只有日，不含年/月自己的 digitSum）
   // ＋天賦數的完整化簡過程（天賦數本身是個位數、沒有化簡過程可顯示時，改用主命數本身頂替）

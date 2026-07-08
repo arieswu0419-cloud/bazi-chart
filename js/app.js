@@ -336,7 +336,7 @@ function renderRenge(data) {
 
   let stageHtml = '<table class="renge-stage-table"><tr><td class="renge-stage-label">歲數</td>';
   data.stages.forEach((s) => {
-    stageHtml += "<td>" + s.label.replace("\n", "<br>") + "</td>";
+    stageHtml += '<td class="' + (s.current ? "renge-stage-current" : "") + '">' + s.label.replace("\n", "<br>") + "</td>";
   });
   stageHtml += '</tr><tr><td class="renge-stage-label">階段數<span class="dot orange"></span></td>';
   data.stages.forEach((s) => {
@@ -344,7 +344,7 @@ function renderRenge(data) {
     if (s.needsHour) cell = '<span class="renge-unconfirmed">需填出生時間</span>';
     else if (s.unconfirmed) cell = unconfirmedSpan();
     else cell = s.value;
-    stageHtml += '<td class="renge-stage-value">' + cell + "</td>";
+    stageHtml += '<td class="renge-stage-value' + (s.current ? " renge-stage-current" : "") + '">' + cell + "</td>";
   });
   stageHtml += "</tr></table>";
   document.getElementById("rengeStageTable").innerHTML = stageHtml;

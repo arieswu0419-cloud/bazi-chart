@@ -479,6 +479,11 @@ main.app {
   font-weight: 700;
   color: var(--text-primary);
 }
+/* 目前歲數對應的那一欄（跟九宮能量圖橘色階段數用同一欄）用咖啡底色＋白字標示出來 */
+.renge-stage-table .renge-stage-current {
+  background: var(--renge-box-dark);
+  color: #fff;
+}
 .renge-number-boxes {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -568,7 +573,8 @@ main.app {
   width: 16px;
 }
 .renge-energy-bar {
-  flex: 1;
+  flex: 0 0 auto;
+  width: 34px;
   display: flex;
   flex-direction: column-reverse;
   gap: 1px;
@@ -586,6 +592,7 @@ main.app {
 .renge-energy-legend {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
   font-size: 11px;
   color: var(--text-secondary);
