@@ -22,6 +22,23 @@
   --border: #DEE2E6;
   --radius: 10px;
   --radius-lg: 16px;
+
+  /* 人格解碼報告專用配色，實際取樣自 https://www.event.meta-academy.biz/metagroup-renge-jie-ma，
+     跟上面八字報告用的金色系分開存放，避免互相覆蓋 */
+  --renge-bg: #F5D800;
+  --renge-box: rgba(255, 255, 255, 0.6);
+  --renge-box-dark: #81641B;
+  --renge-border: #FFC233;
+  --renge-dot: #FFA700;
+  --renge-text-gold: #B4956B;
+
+  /* 九宮能量圖 5 個類別的顏色，實際取樣自參考網站 .bg-blue/.bg-pink/.bg-green/.bg-orange/.bg-purple：
+     主命數藍/天賦數粉/生日數綠/階段數橘/年數能量紫 */
+  --eg-blue: #51B5FC;
+  --eg-pink: #FD618B;
+  --eg-green: #A6CE39;
+  --eg-orange: #FFA700;
+  --eg-purple: #B52BFF;
 }
 
 * { box-sizing: border-box; }
@@ -205,6 +222,39 @@ main.app {
   gap: 14px;
 }
 .form-grid .full { grid-column: 1 / -1; }
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.form-actions .btn { width: auto; max-width: 200px; }
+
+/* 頁籤：切換「八字報告」／「人格解碼報告」 */
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--border);
+}
+.tab-btn {
+  padding: 10px 18px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+.tab-btn.active {
+  color: var(--gold-darker);
+  border-bottom-color: var(--gold-darker);
+  font-weight: 700;
+}
+.tab-btn:hover { color: var(--gold-dark); }
 
 /* info panel: 姓名/性別/生辰/生肖/命格 文字列表。原本這裡上面有「八字命卷」標題，
    現在標題拿掉了，改讓這幾行資訊套用原本標題的字級樣式頂上去 */
@@ -364,6 +414,172 @@ main.app {
 .dayun-table .p-char { font-size: 18px; }
 .dayun-table .hide-col { font-size: 12px; margin: 0 2px; }
 
+/* 人格解碼報告：配色比照參考網站取樣的明亮黃色系，跟八字報告的米色/金色分開 */
+.renge-card {
+  background: var(--renge-bg);
+  border-color: var(--renge-border);
+}
+.renge-card h2 { color: var(--text-primary); }
+.renge-info {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+.renge-info p { margin: 3px 0; }
+.renge-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+}
+.renge-box-title {
+  background: var(--renge-border);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  font-size: 14px;
+}
+.renge-panel {
+  background: var(--renge-box);
+  border: 1px solid var(--renge-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.renge-stage-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.renge-stage-table td {
+  border: 1px solid var(--renge-border);
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 13px;
+}
+.renge-stage-table .renge-stage-label {
+  color: var(--text-secondary);
+  background: var(--renge-box);
+  white-space: nowrap;
+}
+.renge-stage-table .renge-stage-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.renge-number-boxes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.renge-number-box {
+  background: var(--renge-box);
+  border: 1px solid var(--renge-border);
+  border-radius: var(--radius);
+  padding: 10px;
+  text-align: center;
+}
+.renge-number-box.dark {
+  background: var(--renge-box-dark);
+  color: #fff;
+}
+.renge-number-box .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.renge-number-box.dark .label { color: rgba(255,255,255,0.85); }
+.renge-number-box .value { font-size: 20px; font-weight: 700; }
+.renge-energy-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 10px;
+}
+.renge-energy-box {
+  background: var(--renge-box);
+  border: 1px solid var(--renge-border);
+  border-radius: var(--radius);
+  padding: 10px;
+  text-align: center;
+}
+.renge-energy-box .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.renge-energy-box .value { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.renge-code-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.renge-code-table td {
+  border: 1px solid var(--renge-border);
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 12px;
+  background: var(--renge-box);
+}
+.renge-code-table td.matched {
+  background: var(--renge-box-dark);
+  color: #fff;
+}
+.renge-code-table .code-name { display: block; color: var(--text-secondary); }
+.renge-code-table td.matched .code-name { color: rgba(255,255,255,0.85); }
+.renge-code-table .code-num { display: block; font-size: 18px; font-weight: 700; margin: 2px 0; }
+.renge-code-table .code-shadow { display: block; font-size: 11px; color: var(--text-muted); }
+.renge-code-table td.matched .code-shadow { color: rgba(255,255,255,0.7); }
+.renge-unconfirmed {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* 九宮能量圖：1-9 每格一個直立堆疊色塊（電池），比照參考網站每個類別的數字每出現一次疊一格 */
+.renge-energy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.renge-energy-cell {
+  background: var(--renge-box);
+  border: 1px solid var(--renge-border);
+  border-radius: var(--radius);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.renge-energy-cell .digit {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  width: 16px;
+}
+.renge-energy-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1px;
+  height: 60px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.renge-energy-seg { width: 100%; flex: 1 0 auto; min-height: 4px; }
+.renge-energy-seg.grey { background: #D9D9D9; }
+.renge-energy-seg.blue { background: var(--eg-blue); }
+.renge-energy-seg.pink { background: var(--eg-pink); }
+.renge-energy-seg.green { background: var(--eg-green); }
+.renge-energy-seg.orange { background: var(--eg-orange); }
+.renge-energy-seg.purple { background: var(--eg-purple); }
+.renge-energy-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.renge-energy-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.renge-energy-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.renge-energy-legend .dot.blue { background: var(--eg-blue); }
+.renge-energy-legend .dot.pink { background: var(--eg-pink); }
+.renge-energy-legend .dot.green { background: var(--eg-green); }
+.renge-energy-legend .dot.orange { background: var(--eg-orange); }
+.renge-energy-legend .dot.purple { background: var(--eg-purple); }
+
 .tag {
   display: inline-block;
   font-size: 11px;
@@ -419,4 +635,7 @@ footer {
   .form-grid { grid-template-columns: 1fr; }
   .summary-grid { grid-template-columns: 1fr; }
   .card { padding: 16px; }
+  .renge-grid { grid-template-columns: 1fr; }
+  .renge-number-boxes { grid-template-columns: repeat(3, 1fr); }
+  .renge-energy-row { grid-template-columns: repeat(2, 1fr); }
 }

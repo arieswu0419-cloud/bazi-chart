@@ -1,8 +1,64 @@
 let currentChart = null;
 let selectedDayun = null;
 let selectedLiunian = null;
+let currentRenge = null;
 
 requireApprovedUser(function () {});
+
+// 擇日欄位：年/月/日下拉，預設今天
+(function initQChoiceFields() {
+  const today = new Date();
+  const yearSel = document.getElementById("f-qyear");
+  const monthSel = document.getElementById("f-qmonth");
+  const daySel = document.getElementById("f-qday");
+
+  const thisYear = today.getFullYear();
+  let yearHtml = "";
+  for (let y = thisYear - 100; y <= thisYear + 10; y++) yearHtml += '<option value="' + y + '">' + y + "</option>";
+  yearSel.innerHTML = yearHtml;
+
+  let monthHtml = "";
+  for (let m = 1; m <= 12; m++) monthHtml += '<option value="' + m + '">' + m + "</option>";
+  monthSel.innerHTML = monthHtml;
+
+  let dayHtml = "";
+  for (let d = 1; d <= 31; d++) dayHtml += '<option value="' + d + '">' + d + "</option>";
+  daySel.innerHTML = dayHtml;
+
+  yearSel.value = String(thisYear);
+  monthSel.value = String(today.getMonth() + 1);
+  daySel.value = String(today.getDate());
+})();
+
+// 頁籤切換：八字報告／人格解碼報告
+function setActiveTab(tab) {
+  document.getElementById("tabBazi").classList.toggle("active", tab === "bazi");
+  document.getElementById("tabRenge").classList.toggle("active", tab === "renge");
+  document.getElementById("baziTabPanel").style.display = tab === "bazi" ? "" : "none";
+  document.getElementById("rengeTabPanel").style.display = tab === "renge" ? "" : "none";
+}
+document.getElementById("tabBazi").addEventListener("click", function () { setActiveTab("bazi"); });
+document.getElementById("tabRenge").addEventListener("click", function () { setActiveTab("renge"); });
+
+document.getElementById("rengeSubmitBtn").addEventListener("click", function () {
+  const name = document.getElementById("f-name").value.trim();
+  const dateVal = document.getElementById("f-date").value;
+  if (!name || !dateVal) {
+    alert("請先輸入姓名與出生日期（國曆）");
+    return;
+  }
+  const [year, month, day] = dateVal.split("-").map(Number);
+  const qYear = Number(document.getElementById("f-qyear").value);
+  const qMonth = Number(document.getElementById("f-qmonth").value);
+  const qDay = Number(document.getElementById("f-qday").value);
+  // 0-19 階段數需要出生時辰才能算，跟八字報告共用同一個「出生時間」欄位；沒填就留白，其餘欄位不受影響
+  const timeVal = document.getElementById("f-time").value;
+  const hour = timeVal ? Number(timeVal.split(":")[0]) : null;
+
+  currentRenge = calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name });
+  renderRenge(currentRenge);
+  setActiveTab("renge");
+});
 
 document.getElementById("baziForm").addEventListener("submit", function (e) {
   e.preventDefault();
@@ -264,3 +320,104 @@ function renderDayun(data) {
     };
   });
 }
+
+function unconfirmedSpan() {
+  return '<span class="renge-unconfirmed">待確認</span>';
+}
+
+function renderRenge(data) {
+  document.getElementById("rengeCard").style.display = "block";
+
+  const info = document.getElementById("rengeInfoPanel");
+  info.innerHTML =
+    "<p>姓名：" + data.name + "</p>" +
+    "<p>生日（西元年/月/日）：" + data.birthDisplay + "</p>" +
+    "<p>擇日（西元年/月/日）：" + data.choiceDisplay + "</p>";
+
+  let stageHtml = '<table class="renge-stage-table"><tr><td class="renge-stage-label">歲數</td>';
+  data.stages.forEach((s) => {
+    stageHtml += "<td>" + s.label.replace("\n", "<br>") + "</td>";
+  });
+  stageHtml += '</tr><tr><td class="renge-stage-label">階段數</td>';
+  data.stages.forEach((s) => {
+    let cell;
+    if (s.needsHour) cell = '<span class="renge-unconfirmed">需填出生時間</span>';
+    else if (s.unconfirmed) cell = unconfirmedSpan();
+    else cell = s.value;
+    stageHtml += '<td class="renge-stage-value">' + cell + "</td>";
+  });
+  stageHtml += "</tr></table>";
+  document.getElementById("rengeStageTable").innerHTML = stageHtml;
+
+  let codeHtml = '<table class="renge-code-table">';
+  for (let r = 0; r < 3; r++) {
+    codeHtml += "<tr>";
+    for (let c = 0; c < 4; c++) {
+      const line = data.codeLines[r * 4 + c];
+      const cls = line.matched ? "matched" : "";
+      codeHtml +=
+        '<td class="' + cls + '"><span class="code-name">' + line.name + "</span>" +
+        '<span class="code-num">' + line.nums.join("") + "</span>" +
+        '<span class="code-shadow">' + line.shadow + "</span></td>";
+    }
+    codeHtml += "</tr>";
+  }
+  codeHtml += "</table>";
+  document.getElementById("rengeCodeTable").innerHTML = codeHtml;
+
+  document.getElementById("rengeNumberBoxes").innerHTML =
+    '<div class="renge-number-box"><div class="label">生日數</div><div class="value">' + data.birthDisplay + "</div></div>" +
+    '<div class="renge-number-box dark"><div class="label">天賦數</div><div class="value">' + data.talentDisplay + "</div></div>" +
+    '<div class="renge-number-box dark"><div class="label">主命數</div><div class="value">' + data.mainNumber + "</div></div>";
+
+  document.getElementById("rengeEnergyRow").innerHTML =
+    '<div class="renge-energy-box"><div class="label">年數能量</div><div class="value">' + data.yearEnergy + "</div></div>" +
+    '<div class="renge-energy-box"><div class="label">月數能量</div><div class="value">' + data.monthEnergy + "</div></div>" +
+    '<div class="renge-energy-box"><div class="label">日數能量</div><div class="value">' + data.dayEnergy + "</div></div>" +
+    '<div class="renge-energy-box"><div class="label">空缺數</div><div class="value">' + (data.gapNumbers.length ? data.gapNumbers.join(",") : "無") + "</div></div>";
+
+  // 電池滿格固定 10 格：先疊有顏色的格數，剩下的格數用灰色補滿（比照參考網站的電池圖示）
+  const ENERGY_COLORS = ["blue", "pink", "green", "orange", "purple"];
+  const BATTERY_SLOTS = 10;
+  document.getElementById("rengeEnergyGrid").innerHTML = data.energyGrid.map((cell) => {
+    const segs = [];
+    ENERGY_COLORS.forEach((c) => {
+      for (let i = 0; i < cell[c]; i++) segs.push('<div class="renge-energy-seg ' + c + '"></div>');
+    });
+    while (segs.length < BATTERY_SLOTS) segs.push('<div class="renge-energy-seg grey"></div>');
+    return (
+      '<div class="renge-energy-cell"><span class="digit">' + cell.digit + "</span>" +
+      '<div class="renge-energy-bar">' + segs.join("") + "</div></div>"
+    );
+  }).join("");
+}
+
+document.getElementById("exportRengePdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries9419 人格解碼報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+
+    const rengeCanvas = await html2canvas(document.getElementById("rengeCard"), { scale: 1.5, backgroundColor: "#F5D800" });
+    addCanvasToPdf(pdf, rengeCanvas, margin, pageWidth, pageHeight, 26);
+
+    const filename = (currentRenge ? currentRenge.name : "人格解碼") + "-人格解碼報告.pdf";
+    pdf.save(filename);
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});

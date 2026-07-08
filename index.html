@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 
@@ -47,12 +47,33 @@
             <label for="f-time">出生時間</label>
             <input type="time" id="f-time" required>
           </div>
+          <div class="field">
+            <label for="f-qyear">擇日（人格解碼用）</label>
+            <select id="f-qyear"></select>
+          </div>
+          <div class="field">
+            <label for="f-qmonth">&nbsp;</label>
+            <select id="f-qmonth"></select>
+          </div>
+          <div class="field">
+            <label for="f-qday">&nbsp;</label>
+            <select id="f-qday"></select>
+          </div>
         </div>
-        <button type="submit" class="btn" style="margin-top:6px;max-width:200px">產生八字報告</button>
+        <div class="form-actions">
+          <button type="submit" class="btn">產生八字報告</button>
+          <button type="button" class="btn" id="rengeSubmitBtn">人格解碼報告</button>
+        </div>
       </form>
     </div>
 
+    <div class="tabs" id="reportTabs" data-html2canvas-ignore="true">
+      <button class="tab-btn active" id="tabBazi">八字報告</button>
+      <button class="tab-btn" id="tabRenge">人格解碼報告</button>
+    </div>
+
     <div id="printArea">
+    <div id="baziTabPanel">
     <div class="card" id="resultCard" style="display:none">
       <div class="card-head" style="justify-content:flex-end">
         <button class="btn secondary" id="exportPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
@@ -94,6 +115,47 @@
     </div>
     </div>
 
+    <div id="rengeTabPanel" style="display:none">
+    <div class="card renge-card" id="rengeCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end">
+        <button class="btn secondary" id="exportRengePdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+
+      <div class="renge-info" id="rengeInfoPanel"></div>
+
+      <div class="renge-grid">
+        <div>
+          <div class="renge-panel">
+            <div class="renge-box-title">人生階段能量</div>
+            <div id="rengeStageTable"></div>
+          </div>
+          <div class="renge-panel">
+            <div class="renge-box-title">九宮連線密碼</div>
+            <div id="rengeCodeTable"></div>
+          </div>
+        </div>
+        <div>
+          <div class="renge-number-boxes" id="rengeNumberBoxes"></div>
+          <div class="renge-energy-row" id="rengeEnergyRow"></div>
+          <div class="renge-panel" style="margin-top:16px">
+            <div class="renge-box-title">九宮能量圖</div>
+            <div class="box-body">
+              <div class="renge-energy-grid" id="rengeEnergyGrid"></div>
+              <div class="renge-energy-legend">
+                <span><span class="dot blue"></span>主命數</span>
+                <span><span class="dot pink"></span>天賦數</span>
+                <span><span class="dot green"></span>生日數</span>
+                <span><span class="dot orange"></span>階段數</span>
+                <span><span class="dot purple"></span>年數能量</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    </div>
+
   </div>
 </main>
 
@@ -102,12 +164,13 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=2"></script>
-<script src="js/auth.js?v=2"></script>
+<script src="js/firebase-config.js?v=6"></script>
+<script src="js/auth.js?v=6"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=2"></script>
+<script src="js/bazi-engine.js?v=6"></script>
+<script src="js/renge-engine.js?v=6"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>
