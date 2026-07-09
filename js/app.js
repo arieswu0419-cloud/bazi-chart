@@ -165,6 +165,18 @@ async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, st
   return y;
 }
 
+// 每一頁下方置中加上「頁次/總頁次」，數字跟斜線 jsPDF 內建字型就能畫，不用像中文標題那樣先轉成圖片；
+// 要等所有內容都畫完、確定總頁數之後才能跑這段，所以固定放在 pdf.save() 之前呼叫
+function addPageNumbers(pdf, pageWidth, pageHeight) {
+  const total = pdf.internal.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    pdf.setPage(i);
+    pdf.setFontSize(10);
+    pdf.setTextColor(120, 120, 120);
+    pdf.text(i + " / " + total, pageWidth / 2, pageHeight - 6, { align: "center" });
+  }
+}
+
 document.getElementById("exportPdfBtn").addEventListener("click", async function () {
   const btn = this;
   const originalLabel = btn.textContent;
@@ -198,6 +210,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async function
       closingY = margin;
     }
     pdf.addImage(closing.dataUrl, "PNG", (pageWidth - closing.widthMM) / 2, closingY, closing.widthMM, closing.heightMM);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
 
     const filename = (currentChart ? currentChart.name : "八字") + "-八字命盤.pdf";
     pdf.save(filename);
@@ -458,6 +472,8 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
     const rengeSections = Array.from(document.querySelectorAll("#rengeCard > *:not(.card-head)"));
     await addSectionsToPdf(pdf, rengeSections, margin, pageWidth, pageHeight, 26, "#F5D800");
 
+    addPageNumbers(pdf, pageWidth, pageHeight);
+
     const filename = (currentRenge ? currentRenge.name : "人格解碼") + "-人格解碼報告.pdf";
     pdf.save(filename);
   } catch (err) {
@@ -672,6 +688,8 @@ document.getElementById("exportLifenumPdfBtn").addEventListener("click", async f
     // 避免同一個表格被硬切成兩半，跨頁看起來斷掉
     const lifenumSections = Array.from(document.querySelectorAll("#lifenumCard > div:not(.card-head)"));
     await addSectionsToPdf(pdf, lifenumSections, margin, pageWidth, pageHeight, 26);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
 
     const filename = (currentLifenum ? currentLifenum.name : "生命靈數") + "-生命靈數報告.pdf";
     pdf.save(filename);

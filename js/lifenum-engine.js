@@ -176,9 +176,9 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
   // chain 本身已經含原始加總值（例如 raw=38 時 chain=[38,11]），不用再把 raw 疊加一次
   const raw = lnDigitSum(yStr) + lnDigitSum(mStr) + lnDigitSum(dStr);
   const { chain, final: lifeCode } = lnReduceChain(raw);
-  // 三者之合固定以雙位數呈現（原始加總本來就幾乎都是雙位數以上；極少數生日的加總剛好是個位數時，
-  // 補零成兩位顯示，例如原始加總=5 顯示「05」），不會直接跟生命密碼顯示成同一個個位數字
-  const sanZheDisplay = chain.length ? chain.concat(lifeCode).join(".") : String(raw).padStart(2, "0");
+  // 三者之合固定是雙位數以上；極少數生日的原始加總剛好是個位數時，代表沒有「三者之合→生命密碼」
+  // 這個化簡步驟，那個個位數本身就是生命密碼，三者之合欄位改標示「空白」文字，不重複顯示同一個數字
+  const sanZheDisplay = chain.length ? chain.concat(lifeCode).join(".") : "空白";
 
   // 人生功課：月／日各自化簡到個位數後相減取絕對值，範圍固定 0~8
   const monthBase = lnReduceToSingle(month);
