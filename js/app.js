@@ -2,6 +2,7 @@ let currentChart = null;
 let selectedDayun = null;
 let selectedLiunian = null;
 let currentRenge = null;
+let currentLifenum = null;
 
 requireApprovedUser(function () {});
 
@@ -30,15 +31,18 @@ requireApprovedUser(function () {});
   daySel.value = String(today.getDate());
 })();
 
-// 頁籤切換：八字報告／人格解碼報告
+// 頁籤切換：八字報告／人格解碼報告／生命靈數
 function setActiveTab(tab) {
   document.getElementById("tabBazi").classList.toggle("active", tab === "bazi");
   document.getElementById("tabRenge").classList.toggle("active", tab === "renge");
+  document.getElementById("tabLifenum").classList.toggle("active", tab === "lifenum");
   document.getElementById("baziTabPanel").style.display = tab === "bazi" ? "" : "none";
   document.getElementById("rengeTabPanel").style.display = tab === "renge" ? "" : "none";
+  document.getElementById("lifenumTabPanel").style.display = tab === "lifenum" ? "" : "none";
 }
 document.getElementById("tabBazi").addEventListener("click", function () { setActiveTab("bazi"); });
 document.getElementById("tabRenge").addEventListener("click", function () { setActiveTab("renge"); });
+document.getElementById("tabLifenum").addEventListener("click", function () { setActiveTab("lifenum"); });
 
 document.getElementById("rengeSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();
@@ -58,6 +62,21 @@ document.getElementById("rengeSubmitBtn").addEventListener("click", function () 
   currentRenge = calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name });
   renderRenge(currentRenge);
   setActiveTab("renge");
+});
+
+document.getElementById("lifenumSubmitBtn").addEventListener("click", function () {
+  const name = document.getElementById("f-name").value.trim();
+  const dateVal = document.getElementById("f-date").value;
+  if (!name || !dateVal) {
+    alert("請先輸入姓名與出生日期（國曆）");
+    return;
+  }
+  const [year, month, day] = dateVal.split("-").map(Number);
+  const gender = document.getElementById("f-gender").value;
+
+  currentLifenum = calculateLifeNumber({ year, month, day, gender, name });
+  renderLifenum(currentLifenum);
+  setActiveTab("lifenum");
 });
 
 document.getElementById("baziForm").addEventListener("submit", function (e) {
@@ -421,3 +440,92 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
     btn.textContent = originalLabel;
   }
 });
+
+// 九宮格排版：1/2/3、4/5/6、7/8/9,0（0 額外放在第 3 列第 4 欄），用明確的 row/col 定位，不依賴 CSS auto-flow
+const LIFENUM_GRID_LAYOUT = [
+  { d: 1, row: 1, col: 1 }, { d: 2, row: 1, col: 2 }, { d: 3, row: 1, col: 3 },
+  { d: 4, row: 2, col: 1 }, { d: 5, row: 2, col: 2 }, { d: 6, row: 2, col: 3 },
+  { d: 7, row: 3, col: 1 }, { d: 8, row: 3, col: 2 }, { d: 9, row: 3, col: 3 }, { d: 0, row: 3, col: 4 }
+];
+
+function renderLifenum(data) {
+  document.getElementById("lifenumCard").style.display = "block";
+
+  // 左邊的 1-9,0 對照格：依 gridMarks 疊圓圈(生日本身)/三角形(三者之合化簡過程)/方框(生命密碼)
+  let gridHtml = '<div class="lifenum-grid">';
+  LIFENUM_GRID_LAYOUT.forEach(({ d, row, col }) => {
+    const m = data.gridMarks[d];
+    let marks = "";
+    if (m.circle) marks += '<span class="ln-mark">○</span>';
+    for (let i = 0; i < m.triangle; i++) marks += '<span class="ln-mark">△</span>';
+    if (m.square) marks += '<span class="ln-mark">□</span>';
+    gridHtml += '<div class="lifenum-grid-cell" style="grid-row:' + row + ";grid-column:" + col + '"><span class="ln-digit">' + d + '</span><span class="ln-marks">' + marks + "</span></div>";
+  });
+  gridHtml += "</div>";
+  document.getElementById("lifenumGridBox").innerHTML = gridHtml;
+
+  const yStr = String(data.year);
+  const mStr = String(data.month).padStart(2, "0");
+  const dStr = String(data.day).padStart(2, "0");
+
+  let mainHtml = '<table class="lifenum-main-table">';
+  mainHtml +=
+    "<tr><td class=\"ln-label\">姓名</td><td class=\"ln-value\" colspan=\"2\">" + (data.name || "") + "</td>" +
+    '<td class="ln-label blue">西元出生年</td><td class="ln-value">' + yStr + "</td>" +
+    '<td class="ln-label blue">月</td><td class="ln-value">' + mStr + "</td>" +
+    '<td class="ln-label blue">日</td><td class="ln-value">' + dStr + "</td>" +
+    '<td class="ln-label green">三者之合</td><td class="ln-value">' + data.sanZheDisplay + "</td>" +
+    '<td class="ln-label pink">生命密碼</td><td class="ln-value strong">' + data.lifeCode + "</td></tr>";
+  mainHtml +=
+    '<tr><td class="ln-label pink" colspan="3">人生功課</td><td class="ln-value" colspan="5">' + data.lifeLesson + "</td>" +
+    '<td class="ln-label pink" colspan="3">補數</td><td class="ln-value" colspan="3">' +
+    (data.complementNumbers.length ? data.complementNumbers.join("、") : "無") + "</td></tr>";
+  mainHtml +=
+    '<tr><td class="ln-label blue" colspan="3">影響最大的數</td><td class="ln-value" colspan="5">' +
+    (data.mostInfluential.length ? data.mostInfluential.join("、") : "—") + "</td>" +
+    '<td class="ln-label blue" colspan="3">別人眼中的你</td><td class="ln-value" colspan="3">' + data.otherSideView + "</td></tr>";
+
+  const starText = data.star
+    ? data.star.number + "．" + data.star.trigram + "．" + data.star.wuxing + "（" + data.star.planet + "）" +
+      (data.star.hasSecond ? "<br><span class=\"ln-note\">農曆生日在中秋後，40歲後轉換為：" + data.star.secondNumber + "．" + data.star.secondInfo.trigram + "．" + data.star.secondInfo.wuxing + "</span>" : "")
+    : '<span class="renge-unconfirmed">請先選擇性別</span>';
+  const colorText = data.colorGroups
+    ? data.colorGroups.map((g) => "<div><b>" + g.relation + "：</b>" + g.colors.join("／") + "</div>").join("")
+    : "—";
+  mainHtml +=
+    '<tr><td class="ln-label green" colspan="3">九星五行</td><td class="ln-value" colspan="5">' + starText + "</td>" +
+    '<td class="ln-label green" colspan="3">帶來加分的顏色</td><td class="ln-value" colspan="3">' + colorText + "</td></tr>";
+  mainHtml += "</table>";
+  document.getElementById("lifenumMainTable").innerHTML = mainHtml;
+
+  document.getElementById("lifenumTypeBox").innerHTML =
+    '<table class="lifenum-type-table">' +
+    [0, 3, 6].map((row) =>
+      "<tr>" + LIFENUM_TYPE_BOX.slice(row, row + 3).map((t) =>
+        '<td class="lt-' + t.color + '"><div class="lt-name">' + t.name + "（" + t.n + "）</div><div class=\"lt-desc\">" + t.desc + "</div></td>"
+      ).join("") + "</tr>"
+    ).join("") +
+    "</table>";
+
+  document.getElementById("lifenumCodeLines").innerHTML =
+    '<table class="lifenum-lines-table">' +
+    [0, 4, 8].map((row) =>
+      "<tr>" + data.codeLines.slice(row, row + 4).map((l) =>
+        '<td class="' + (l.matched ? "matched" : "") + '"><span class="ll-num">' + l.nums.join("") + "</span><span class=\"ll-name\">" + l.name + "</span></td>"
+      ).join("") + "</tr>"
+    ).join("") +
+    "</table>";
+
+  const trait = data.trait;
+  document.getElementById("lifenumTraitCard").innerHTML = trait
+    ? "<h3>生命密碼 " + data.lifeCode + "：" + trait.title + "</h3>" +
+      '<div class="lt-plus">' + trait.plus.map((t) => "<p>(+) " + t + "</p>").join("") + "</div>" +
+      '<div class="lt-minus">' + trait.minus.map((t) => "<p>(－) " + t + "</p>").join("") + "</div>" +
+      "<h4>人生功課 " + data.lifeLesson + "</h4><p class=\"ln-lesson\">" + data.lifeLessonText + "</p>"
+    : "";
+
+  document.getElementById("lifenumStarCard").innerHTML = data.star
+    ? "<h3>九星五行 " + data.star.number + "．" + data.star.trigram + "．" + data.star.wuxing + "（" + data.star.type + "）</h3>" +
+      "<p>" + data.star.desc + "</p><p class=\"ln-health\">健康：" + data.star.health + "</p>"
+    : "";
+}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=14">
+<link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
 
@@ -63,6 +63,7 @@
         <div class="form-actions">
           <button type="submit" class="btn">產生八字報告</button>
           <button type="button" class="btn" id="rengeSubmitBtn">人格解碼報告</button>
+          <button type="button" class="btn" id="lifenumSubmitBtn">生命靈數</button>
         </div>
       </form>
     </div>
@@ -70,6 +71,7 @@
     <div class="tabs" id="reportTabs" data-html2canvas-ignore="true">
       <button class="tab-btn active" id="tabBazi">八字報告</button>
       <button class="tab-btn" id="tabRenge">人格解碼報告</button>
+      <button class="tab-btn" id="tabLifenum">生命靈數</button>
     </div>
 
     <div id="printArea">
@@ -156,6 +158,23 @@
       </div>
     </div>
     </div>
+
+    <div id="lifenumTabPanel" style="display:none">
+    <div class="card lifenum-card" id="lifenumCard" style="display:none">
+      <div class="lifenum-top">
+        <div class="lifenum-gridbox" id="lifenumGridBox"></div>
+        <div class="lifenum-maintable" id="lifenumMainTable"></div>
+      </div>
+
+      <div class="lifenum-typebox" id="lifenumTypeBox"></div>
+
+      <div class="lifenum-codelines" id="lifenumCodeLines"></div>
+
+      <div class="lifenum-traitcard" id="lifenumTraitCard"></div>
+
+      <div class="lifenum-starcard" id="lifenumStarCard"></div>
+    </div>
+    </div>
     </div>
 
   </div>
@@ -166,13 +185,14 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=14"></script>
-<script src="js/auth.js?v=14"></script>
+<script src="js/firebase-config.js?v=15"></script>
+<script src="js/auth.js?v=15"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=14"></script>
-<script src="js/renge-engine.js?v=14"></script>
+<script src="js/bazi-engine.js?v=15"></script>
+<script src="js/renge-engine.js?v=15"></script>
+<script src="js/lifenum-engine.js?v=15"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=14"></script>
+<script src="js/app.js?v=15"></script>
 </body>
 </html>

@@ -667,3 +667,52 @@ footer {
   .renge-row-pair > * { flex-basis: auto; max-width: none; }
   .renge-number-boxes { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* 生命靈數 頁籤：比照課程講義的表格配色（藍/綠/粉），內部測試用，尚未取樣正式配色 */
+.lifenum-card { background: #fff; }
+.lifenum-top { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+
+.lifenum-grid { display: grid; grid-template-columns: repeat(4, 56px); grid-template-rows: repeat(3, 56px); border: 1px solid var(--border); flex: 0 0 auto; }
+.lifenum-grid-cell { border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; font-style: italic; }
+.ln-digit { font-size: 20px; }
+.ln-marks { position: absolute; bottom: 2px; left: 0; right: 0; display: flex; justify-content: center; gap: 1px; font-style: normal; line-height: 1; }
+.ln-mark { color: #C0392B; font-size: 13px; }
+
+.lifenum-maintable { flex: 1 1 480px; min-width: 320px; overflow-x: auto; }
+.lifenum-main-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.lifenum-main-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: center; }
+.lifenum-main-table .ln-label { font-weight: 600; white-space: nowrap; }
+.lifenum-main-table .ln-label.blue { background: var(--water-bg); color: var(--water-text); }
+.lifenum-main-table .ln-label.green { background: var(--wood-bg); color: var(--wood-text); }
+.lifenum-main-table .ln-label.pink { background: #FBE1EA; color: #8A2A4C; }
+.lifenum-main-table .ln-value { text-align: left; }
+.lifenum-main-table .ln-value.strong { font-size: 20px; font-weight: 700; text-align: center; }
+.ln-note { font-size: 12px; color: var(--text-secondary); }
+
+.lifenum-type-table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+.lifenum-type-table td { border: 1px solid var(--border); padding: 10px; width: 33.33%; vertical-align: top; }
+.lt-name { font-weight: 700; margin-bottom: 4px; }
+.lt-desc { font-size: 13px; color: var(--text-secondary); }
+.lifenum-type-table .lt-red .lt-name { color: #C0392B; }
+.lifenum-type-table .lt-orange .lt-name { color: #D68910; }
+.lifenum-type-table .lt-yellow .lt-name { color: #B7950B; }
+.lifenum-type-table .lt-green .lt-name { color: var(--wood-mid); }
+.lifenum-type-table .lt-blue .lt-name { color: var(--water-mid); }
+.lifenum-type-table .lt-indigo .lt-name { color: #6C3483; }
+.lifenum-type-table .lt-purple .lt-name { color: #7D3C98; }
+.lifenum-type-table .lt-pink .lt-name { color: #C2185B; }
+.lifenum-type-table .lt-gold .lt-name { color: var(--metal-mid); }
+
+.lifenum-lines-table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+.lifenum-lines-table td { border: 1px solid var(--border); padding: 8px; text-align: center; }
+.lifenum-lines-table td.matched { background: #FBE1EA; }
+.ll-num { display: block; font-weight: 700; }
+.ll-name { display: block; font-size: 12px; color: var(--text-secondary); }
+
+.lifenum-traitcard, .lifenum-starcard { margin-top: 16px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); }
+.lifenum-traitcard h3, .lifenum-starcard h3 { margin: 0 0 8px; }
+.lifenum-traitcard h4 { margin: 12px 0 4px; }
+.lt-plus p { color: #1E7E34; margin: 2px 0; }
+.lt-minus p { color: #B02A37; margin: 2px 0; }
+.ln-lesson, .lifenum-starcard p { line-height: 1.6; }
+.ln-health { color: var(--text-secondary); }
