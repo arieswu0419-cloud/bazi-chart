@@ -7,16 +7,19 @@
 ## 檔案結構
 
 ```
-index.html          主頁面（命盤分析，需登入且審核通過）
+index.html          主頁面（命盤分析，需登入且審核通過，且該報告的權限要開啟）
 login.html          登入頁
 signup.html         申請帳號頁
+admin.html          系統維護頁（只有 ADMIN_EMAIL 本人能進，審核帳號＋開關三個報告的權限）
 css/style.css       版面樣式（響應式：桌面／平板／手機）
 js/firebase-config.js   Firebase 專案設定（需自行填入）
-js/auth.js          登入／註冊／審核狀態檢查
+js/auth.js          登入／註冊／審核狀態檢查／ADMIN_EMAIL 常數／requireAdmin()
+js/admin.js         系統維護頁邏輯（列出所有帳號、切換審核狀態、勾選三個報告權限）
 js/bazi-engine.js    八字計算（四柱／五行／十神／大運／流年／神煞／格局）
 js/renge-engine.js  人格解碼能量分析計算（生命靈數系統）
+js/lifenum-engine.js 生命靈數計算（三者之合／生命密碼／人生功課／補數／九星五行等）
 js/app.js           頁面互動邏輯
-firestore.rules     Firestore 安全規則
+firestore.rules     Firestore 安全規則（改完要手動貼回 Firebase 主控台發布，見下方「二」）
 assets/logo.png      Aries LOGO
 ```
 
@@ -31,13 +34,32 @@ GitHub Pages 只能放靜態檔案，帳號密碼與審核狀態需要 Firebase 
 5. 左側選單「專案設定」（齒輪圖示）→ 一路往下滑到「您的應用程式」→ 選網頁圖示 `</>` 新增網頁應用程式 → 註冊後會看到一段 `firebaseConfig = {...}` 設定值。
 6. 把這段設定值複製貼到 `js/firebase-config.js`，取代裡面的 `YOUR_API_KEY` 等預設文字。
 
-## 二、審核學員帳號（管理者操作）
+## 二、審核學員帳號＋權限管理（管理者操作）
 
-不用寫管理後台，直接用 Firebase 主控台：
+**帳號＝信箱、密碼由使用者自訂，三個報告（八字／人格解碼／生命靈數）各自有獨立的開關權限**，
+由系統維護帳號（寫死在 `js/auth.js` 的 `ADMIN_EMAIL` 常數，目前是 `arieswu0419@gmail.com`）登入
+`admin.html` 管理，不用再逐筆手動改 Firestore：
 
-- **核准新申請**：Firestore Database → `users` collection → 找到該學員的文件 → 把 `status` 欄位從 `"pending"` 改成 `"approved"` → 存檔。學員之後登入就能進入命盤分析頁。
-- **停用某帳號**：Authentication 分頁 → 找到該使用者 → 右側選單「停用帳戶」。停用後該帳號即使密碼正確也無法登入。
-- **第一個管理者/測試帳號**：請先自己到 `signup.html` 申請一個帳號，再回 Firestore 手動把自己的 `status` 改成 `approved`，這樣才能登入測試。
+- **核准新申請＋開通權限**：用系統維護帳號登入網站後，右上角會出現「系統維護」連結（一般帳號看不到這個連結）。
+  進去之後每個帳號一列，點狀態按鈕在「審核中／已核准」間切換，勾選八字／人格解碼／生命靈數三個checkbox 就是即時
+  開通對應報告的權限，不用存檔按鈕，每次勾選都會馬上寫回 Firestore。
+- 使用者剛申請帳號時，`permissions` 三個報告預設全部是 `false`（關閉），核准之後還要記得勾選需要開放的報告，
+  不然學員登入後會看到「您的帳號目前沒有任何報告的使用權限」的提示，三個報告按鈕/頁籤都不會顯示。
+- 這個功能上線前就已經 `approved` 的舊帳號，Firestore 文件裡沒有 `permissions` 欄位，前端會當作「沿用舊行為、
+  三個報告都開放」處理（`js/app.js` 裡 `data.permissions || {bazi:true,renge:true,lifenum:true}` 這個 fallback），
+  不會因為新功能上線就把舊學員鎖住；但只要系統維護帳號在 `admin.html` 幫該帳號勾選過一次（即使全勾），
+  Firestore 就會寫入明確的 `permissions` 物件，之後就照這個物件的值走，不會再套用 fallback。
+- **停用某帳號**：目前仍然要到 Firebase 主控台 Authentication 分頁 → 找到該使用者 → 右側選單「停用帳戶」
+  （這個跟「審核狀態」是兩件事：停用是完全擋登入，審核狀態/權限只是能不能看到報告內容）。
+- **第一個管理者帳號**：直接到 `signup.html` 用 `arieswu0419@gmail.com` 申請帳號，申請完還是要先照 Firebase
+  主控台的方式把自己的 `status` 改成 `approved`（管理者帳號的「審核狀態」跟「是不是系統維護帳號」是分開判斷的，
+  審核狀態沒過一樣不能登入），之後才能用這個帳號登入 `admin.html`。
+
+**重要：改過 `firestore.rules` 之後一定要重新發布**——這份規則檔只是這個 repo 裡的原始碼，改完存檔
+不會自動生效在真正的 Firebase 專案上，一定要照本節「一、」的步驟 4，把整份新內容貼到 Firebase 主控台
+Firestore Database → 規則分頁 → 發布，管理權限（`isAdmin()`）跟權限欄位的檢查才會真的開始生效；
+發布前 `admin.html` 會因為 Firestore 規則還是舊版而讀取失敗（顯示「Missing or insufficient permissions」）。
+這個環境沒有安裝 Firebase CLI，沒辦法用指令自動部署規則，只能手動貼到主控台。
 
 ## 三、部署到 GitHub Pages
 

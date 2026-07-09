@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=18">
+<link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body>
 
@@ -16,6 +16,7 @@
       <span>Aries9419 八字報告</span>
     </div>
     <nav class="nav-links">
+      <a href="admin.html" id="adminLink" class="btn secondary" style="width:auto;display:none">系統維護</a>
       <button onclick="handleLogout()">登出</button>
     </nav>
   </div>
@@ -61,10 +62,11 @@
           </div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn">產生八字報告</button>
+          <button type="submit" class="btn" id="baziSubmitBtn">產生八字報告</button>
           <button type="button" class="btn" id="rengeSubmitBtn">人格解碼報告</button>
           <button type="button" class="btn" id="lifenumSubmitBtn">生命靈數報告</button>
         </div>
+        <p class="form-msg show info" id="permissionNote" style="display:none">您的帳號目前沒有任何報告的使用權限，請聯絡管理者開通。</p>
       </form>
     </div>
 
@@ -203,14 +205,14 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=18"></script>
-<script src="js/auth.js?v=18"></script>
+<script src="js/firebase-config.js?v=19"></script>
+<script src="js/auth.js?v=19"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=18"></script>
-<script src="js/renge-engine.js?v=18"></script>
-<script src="js/lifenum-engine.js?v=18"></script>
+<script src="js/bazi-engine.js?v=19"></script>
+<script src="js/renge-engine.js?v=19"></script>
+<script src="js/lifenum-engine.js?v=19"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=18"></script>
+<script src="js/app.js?v=19"></script>
 </body>
 </html>

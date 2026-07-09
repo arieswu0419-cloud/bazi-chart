@@ -4,7 +4,35 @@ let selectedLiunian = null;
 let currentRenge = null;
 let currentLifenum = null;
 
-requireApprovedUser(function () {});
+requireApprovedUser(function (user, data) {
+  if (user.email === ADMIN_EMAIL) {
+    document.getElementById("adminLink").style.display = "";
+  }
+
+  // 三個報告權限：帳號資料裡沒有 permissions 欄位的話（這個功能上線前就已核准的舊帳號），
+  // 視為沿用舊行為、三個都開放；新申請的帳號一律會有 permissions 欄位（預設全部關閉，等管理者開通）
+  const perms = data.permissions || { bazi: true, renge: true, lifenum: true };
+
+  if (!perms.bazi) {
+    document.getElementById("baziSubmitBtn").style.display = "none";
+    document.getElementById("tabBazi").style.display = "none";
+  }
+  if (!perms.renge) {
+    document.getElementById("rengeSubmitBtn").style.display = "none";
+    document.getElementById("tabRenge").style.display = "none";
+  }
+  if (!perms.lifenum) {
+    document.getElementById("lifenumSubmitBtn").style.display = "none";
+    document.getElementById("tabLifenum").style.display = "none";
+  }
+
+  if (!perms.bazi && !perms.renge && !perms.lifenum) {
+    document.getElementById("permissionNote").style.display = "";
+  } else if (!perms.bazi) {
+    // 預設頁籤是八字報告，如果這個人沒有八字權限，切到他有權限的第一個頁籤，避免打開就是空白頁
+    setActiveTab(perms.renge ? "renge" : "lifenum");
+  }
+});
 
 // 擇日欄位：年/月/日下拉，預設今天
 (function initQChoiceFields() {

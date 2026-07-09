@@ -1,3 +1,6 @@
+// 系統維護帳號，跟 firestore.rules 裡的 isAdmin() 判斷條件是同一個 email，兩邊要保持一致
+const ADMIN_EMAIL = "arieswu0419@gmail.com";
+
 function showMsg(el, text, type) {
   el.textContent = text;
   el.className = "form-msg show " + type;
@@ -27,6 +30,8 @@ async function handleSignup(e) {
       name: name,
       email: email,
       status: "pending",
+      // 三個報告權限預設全部關閉，審核通過後要由系統維護帳號登入後台手動開啟
+      permissions: { bazi: false, renge: false, lifenum: false },
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     await auth.signOut();
@@ -91,6 +96,17 @@ function requireApprovedUser(onReady) {
       return;
     }
     onReady(user, doc.data());
+  });
+}
+
+// 保護頁面用：放在 admin.html，只有系統維護帳號本人登入才能進入，其餘一律導回登入頁
+function requireAdmin(onReady) {
+  auth.onAuthStateChanged((user) => {
+    if (!user || user.email !== ADMIN_EMAIL) {
+      window.location.href = "login.html";
+      return;
+    }
+    onReady(user);
   });
 }
 
