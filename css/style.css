@@ -377,13 +377,15 @@ main.app {
 .strip-label {
   font-size: 13px;
   color: var(--text-secondary);
-  margin: 16px 0 8px;
+  margin: 0 0 8px;
 }
-.strip-label:first-child { margin-top: 0; }
 .dayun-wrap {
   overflow-x: auto;
   margin-bottom: 8px;
 }
+/* 大運／流年各自包一層 .dayun-block（PDF 匯出逐區塊換頁用），區塊之間留白，取代原本掛在
+   .strip-label:first-child 上的間距寫法（改成包一層 wrapper 後 :first-child 會失準，兩個 label 都會被當第一個） */
+.dayun-block + .dayun-block { margin-top: 16px; }
 .dayun-table {
   width: 100%;
   min-width: 720px;
@@ -666,17 +668,31 @@ footer {
   .renge-row-pair { flex-direction: column; }
   .renge-row-pair > * { flex-basis: auto; max-width: none; }
   .renge-number-boxes { grid-template-columns: repeat(3, 1fr); }
+
+  /* 主表格在手機上改成一格一行（label 疊在 value 上面），不用再左右滑動 */
+  .lifenum-main-table, .lifenum-main-table tbody, .lifenum-main-table tr, .lifenum-main-table td { display: block; width: 100%; }
+  .lifenum-main-table td { padding: 6px 10px; }
+  .lifenum-main-table tr { border-bottom: 6px solid var(--page-bg); }
+  .lifenum-main-table .ln-value { text-align: left; }
+
+  .lifenum-type-table, .lifenum-lines-table { font-size: 12px; }
+  .lifenum-type-table td, .lifenum-lines-table td { padding: 6px; }
+  .lifenum-wuxing-table { font-size: 12px; }
+  .lifenum-wuxing-table td { padding: 5px; }
 }
 
 /* 生命靈數 頁籤：比照課程講義的表格配色（藍/綠/粉），內部測試用，尚未取樣正式配色 */
 .lifenum-card { background: #fff; }
-.lifenum-top { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+/* 九宮格改放最上方、置中，跟下方主表格一樣是整列滿寬（不再是側邊窄欄），手機/平板也用同一份排版，
+   格子大小用 clamp() 依螢幕寬度縮放，避免在小螢幕被拉超出邊界或大螢幕格子太小 */
+.lifenum-top { display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
 
-.lifenum-grid { display: grid; grid-template-columns: repeat(4, 56px); grid-template-rows: repeat(3, 56px); border: 1px solid var(--border); flex: 0 0 auto; }
+.lifenum-gridbox { width: 100%; display: flex; justify-content: center; }
+.lifenum-grid { display: grid; grid-template-columns: repeat(4, clamp(48px, 12vw, 72px)); grid-template-rows: repeat(3, clamp(48px, 12vw, 72px)); border: 1px solid var(--border); }
 .lifenum-grid-cell { border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
 .ln-mark-svg { width: 100%; height: 100%; }
 
-.lifenum-maintable { flex: 1 1 480px; min-width: 320px; overflow-x: auto; }
+.lifenum-maintable { width: 100%; overflow-x: auto; }
 .lifenum-main-table { border-collapse: collapse; width: 100%; font-size: 14px; }
 .lifenum-main-table td { border: 1px solid var(--border); padding: 6px 10px; text-align: center; }
 .lifenum-main-table .ln-label { font-weight: 600; white-space: nowrap; }
@@ -684,8 +700,10 @@ footer {
 .lifenum-main-table .ln-label.green { background: var(--wood-bg); color: var(--wood-text); }
 .lifenum-main-table .ln-label.pink { background: #FBE1EA; color: #8A2A4C; }
 .lifenum-main-table .ln-value { text-align: left; }
-.lifenum-main-table .ln-value.strong { font-size: 20px; font-weight: 700; text-align: center; }
+.lifenum-main-table .ln-value.strong { font-size: 20px; font-weight: 700; text-align: center; color: #C0392B; }
 .ln-note { font-size: 12px; color: var(--text-secondary); }
+.ln-color-group { margin-bottom: 6px; }
+.ln-color-group u { font-size: 12px; color: var(--text-secondary); }
 
 .lifenum-type-table { border-collapse: collapse; width: 100%; margin-top: 16px; }
 .lifenum-type-table td { border: 1px solid var(--border); padding: 10px; width: 33.33%; vertical-align: top; }

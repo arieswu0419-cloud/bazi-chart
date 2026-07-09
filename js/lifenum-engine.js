@@ -176,7 +176,9 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
   // chain 本身已經含原始加總值（例如 raw=38 時 chain=[38,11]），不用再把 raw 疊加一次
   const raw = lnDigitSum(yStr) + lnDigitSum(mStr) + lnDigitSum(dStr);
   const { chain, final: lifeCode } = lnReduceChain(raw);
-  const sanZheDisplay = chain.length ? chain.concat(lifeCode).join(".") : String(lifeCode);
+  // 三者之合固定以雙位數呈現（原始加總本來就幾乎都是雙位數以上；極少數生日的加總剛好是個位數時，
+  // 補零成兩位顯示，例如原始加總=5 顯示「05」），不會直接跟生命密碼顯示成同一個個位數字
+  const sanZheDisplay = chain.length ? chain.concat(lifeCode).join(".") : String(raw).padStart(2, "0");
 
   // 人生功課：月／日各自化簡到個位數後相減取絕對值，範圍固定 0~8
   const monthBase = lnReduceToSingle(month);
@@ -267,6 +269,8 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
   }
 
   const colorGroups = star ? LIFENUM_WUXING_COLORS[star.wuxing] : null;
+  // 40 歲後轉換的第二個星，五行可能跟第一個不一樣（例如水轉火），加分顏色要分開列出，不能只顯示第一個星的
+  const secondColorGroups = star && star.hasSecond ? LIFENUM_WUXING_COLORS[star.secondInfo.wuxing] : null;
 
   return {
     name,
@@ -286,6 +290,7 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
     codeLines,
     star,
     colorGroups,
+    secondColorGroups,
     wuxingHealth: LIFENUM_WUXING_HEALTH,
     trait: LIFENUM_TRAITS[lifeCode],
     // 別人眼中的你／影響最大的數 也對照同一份 1-9 個性解讀表（見 LINE_NOTE_260709_4.jpg／_5.jpg）；

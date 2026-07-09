@@ -140,6 +140,31 @@ function addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, startY) {
   return lastBottom;
 }
 
+// 依「區塊」逐一畫進 PDF：每個區塊（例如一個表格／一張卡片）先各自 html2canvas 轉成圖片，
+// 如果整塊放不進當頁剩餘空間，就直接整塊換到下一頁，不會像單一大圖那樣被硬切一半；
+// 只有單一區塊本身就比一整頁還高時，才不得已用 addCanvasToPdf 的切頁邏輯畫（沒有更好的辦法）。
+async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, startY, backgroundColor) {
+  const imgWidth = pageWidth - margin * 2;
+  const maxHeight = pageHeight - margin * 2;
+  let y = startY;
+  for (const el of sections) {
+    const canvas = await html2canvas(el, { scale: 1.5, backgroundColor: backgroundColor || "#ffffff" });
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    if (imgHeight > maxHeight) {
+      if (y > startY) { pdf.addPage(); y = margin; }
+      y = addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, y) + 6;
+      continue;
+    }
+    if (y + imgHeight > pageHeight - margin) {
+      pdf.addPage();
+      y = margin;
+    }
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.85), "JPEG", margin, y, imgWidth, imgHeight);
+    y += imgHeight + 6;
+  }
+  return y;
+}
+
 document.getElementById("exportPdfBtn").addEventListener("click", async function () {
   const btn = this;
   const originalLabel = btn.textContent;
@@ -157,13 +182,14 @@ document.getElementById("exportPdfBtn").addEventListener("click", async function
     const title = textToImage("Aries9419 八字報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
-    const resultCanvas = await html2canvas(document.getElementById("resultCard"), { scale: 1.5, backgroundColor: "#ffffff" });
-    addCanvasToPdf(pdf, resultCanvas, margin, pageWidth, pageHeight, 26);
+    // 逐區塊（命盤資訊／四柱表格／天干地支合沖／五行十神）換頁，避免任何一個表格被硬切一半
+    const resultSections = Array.from(document.querySelectorAll("#resultCard > *:not(.card-head)"));
+    await addSectionsToPdf(pdf, resultSections, margin, pageWidth, pageHeight, 26);
 
     // 大運流年另外強制換頁，不要被切一半；表格說明文字（點選欄位標題...）不匯出
     pdf.addPage();
-    const dayunCanvas = await html2canvas(document.getElementById("dayunCard"), { scale: 1.5, backgroundColor: "#ffffff" });
-    const dayunBottom = addCanvasToPdf(pdf, dayunCanvas, margin, pageWidth, pageHeight, margin);
+    const dayunSections = Array.from(document.querySelectorAll("#dayunCard > *"));
+    const dayunBottom = await addSectionsToPdf(pdf, dayunSections, margin, pageWidth, pageHeight, margin);
 
     const closing = textToImage("-----八字報告請交由專業人士分析-----", 12, "#5F5E5A");
     let closingY = dayunBottom + 8;
@@ -428,8 +454,9 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
     const title = textToImage("Aries9419 人格解碼報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
-    const rengeCanvas = await html2canvas(document.getElementById("rengeCard"), { scale: 1.5, backgroundColor: "#F5D800" });
-    addCanvasToPdf(pdf, rengeCanvas, margin, pageWidth, pageHeight, 26);
+    // 逐區塊（基本資訊／生日數天賦數主命數／人生階段能量／九宮連線密碼與能量圖）換頁，避免表格被硬切一半
+    const rengeSections = Array.from(document.querySelectorAll("#rengeCard > *:not(.card-head)"));
+    await addSectionsToPdf(pdf, rengeSections, margin, pageWidth, pageHeight, 26, "#F5D800");
 
     const filename = (currentRenge ? currentRenge.name : "人格解碼") + "-人格解碼報告.pdf";
     pdf.save(filename);
@@ -448,12 +475,14 @@ const LIFENUM_GRID_LAYOUT = [
   { d: 7, row: 3, col: 1 }, { d: 8, row: 3, col: 2 }, { d: 9, row: 3, col: 3 }, { d: 0, row: 3, col: 4 }
 ];
 
-// 圈記號用 SVG 畫同心圖形：圓圈(紅)/三角形(藍)/正方形(深綠)，同一種形狀出現多次就疊出對應數量的同心圖形（如參考圖）
-const LN_MARK_COLORS = { circle: "#C0392B", triangle: "#1D4ED8", square: "#1B5E20" };
-function lifenumTrianglePoints(cx, cy, r) {
-  const h = r * 1.6; // 三角形整體高度，跟 r 對應圓形的視覺大小相近
-  const halfBase = r * 1.35;
-  return (cx) + "," + (cy - h * 0.6) + " " + (cx - halfBase) + "," + (cy + h * 0.4) + " " + (cx + halfBase) + "," + (cy + h * 0.4);
+// 圈記號用 SVG 畫同心圖形：圓圈(深灰)/三角形(藍，正三角形)/正方形(紅，加粗)，同一種形狀出現多次就疊出對應數量的同心圖形
+const LN_MARK_COLORS = { circle: "#4B4B4B", triangle: "#1D4ED8", square: "#C0392B" };
+function lifenumTrianglePoints(cx, cy, R) {
+  // 正三角形（等邊三角形）：三個頂點都在半徑 R 的圓上，角度間隔 120 度（-90°/150°/30°）
+  const top = cx + "," + (cy - R);
+  const bl = (cx - R * 0.866) + "," + (cy + R * 0.5);
+  const br = (cx + R * 0.866) + "," + (cy + R * 0.5);
+  return top + " " + bl + " " + br;
 }
 function lifenumMarkSvg(digit, m) {
   const cx = 28, cy = 28;
@@ -464,12 +493,13 @@ function lifenumMarkSvg(digit, m) {
     if (r > 3) shapes += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + LN_MARK_COLORS.circle + '" stroke-width="1.6"/>';
   }
   for (let i = 0; i < m.triangle; i++) {
-    const r = 22 - i * 5;
+    // 三角形整體比圓圈略小一點
+    const r = (20 - i * 5) * 0.85;
     if (r > 3) shapes += '<polygon points="' + lifenumTrianglePoints(cx, cy, r) + '" fill="none" stroke="' + LN_MARK_COLORS.triangle + '" stroke-width="1.6"/>';
   }
   for (let i = 0; i < m.square; i++) {
     const half = 17 - i * 4;
-    if (half > 2) shapes += '<rect x="' + (cx - half) + '" y="' + (cy - half) + '" width="' + (half * 2) + '" height="' + (half * 2) + '" fill="none" stroke="' + LN_MARK_COLORS.square + '" stroke-width="1.6"/>';
+    if (half > 2) shapes += '<rect x="' + (cx - half) + '" y="' + (cy - half) + '" width="' + (half * 2) + '" height="' + (half * 2) + '" fill="none" stroke="' + LN_MARK_COLORS.square + '" stroke-width="2.6"/>';
   }
   return (
     '<svg viewBox="0 0 56 56" class="ln-mark-svg">' + shapes +
@@ -511,11 +541,17 @@ function renderLifenum(data) {
     '<td class="ln-label blue" colspan="3">別人眼中的你</td><td class="ln-value" colspan="3">' + data.otherSideView + "</td></tr>";
 
   const starText = data.star
-    ? data.star.number + "．" + data.star.trigram + "．" + data.star.wuxing + "（" + data.star.planet + "）" +
-      (data.star.hasSecond ? "<br><span class=\"ln-note\">農曆生日在中秋後，40歲後轉換為：" + data.star.secondNumber + "．" + data.star.secondInfo.trigram + "．" + data.star.secondInfo.wuxing + "</span>" : "")
+    ? "<div>40歲以前：<b>" + data.star.number + "．" + data.star.trigram + "．" + data.star.wuxing + "</b>（" + data.star.planet + "）</div>" +
+      (data.star.hasSecond
+        ? "<div>40歲以後：<b>" + data.star.secondNumber + "．" + data.star.secondInfo.trigram + "．" + data.star.secondInfo.wuxing + "</b>（" + data.star.secondInfo.planet + "）</div>"
+        : "")
     : '<span class="renge-unconfirmed">請先選擇性別</span>';
+  const colorGroupHtml = (groups) => groups.map((g) => "<div><b>" + g.relation + "：</b>" + g.colors.join("／") + "</div>").join("");
   const colorText = data.colorGroups
-    ? data.colorGroups.map((g) => "<div><b>" + g.relation + "：</b>" + g.colors.join("／") + "</div>").join("")
+    ? (data.star.hasSecond
+        ? "<div class=\"ln-color-group\"><u>40歲以前</u>" + colorGroupHtml(data.colorGroups) + "</div>" +
+          "<div class=\"ln-color-group\"><u>40歲以後</u>" + colorGroupHtml(data.secondColorGroups) + "</div>"
+        : colorGroupHtml(data.colorGroups))
     : "—";
   mainHtml +=
     '<tr><td class="ln-label green" colspan="3">九星五行</td><td class="ln-value" colspan="5">' + starText + "</td>" +
@@ -632,8 +668,10 @@ document.getElementById("exportLifenumPdfBtn").addEventListener("click", async f
     const title = textToImage("Aries9419 生命靈數報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
-    const lifenumCanvas = await html2canvas(document.getElementById("lifenumCard"), { scale: 1.5, backgroundColor: "#ffffff" });
-    addCanvasToPdf(pdf, lifenumCanvas, margin, pageWidth, pageHeight, 26);
+    // 生命靈數報告內容區塊很多（主表格／九宮格個性說明／連線密碼／各種解讀卡片），逐區塊換頁，
+    // 避免同一個表格被硬切成兩半，跨頁看起來斷掉
+    const lifenumSections = Array.from(document.querySelectorAll("#lifenumCard > div:not(.card-head)"));
+    await addSectionsToPdf(pdf, lifenumSections, margin, pageWidth, pageHeight, 26);
 
     const filename = (currentLifenum ? currentLifenum.name : "生命靈數") + "-生命靈數報告.pdf";
     pdf.save(filename);
