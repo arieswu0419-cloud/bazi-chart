@@ -692,7 +692,7 @@ function renderLifenum(data) {
       "<td>" + w.wuxing + "</td><td>" + w.organs + "</td><td>" + w.emotion + "</td><td>" + w.colors.join("／") + "</td></tr>"
     ).join("") +
     "</table>" +
-    (data.star ? '<p class="ln-note">您本身九星五行屬「' + data.star.wuxing + '」，上表反白的一列是您要特別注意的器官與情緒。</p>' : "");
+    (data.star ? '<p class="ln-note">您本身九星五行屬「' + data.star.wuxing + '」，上表粉紅底色請您特別注意器官與情緒。</p>' : "");
 }
 
 document.getElementById("exportLifenumPdfBtn").addEventListener("click", async function () {
