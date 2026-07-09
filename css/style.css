@@ -688,9 +688,17 @@ footer {
 .lifenum-top { display: flex; flex-direction: column; gap: 16px; align-items: stretch; }
 
 .lifenum-gridbox { width: 100%; display: flex; justify-content: center; }
+.lifenum-grid-row { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
 .lifenum-grid { display: grid; grid-template-columns: repeat(4, clamp(48px, 12vw, 72px)); grid-template-rows: repeat(3, clamp(48px, 12vw, 72px)); border: 1px solid var(--border); }
 .lifenum-grid-cell { border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
 .ln-mark-svg { width: 100%; height: 100%; }
+
+/* 右側累計數量表：跟左邊的圈記號格子同樣排法（1/2/3、4/5/6、7/8/9,0），純文字顯示「數字」+「有N個」 */
+.lifenum-count-grid { display: grid; grid-template-columns: repeat(4, clamp(60px, 14vw, 84px)); grid-template-rows: repeat(3, clamp(48px, 12vw, 72px)); border: 1px solid var(--border); }
+.lifenum-count-cell { border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.lc-digit { font-size: 18px; font-weight: 600; }
+.lc-count { font-size: 12px; white-space: nowrap; }
+.lc-num { color: #C0392B; font-weight: 700; }
 
 .lifenum-maintable { width: 100%; overflow-x: auto; }
 .lifenum-main-table { border-collapse: collapse; width: 100%; font-size: 14px; }

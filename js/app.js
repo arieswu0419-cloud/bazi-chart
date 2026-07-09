@@ -561,7 +561,19 @@ function renderLifenum(data) {
     gridHtml += '<div class="lifenum-grid-cell" style="grid-row:' + row + ";grid-column:" + col + '">' + lifenumMarkSvg(d, data.gridMarks[d]) + "</div>";
   });
   gridHtml += "</div>";
-  document.getElementById("lifenumGridBox").innerHTML = gridHtml;
+
+  // 右邊新增一個累計數量表：跟左邊同一份 digitCounts（圓圈1/三角形2/方框4 加總），純文字呈現「數字 + 有N個」
+  let countHtml = '<div class="lifenum-count-grid">';
+  LIFENUM_GRID_LAYOUT.forEach(({ d, row, col }) => {
+    countHtml +=
+      '<div class="lifenum-count-cell" style="grid-row:' + row + ";grid-column:" + col + '">' +
+      '<div class="lc-digit">' + d + "</div>" +
+      '<div class="lc-count">有 <span class="lc-num">' + data.digitCounts[d] + "</span> 個</div>" +
+      "</div>";
+  });
+  countHtml += "</div>";
+
+  document.getElementById("lifenumGridBox").innerHTML = '<div class="lifenum-grid-row">' + gridHtml + countHtml + "</div>";
 
   const yStr = String(data.year);
   const mStr = String(data.month).padStart(2, "0");

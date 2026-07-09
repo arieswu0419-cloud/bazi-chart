@@ -287,6 +287,10 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
     mostInfluential,
     otherSideView,
     gridMarks,
+    // 0~9 每個數字的累計數量：圓圈(生日本身)算1個、三角形(三者之合化簡過程)算2個、方框(生命密碼)算4個，
+    // 同一個數字全部加總——跟 gridMarks 是同一份底層資料，這裡是攤平成「數字→總數量」方便畫右側統計表格
+    digitCounts: allNums.reduce((acc, d) => { acc[d] = weights[d] || 0; return acc; }, {}),
+    codeLines,
     codeLines,
     star,
     colorGroups,
