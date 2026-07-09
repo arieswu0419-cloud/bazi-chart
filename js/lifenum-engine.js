@@ -264,7 +264,9 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
       let r2 = gender === "female" ? lnMod9((year - 1911 + 1) - 2) : lnMod9(17 - (year - 1911 + 1));
       if (r2 === 5) r2 = gender === "female" ? 8 : 2;
       star.secondNumber = r2;
-      star.secondInfo = LIFENUM_STAR_INFO[r2];
+      // secondInfo 也要補上 number 欄位（LIFENUM_STAR_INFO 的資料本身只用物件的 key 存數字，沒有內含 number
+      // 屬性），不然畫面上「九星」卡片第二段的星號會顯示 undefined，看起來像是漏列
+      star.secondInfo = { number: r2, ...LIFENUM_STAR_INFO[r2] };
     }
   }
 
