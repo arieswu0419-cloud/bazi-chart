@@ -448,18 +448,43 @@ const LIFENUM_GRID_LAYOUT = [
   { d: 7, row: 3, col: 1 }, { d: 8, row: 3, col: 2 }, { d: 9, row: 3, col: 3 }, { d: 0, row: 3, col: 4 }
 ];
 
+// 圈記號用 SVG 畫同心圖形：圓圈(紅)/三角形(藍)/正方形(深綠)，同一種形狀出現多次就疊出對應數量的同心圖形（如參考圖）
+const LN_MARK_COLORS = { circle: "#C0392B", triangle: "#1D4ED8", square: "#1B5E20" };
+function lifenumTrianglePoints(cx, cy, r) {
+  const h = r * 1.6; // 三角形整體高度，跟 r 對應圓形的視覺大小相近
+  const halfBase = r * 1.35;
+  return (cx) + "," + (cy - h * 0.6) + " " + (cx - halfBase) + "," + (cy + h * 0.4) + " " + (cx + halfBase) + "," + (cy + h * 0.4);
+}
+function lifenumMarkSvg(digit, m) {
+  const cx = 28, cy = 28;
+  let shapes = "";
+  // 由外而內畫，數量越多同心圖形越密；圓圈/三角形/正方形各自獨立疊加，半徑跟著數量遞減
+  for (let i = 0; i < m.circle; i++) {
+    const r = 22 - i * 4;
+    if (r > 3) shapes += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + LN_MARK_COLORS.circle + '" stroke-width="1.6"/>';
+  }
+  for (let i = 0; i < m.triangle; i++) {
+    const r = 22 - i * 5;
+    if (r > 3) shapes += '<polygon points="' + lifenumTrianglePoints(cx, cy, r) + '" fill="none" stroke="' + LN_MARK_COLORS.triangle + '" stroke-width="1.6"/>';
+  }
+  for (let i = 0; i < m.square; i++) {
+    const half = 17 - i * 4;
+    if (half > 2) shapes += '<rect x="' + (cx - half) + '" y="' + (cy - half) + '" width="' + (half * 2) + '" height="' + (half * 2) + '" fill="none" stroke="' + LN_MARK_COLORS.square + '" stroke-width="1.6"/>';
+  }
+  return (
+    '<svg viewBox="0 0 56 56" class="ln-mark-svg">' + shapes +
+    '<text x="' + cx + '" y="' + (cy + 1) + '" text-anchor="middle" dominant-baseline="central" font-style="italic" font-size="19" fill="#212529">' + digit + "</text>" +
+    "</svg>"
+  );
+}
+
 function renderLifenum(data) {
   document.getElementById("lifenumCard").style.display = "block";
 
   // 左邊的 1-9,0 對照格：依 gridMarks 疊圓圈(生日本身)/三角形(三者之合化簡過程)/方框(生命密碼)
   let gridHtml = '<div class="lifenum-grid">';
   LIFENUM_GRID_LAYOUT.forEach(({ d, row, col }) => {
-    const m = data.gridMarks[d];
-    let marks = "";
-    if (m.circle) marks += '<span class="ln-mark">○</span>';
-    for (let i = 0; i < m.triangle; i++) marks += '<span class="ln-mark">△</span>';
-    if (m.square) marks += '<span class="ln-mark">□</span>';
-    gridHtml += '<div class="lifenum-grid-cell" style="grid-row:' + row + ";grid-column:" + col + '"><span class="ln-digit">' + d + '</span><span class="ln-marks">' + marks + "</span></div>";
+    gridHtml += '<div class="lifenum-grid-cell" style="grid-row:' + row + ";grid-column:" + col + '">' + lifenumMarkSvg(d, data.gridMarks[d]) + "</div>";
   });
   gridHtml += "</div>";
   document.getElementById("lifenumGridBox").innerHTML = gridHtml;
@@ -520,12 +545,102 @@ function renderLifenum(data) {
   document.getElementById("lifenumTraitCard").innerHTML = trait
     ? "<h3>生命密碼 " + data.lifeCode + "：" + trait.title + "</h3>" +
       '<div class="lt-plus">' + trait.plus.map((t) => "<p>(+) " + t + "</p>").join("") + "</div>" +
-      '<div class="lt-minus">' + trait.minus.map((t) => "<p>(－) " + t + "</p>").join("") + "</div>" +
-      "<h4>人生功課 " + data.lifeLesson + "</h4><p class=\"ln-lesson\">" + data.lifeLessonText + "</p>"
+      '<div class="lt-minus">' + trait.minus.map((t) => "<p>(－) " + t + "</p>").join("") + "</div>"
     : "";
 
+  // 人生功課：內容取自「人生功課.pdf」，含計算過程＋對應的缺憾數解讀文字
+  document.getElementById("lifenumLessonCard").innerHTML =
+    "<h3>人生功課 " + data.lifeLesson + "</h3>" +
+    '<p class="ln-calc">計算方式：日基數與月基數相減，所得的數字。' + data.lifeLessonCalc + "</p>" +
+    '<p class="ln-lesson">' + data.lifeLessonText + "</p>";
+
+  function starBlock(title, info) {
+    return (
+      "<h3>" + title + " " + info.number + "．" + info.trigram + "．" + info.wuxing + "《" + info.planet + "》</h3>" +
+      "<p>" + info.desc + "</p>" +
+      '<p class="ln-health">健康：' + info.health + "</p>" +
+      '<p class="ln-bed">您最適合的床單顏色是～五行屬《' + info.bedGood.split("：")[0] + "》的顏色：" + info.bedGood.split("：")[1] + "</p>" +
+      '<p class="ln-bed">您不適合的床單顏色是～五行屬《' + info.bedBad.split("：")[0] + "》的顏色：" + info.bedBad.split("：")[1] + "</p>"
+    );
+  }
+  // 九星：內容取自「九星五行.pdf」，含個性、健康、床單顏色建議；中秋後出生者 40 歲後轉換的第二個星另外列出
   document.getElementById("lifenumStarCard").innerHTML = data.star
-    ? "<h3>九星五行 " + data.star.number + "．" + data.star.trigram + "．" + data.star.wuxing + "（" + data.star.type + "）</h3>" +
-      "<p>" + data.star.desc + "</p><p class=\"ln-health\">健康：" + data.star.health + "</p>"
+    ? starBlock("九星五行（40歲以前）", data.star) +
+      (data.star.hasSecond ? '<hr class="ln-divider">' + starBlock("九星五行（40歲以後）", data.star.secondInfo) : "")
     : "";
+
+  function traitBlock(title, trait) {
+    return (
+      "<h3>" + title + "</h3>" +
+      '<div class="lt-plus">' + trait.plus.map((t) => "<p>(+) " + t + "</p>").join("") + "</div>" +
+      '<div class="lt-minus">' + trait.minus.map((t) => "<p>(－) " + t + "</p>").join("") + "</div>"
+    );
+  }
+  // 別人眼中的你／影響最大的數：對照同一份 1-9 個性解讀表（LINE_NOTE_260709_4.jpg／_5.jpg）
+  document.getElementById("lifenumOtherSideCard").innerHTML = data.otherSideTrait
+    ? traitBlock("別人眼中的你 " + data.otherSideView + "：" + data.otherSideTrait.title, data.otherSideTrait)
+    : "";
+
+  document.getElementById("lifenumMostInfluentialCard").innerHTML = data.mostInfluentialTraits.length
+    ? data.mostInfluentialTraits.map((mt) =>
+        traitBlock("影響最大的數 " + mt.digit + "：" + mt.trait.title, mt.trait)
+      ).join('<hr class="ln-divider">')
+    : "";
+
+  // 補數使用建議：內容取自課程 PPT 82 頁，水晶珠珠依補數顆數／顏色使用，4/7/8 另有特定用途
+  const complementList = data.complementDetails.length
+    ? data.complementDetails.map((c) =>
+        "<li>補數 <b>" + c.digit + "</b>（" + c.colorName + "）" + (c.usage ? "：可用 " + c.digit + " 顆水晶珠，用途「" + c.usage + "」" : "：可用該數字顏色的水晶珠，依需求佩戴") + "</li>"
+      ).join("")
+    : "<li>沒有缺（補數），代表這個人本身沒有明顯缺乏的數字特質</li>";
+  const lineBenefitHtml = data.complementLineBenefits.length
+    ? "<p>補數剛好湊成以下連線，可以視需求特別補強：" + data.complementLineBenefits.map((b) => b.nums + "→" + b.benefit).join("、") + "</p>"
+    : "";
+  document.getElementById("lifenumComplementCard").innerHTML =
+    "<h3>補數怎麼用</h3>" +
+    "<ul class=\"ln-complement-list\">" + complementList + "</ul>" +
+    lineBenefitHtml +
+    '<p class="ln-note">生命靈數的缺數（補數）建議買水晶珠珠佩戴，不建議串成手鍊或項鍊；補數水晶珠以顏色為數字能量（依需求使用），也可依需求常用該數字。每個人的生命屬性不同，沒有好壞區分：沒有缺就代表相對不會呈現這個數字的缺點，一樣可以視特定需求做補數連線。</p>';
+
+  // 五行健康對照：內容取自課程講義的五行相生圖（器官／情緒失衡／顏色），並標示使用者本身九星對應的五行
+  document.getElementById("lifenumWuxingHealthCard").innerHTML =
+    "<h3>五行與健康</h3>" +
+    '<table class="lifenum-wuxing-table">' +
+    "<tr><td>五行</td><td>對應器官</td><td>情緒失衡</td><td>對應顏色</td></tr>" +
+    data.wuxingHealth.map((w) =>
+      "<tr" + (data.star && data.star.wuxing === w.wuxing ? ' class="ln-my-wuxing"' : "") + ">" +
+      "<td>" + w.wuxing + "</td><td>" + w.organs + "</td><td>" + w.emotion + "</td><td>" + w.colors.join("／") + "</td></tr>"
+    ).join("") +
+    "</table>" +
+    (data.star ? '<p class="ln-note">您本身九星五行屬「' + data.star.wuxing + '」，上表反白的一列是您要特別注意的器官與情緒。</p>' : "");
 }
+
+document.getElementById("exportLifenumPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries9419 生命靈數報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+
+    const lifenumCanvas = await html2canvas(document.getElementById("lifenumCard"), { scale: 1.5, backgroundColor: "#ffffff" });
+    addCanvasToPdf(pdf, lifenumCanvas, margin, pageWidth, pageHeight, 26);
+
+    const filename = (currentLifenum ? currentLifenum.name : "生命靈數") + "-生命靈數報告.pdf";
+    pdf.save(filename);
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});

@@ -48,6 +48,8 @@ const LIFENUM_TYPE_BOX = [
   { n: 4, name: "執著數", color: "green" }, { n: 5, name: "自由數", color: "blue" }, { n: 6, name: "關懷數", color: "indigo" },
   { n: 7, name: "真理數", color: "purple" }, { n: 8, name: "務實數", color: "pink" }, { n: 9, name: "智慧數", color: "gold" }
 ].map((t) => ({ ...t, desc: LIFENUM_TYPE_DESC[t.n] }));
+// 補數欄位要顯示的中文顏色名稱（跟九宮格 1-9 的固定顏色是同一組：紅/橙/黃/綠/藍/靛/紫/粉紅/金黃）
+const LIFENUM_TYPE_DESC_COLOR_NAME = { 1: "紅色", 2: "橙色", 3: "黃色", 4: "綠色", 5: "藍色", 6: "靛色", 7: "紫色", 8: "粉紅色", 9: "金黃色" };
 
 // 底部逐一展開的生命密碼 1-9 個性解讀（(+)/(-)兩面），取自課程講義 page -1-/-2-
 const LIFENUM_TRAITS = {
@@ -72,6 +74,21 @@ const LIFENUM_CODE_LINES = [
   { nums: [2, 6], name: "公平正義線" }, { nums: [4, 8], name: "工作模範線" }, { nums: [6, 8], name: "誠實親切線" }
 ];
 
+// 補數的使用建議：水晶珠珠依增強能量放顆數，4/7/8 有特定用途（取自課程 PPT 82 頁）；
+// 其餘數字沒有特定顆數用途說明，只標示「可用該數字顏色」
+const LIFENUM_COMPLEMENT_USAGE = { 4: "防小人", 7: "招貴人", 8: "招財" };
+// 補數如果剛好湊成這 4 條連線，各自對應的加分效果（取自課程 PPT 82 頁，跟九宮連線密碼表裡的正式線名分開存放）
+const LIFENUM_COMPLEMENT_LINE_BENEFIT = { "147": "留下錢財", "1590": "能量連結", "456": "有助學習", "789": "貴人" };
+
+// 五行對應的器官／情緒失衡／顏色（取自課程講義的五行相生圖，跟「帶來加分的顏色」的生我/同屬/我生是同一組五行系統）
+const LIFENUM_WUXING_HEALTH = [
+  { wuxing: "木", organs: "肝、膽、筋、目", emotion: "怒傷肝：壓抑、浮躁、報復心", colors: ["綠色系", "藍色系"] },
+  { wuxing: "火", organs: "心、小腸、血脈、舌頭", emotion: "喜傷心：個性急、情緒起伏", colors: ["紅色系", "紫色系", "紅橘色"] },
+  { wuxing: "土", organs: "脾、胃、肌肉、口", emotion: "思傷胃：緊張、在意、思慮過多", colors: ["黃色系", "棕色系", "膚色", "黃橘色"] },
+  { wuxing: "金", organs: "肺、大腸、皮膚、鼻", emotion: "憂傷肺：悲觀、自以為是", colors: ["白色系", "銀色", "淺灰色"] },
+  { wuxing: "水", organs: "腎、膀胱、骨、耳、婦科、攝護腺", emotion: "恐傷腎：驚、疑、用腦過度", colors: ["黑色", "極深藍", "深灰色"] }
+];
+
 // 九星五行：民國出生年（西元-1911）依性別代入固定公式，對照課程講義的表格核對一致
 // 男：((17-民國年) mod 9)，餘 0 記為 9；女：((民國年-2) mod 9)，餘 0 記為 9
 // 「5」這個星在表上是併入其他星顯示（男併入 2、女併入 8），沒有獨立的第五星
@@ -89,28 +106,36 @@ function lnStarNumber(year, gender) {
 const LIFENUM_STAR_INFO = {
   1: { trigram: "坎", wuxing: "水", nature: "水", planet: "海王星", type: "智慧型",
     desc: "思考力強、聰明智力優秀，典型的天才型人物。基本個性就像水，溫和卻帶點優柔寡斷，屬於外柔內剛的一型。具親和力，有很大的包容性，是最好的團隊合作人選。表面沉穩，內在深沉謀略，能自己找出解決事情的方式是他們聰明過人之處。同時也擅長游走在各個社交小圈圈裏，容易隱藏自己的真正感覺。",
-    health: "慎防腎臟、膀胱、婦科、骨及耳朵方面的疾病。" },
+    health: "慎防腎臟、膀胱、婦科、骨及耳朵方面的疾病。",
+    bedGood: "金與木：白色系／綠色系／藍色系", bedBad: "土與火：黃色系／紅色系／紫色系" },
   2: { trigram: "坤", wuxing: "土", nature: "地", planet: "土星", type: "保守型",
     desc: "如大地般沉穩，是所有星數裡面最具有母愛的一群人。第一印象給人乖巧、謙恭有禮、中規中矩的感覺，不擅計較的個性，喜歡穩定與保守的人際關係，體貼、細心、有耐心，總是習慣無怨無悔、任勞任怨的付出，有堅持到底的特性，做事向來不拖延，堪稱是言出必行的表率。",
-    health: "慎防消化系統、脾胃方面的疾病，呼吸系統也要留心。" },
+    health: "慎防消化系統、脾胃方面的疾病，呼吸系統也要留心。",
+    bedGood: "火與金：紅色系／紫色系／白色系", bedBad: "木與水：綠色系／藍色系／黑色／深藍色系" },
   3: { trigram: "震", wuxing: "木", nature: "雷", planet: "木星", type: "機動型",
     desc: "生命力旺盛、積極進取、急性子、好奇心求知慾強，屬機動性的個性，不喜歡拐彎抹角，感情起伏大。本性活潑，有很強的活動力，膽識過人，在眾人中有擔任首領的條件。是直線條、單一思考的人，心慈性急，有口無心，易刺傷他人而不自知。",
-    health: "慎防肝膽、神經及手足等病變所造成的不適。" },
+    health: "慎防肝膽、神經及手足等病變所造成的不適。",
+    bedGood: "水與火：黑色／深藍色系／紅色系／紫色系", bedBad: "金與土：白色系／黃色系" },
   4: { trigram: "巽", wuxing: "木", nature: "風", planet: "水星", type: "隨和型",
     desc: "適應力好，內心柔和、仁慈，具有親和力，像風一樣靈巧多變，天生具有卓越的邏輯分析技巧，善於察言觀色，具有優秀的洞察能力。人情壓力排名第一，優柔寡斷，沒有固定的原則性，常容易陷於緊要關頭驚慌失措的窘境。",
-    health: "特別注意肝膽、腎臟、呼吸及神經系統方面的疾病。" },
+    health: "特別注意肝膽、腎臟、呼吸及神經系統方面的疾病。",
+    bedGood: "水與火：黑色／深藍色系／紅色系／紫色系", bedBad: "金與土：白色系／黃色系" },
   6: { trigram: "乾", wuxing: "金", nature: "天", planet: "天王星", type: "正直型",
     desc: "不擅長運用交際奉承的手段，看不慣高談闊論，是屬實力派、以工作取勝的人，極端的聰明，又有先見之明，樂於主導掌控，非常重視自我的尊嚴以及形象。具有傲上善下的氣質，一旦說出口的承諾，很少會讓自己有做不到的時候，是個相當守信用的人。",
-    health: "留意呼吸系統及血液循環方面的毛病。" },
+    health: "留意呼吸系統及血液循環方面的毛病。",
+    bedGood: "土與水：黃色系／黑色／深藍色系", bedBad: "火與木：紅色系／綠色系／藍色系" },
   7: { trigram: "兌", wuxing: "金", nature: "澤", planet: "金星", type: "交際型",
     desc: "思想自然率真，天性充滿開朗喜悅的個性，有它們在的場合總是氣氛活絡。口才伶俐人緣頗佳，辯才無礙，是個天生有公關手腕的人才，屬交際型的人，追求浪漫優雅活潑多彩的生活。財運甚佳，但必須到中年，財運方能穩固，年輕時必須較辛苦，接受磨練。",
-    health: "肺部、骨骼與大腸較弱，要多加小心。" },
+    health: "肺部、骨骼與大腸較弱，要多加小心。",
+    bedGood: "土與水：黃色系／黑色／深藍色系", bedBad: "火與木：紅色系／綠色系／藍色系" },
   8: { trigram: "艮", wuxing: "土", nature: "山", planet: "冥王星", type: "內斂型",
     desc: "內柔外剛，待人柔和，堅持自己的信念行事，是令人相當信任的合作對象，對人脈的掌握與運用十分不錯，因為個性如山般的穩固不可動搖，處事較沉著冷靜、穩健樸實、默默耕耘、勤勉工作。不善於表達內心的情感，內心如火的熱情需要鼓勵和激發，方敢表露出來。",
-    health: "在神經與消化系統方面易出現病痛，要小心慎防。" },
+    health: "在神經與消化系統方面易出現病痛，要小心慎防。",
+    bedGood: "火與金：紅色系／紫色系／白色系", bedBad: "木與水：綠色系／藍色系／黑色／深藍色系" },
   9: { trigram: "離", wuxing: "火", nature: "火", planet: "火星", type: "敏捷型",
     desc: "個性熱情如火，先天有著積極的熱情因子，行動力強，遇事斷然處之，積極又敢挑戰，是事業的急先鋒。做事有時因較沒有計畫性，常是憑一時的熱忱，若能在事前有周詳細密的計畫，凡事就有勢如破竹的大勝利與成功。有願意付出心力照顧、關心他人的個性。",
-    health: "要注意心臟、血液、眼睛及小腸方面容易產生病變。" }
+    health: "要注意心臟、血液、眼睛及小腸方面容易產生病變。",
+    bedGood: "木與土：綠色系／藍色系／黃色系", bedBad: "水與金：黑色／深藍色系／白色系" }
 };
 
 // 加分顏色：依五行「生我／同屬／我生」三組，取自課程講義 page -18-
@@ -154,7 +179,12 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
   const sanZheDisplay = chain.length ? chain.concat(lifeCode).join(".") : String(lifeCode);
 
   // 人生功課：月／日各自化簡到個位數後相減取絕對值，範圍固定 0~8
-  const lifeLesson = Math.abs(lnReduceToSingle(month) - lnReduceToSingle(day));
+  const monthBase = lnReduceToSingle(month);
+  const dayBase = lnReduceToSingle(day);
+  const lifeLesson = Math.abs(monthBase - dayBase);
+  // 比照課程講義的計算過程文字：您的生日為X月Y日之（月基數=..）（日基數=..）：兩數相減=..
+  const lifeLessonCalc =
+    "您的生日為" + month + "月" + day + "日之（月基數=" + monthBase + "）（日基數=" + dayBase + "）：兩數相減=" + lifeLesson;
 
   // 別人眼中的你：日期本身（不補零）化簡到個位數
   const otherSideView = lnReduceToSingle(day);
@@ -176,16 +206,39 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
 
   const allNums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
   const complementNumbers = allNums.filter((d) => !weights[d]).sort((a, b) => a - b);
-  const maxWeight = Math.max(0, ...Object.values(weights));
-  const mostInfluential = allNums.filter((d) => (weights[d] || 0) === maxWeight && maxWeight > 0);
+  // 補數使用建議：每個補數對應的顏色（沿用開創數紅1~智慧數金黃9 的顏色），4/7/8 另外有特定用途
+  const complementDetails = complementNumbers.map((d) => ({
+    digit: d,
+    colorName: LIFENUM_TYPE_DESC_COLOR_NAME[d] || null,
+    usage: LIFENUM_COMPLEMENT_USAGE[d] || null
+  }));
+  // 補數如果完整湊成 147/1590/456/789 其中一條線，額外標示對應的加分效果
+  const complementLineBenefits = Object.keys(LIFENUM_COMPLEMENT_LINE_BENEFIT)
+    .filter((key) => key.split("").map(Number).every((d) => complementNumbers.includes(d)))
+    .map((key) => ({ nums: key, benefit: LIFENUM_COMPLEMENT_LINE_BENEFIT[key] }));
 
+  // 圈記號一律用「數量」而不是有/沒有：同一個數字重複出現要疊出對應數量的圓圈/三角形（如圖），
+  // 生命密碼固定只有一位數，方框數量最多是 1，但一樣用數量存，跟其他兩種記號的資料型別一致
   const gridMarks = {};
   allNums.forEach((d) => {
-    gridMarks[d] = { circle: false, triangle: 0, square: false };
+    gridMarks[d] = { circle: 0, triangle: 0, square: 0 };
   });
-  String(yStr + mStr + dStr).split("").forEach((ch) => { gridMarks[Number(ch)].circle = true; });
+  String(yStr + mStr + dStr).split("").forEach((ch) => { gridMarks[Number(ch)].circle += 1; });
   chain.forEach((v) => String(v).split("").forEach((ch) => { gridMarks[Number(ch)].triangle += 1; }));
-  String(lifeCode).split("").forEach((ch) => { gridMarks[Number(ch)].square = true; });
+  String(lifeCode).split("").forEach((ch) => { gridMarks[Number(ch)].square += 1; });
+
+  // 影響最大的數：先比權重加總，加總打平時再依「方框(生命密碼)＞三角形(三者之合)＞圓圈(生日)」的記號優先順序
+  // 決定唯一一個數字（PPT 裡「影響最大的數」欄位一律只填一個數字，不會同時填兩個）
+  const maxWeight = Math.max(0, ...Object.values(weights));
+  const tiedCandidates = allNums.filter((d) => (weights[d] || 0) === maxWeight && maxWeight > 0);
+  tiedCandidates.sort((a, b) => {
+    const ma = gridMarks[a], mb = gridMarks[b];
+    if (ma.square !== mb.square) return mb.square - ma.square;
+    if (ma.triangle !== mb.triangle) return mb.triangle - ma.triangle;
+    if (ma.circle !== mb.circle) return mb.circle - ma.circle;
+    return a - b;
+  });
+  const mostInfluential = tiedCandidates.length ? [tiedCandidates[0]] : [];
 
   const digitSet = new Set(Object.keys(weights).map(Number));
   const codeLines = LIFENUM_CODE_LINES.map((line) => ({
@@ -222,14 +275,22 @@ function calculateLifeNumber({ year, month, day, gender, name }) {
     sanZheRaw: raw,
     lifeCode,
     lifeLesson,
+    lifeLessonCalc,
     lifeLessonText: LIFE_LESSON_TEXT[lifeLesson],
     complementNumbers,
+    complementDetails,
+    complementLineBenefits,
     mostInfluential,
     otherSideView,
     gridMarks,
     codeLines,
     star,
     colorGroups,
-    trait: LIFENUM_TRAITS[lifeCode]
+    wuxingHealth: LIFENUM_WUXING_HEALTH,
+    trait: LIFENUM_TRAITS[lifeCode],
+    // 別人眼中的你／影響最大的數 也對照同一份 1-9 個性解讀表（見 LINE_NOTE_260709_4.jpg／_5.jpg）；
+    // 影響最大的數如果剛好圈到 0（沒有對應的個性方塊），就跳過不顯示
+    otherSideTrait: LIFENUM_TRAITS[otherSideView],
+    mostInfluentialTraits: mostInfluential.filter((d) => LIFENUM_TRAITS[d]).map((d) => ({ digit: d, trait: LIFENUM_TRAITS[d] }))
   };
 }
