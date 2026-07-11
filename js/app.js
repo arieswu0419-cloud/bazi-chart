@@ -1322,10 +1322,10 @@ document.getElementById("exportLifenumPdfBtn").addEventListener("click", async f
 });
 
 // ================= 名片風水 =================
-// 姓名的分數由「使用者從 OCR 候選文字挑出哪一段是姓名」決定位置，姓名文字本身是使用者手動輸入（單純記錄用）；
-// 公司名文字與分數則都直接取自使用者挑選的 OCR 候選段落。名片底色分數預設用整張圖片像素分析結果，
-// 使用者仍可手動覆蓋分數欄位（生肖分數則完全鎖定不可調整，因為是固定對照表查出來的）。
-const mpState = { candidates: [], imgW: 0, imgH: 0, nameCells: null, companyCells: null };
+// 姓名／公司名分數改為使用者自行看著「風水分析」畫出來的九宮格數字圖，自行判斷後手動輸入
+// （原本用 OCR 自動辨識姓名／公司名位置的做法準確度太差，已移除）；名片底色分數則仍用整張圖片
+// 像素分析自動判斷，使用者可手動覆蓋；生肖分數鎖定不可調整（固定對照表查出來的）。
+const mpState = { imgW: 0, imgH: 0 };
 
 function showMingpianView() {
   document.getElementById("mainView").style.display = "none";
@@ -1334,6 +1334,8 @@ function showMingpianView() {
 function hideMingpianView() {
   document.getElementById("mingpianView").style.display = "none";
   document.getElementById("mainView").style.display = "";
+  mpStopCamera();
+  mpResetAll();
 }
 document.getElementById("mingpianBackBtn").addEventListener("click", hideMingpianView);
 
@@ -1357,6 +1359,8 @@ document.getElementById("mingpianBackBtn").addEventListener("click", hideMingpia
     mpRecomputeTotal();
   });
   document.getElementById("mp-color-score").addEventListener("input", mpRecomputeTotal);
+  document.getElementById("mp-name-score").addEventListener("input", mpRecomputeTotal);
+  document.getElementById("mp-company-score").addEventListener("input", mpRecomputeTotal);
 })();
 
 function mpRecomputeTotal() {
@@ -1367,34 +1371,115 @@ function mpRecomputeTotal() {
   const total = n + z + c + co;
   document.getElementById("mp-total-score").textContent = total;
   document.getElementById("mp-total-fortune").textContent = mpFortuneText(total);
+  const category = mpFortuneCategory(total);
+  const badge = document.getElementById("mp-total-category");
+  badge.textContent = category || "";
+  badge.className = "mingpian-category-badge" + (category ? " " + MP_CATEGORY_CLASS[category] : "");
 }
 
-// 上傳圖片：預覽並清空上一次分析的結果，避免使用者誤以為新圖片沿用舊分數
+// 換一張新的名片圖片（不管是從檔案選取還是拍照）：預覽並清空上一次分析的結果，
+// 避免使用者誤以為新圖片沿用舊分數
+function mpSetPreviewImage(dataUrl) {
+  const img = document.getElementById("mingpianPreviewImg");
+  img.src = dataUrl;
+  img.style.display = "";
+  document.getElementById("mingpianUploadHint").style.display = "none";
+
+  document.getElementById("mingpianAnalyzeStatus").textContent = "";
+  document.getElementById("mingpianResultCanvas").style.display = "none";
+  document.getElementById("mingpianResultHint").style.display = "";
+  mpRecomputeTotal();
+}
+
+// 使用者拍照／分析的資料一律不留存：離開名片風水頁面（按返回）就整組清空，
+// 不會留在畫面或記憶體裡等下次進來被看到——本來就沒有寫進 Firestore／localStorage，
+// 名片底色分析也是瀏覽器端 canvas 像素分析，圖片不會被上傳到任何伺服器
+function mpResetAll() {
+  const img = document.getElementById("mingpianPreviewImg");
+  img.src = "";
+  img.style.display = "none";
+  document.getElementById("mingpianUploadHint").style.display = "";
+  document.getElementById("mingpianFileInput").value = "";
+
+  document.getElementById("mingpianAnalyzeStatus").textContent = "";
+  document.getElementById("mingpianResultCanvas").style.display = "none";
+  document.getElementById("mingpianResultHint").style.display = "";
+
+  document.getElementById("mp-name").value = "";
+  document.getElementById("mp-name-score").value = 0;
+  document.getElementById("mp-gender").value = "male";
+  document.getElementById("mp-zodiac").value = "鼠";
+  document.getElementById("mp-zodiac-score").value = MP_ZODIAC_SCORE["鼠"];
+  document.getElementById("mp-color").value = "白";
+  document.getElementById("mp-color-score").value = MP_COLOR_SCORE["白"];
+  document.getElementById("mp-company").value = "";
+  document.getElementById("mp-company-score").value = 0;
+
+  mpState.imgW = 0;
+  mpState.imgH = 0;
+  mpRecomputeTotal();
+}
+
 document.getElementById("mingpianFileInput").addEventListener("change", function () {
   const file = this.files && this.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function (e) {
-    const img = document.getElementById("mingpianPreviewImg");
-    img.src = e.target.result;
-    img.style.display = "";
-    document.getElementById("mingpianUploadHint").style.display = "none";
-
-    document.getElementById("mingpianCandidateRow").style.display = "none";
-    document.getElementById("mingpianAnalyzeStatus").textContent = "";
-    document.getElementById("mingpianResultCanvas").style.display = "none";
-    document.getElementById("mingpianResultHint").style.display = "";
-    document.getElementById("mp-name-score").value = 0;
-    document.getElementById("mp-company").value = "";
-    document.getElementById("mp-company-score").value = 0;
-    document.getElementById("mp-name-warn").style.display = "none";
-    document.getElementById("mp-company-warn").style.display = "none";
-    mpState.candidates = [];
-    mpState.nameCells = null;
-    mpState.companyCells = null;
-    mpRecomputeTotal();
-  };
+  reader.onload = function (e) { mpSetPreviewImage(e.target.result); };
   reader.readAsDataURL(file);
+});
+
+// 自訂拍照畫面：用 getUserMedia 開啟相機直接在頁面內預覽，疊加 9:5.5 白色框線導引使用者對齊名片，
+// 拍照時只裁切框線範圍內的畫面，而不是整個鏡頭視野，確保輸出圖片的長寬比跟名片實際比例一致
+let mpCameraStream = null;
+
+function mpStopCamera() {
+  if (mpCameraStream) {
+    mpCameraStream.getTracks().forEach((t) => t.stop());
+    mpCameraStream = null;
+  }
+  document.getElementById("mingpianCameraOverlay").style.display = "none";
+}
+
+document.getElementById("mingpianCameraBtn").addEventListener("click", async function () {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast("此瀏覽器不支援相機拍照，請改用「選擇圖片」上傳", "error");
+    return;
+  }
+  try {
+    mpCameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+  } catch (err) {
+    showToast("無法開啟相機：" + err.message, "error");
+    return;
+  }
+  const video = document.getElementById("mingpianCameraVideo");
+  video.srcObject = mpCameraStream;
+  document.getElementById("mingpianCameraOverlay").style.display = "flex";
+});
+
+document.getElementById("mingpianCameraCancelBtn").addEventListener("click", mpStopCamera);
+
+document.getElementById("mingpianCaptureBtn").addEventListener("click", function () {
+  const video = document.getElementById("mingpianCameraVideo");
+  const wrap = document.getElementById("mingpianCameraVideoWrap");
+  const frame = document.querySelector(".mingpian-camera-frame");
+  const wrapRect = wrap.getBoundingClientRect();
+  const frameRect = frame.getBoundingClientRect();
+  const scaleX = video.videoWidth / wrapRect.width;
+  const scaleY = video.videoHeight / wrapRect.height;
+  const sx = (frameRect.left - wrapRect.left) * scaleX;
+  const sy = (frameRect.top - wrapRect.top) * scaleY;
+  const sw = frameRect.width * scaleX;
+  const sh = frameRect.height * scaleY;
+
+  const outW = 900;
+  const outH = Math.round((outW * 5.5) / 9);
+  const canvas = document.createElement("canvas");
+  canvas.width = outW;
+  canvas.height = outH;
+  canvas.getContext("2d").drawImage(video, sx, sy, sw, sh, 0, 0, outW, outH);
+
+  mpSetPreviewImage(canvas.toDataURL("image/jpeg", 0.92));
+  mpStopCamera();
 });
 
 // 名片底色：把圖片縮小取樣成 60x60，每個像素找最接近的顏色分類，佔比 50% 以上才採用，否則歸類「彩色」
@@ -1420,70 +1505,11 @@ function mpAnalyzeColor(img) {
   return best && bestCount / total >= 0.5 ? best : "彩色";
 }
 
-// 用 Tesseract.js 做瀏覽器端 OCR；只有點「風水分析」才會載入，避免拖慢一般使用者的頁面首次載入速度
-function mpLoadTesseract() {
-  if (window.Tesseract) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-    s.onload = resolve;
-    s.onerror = () => reject(new Error("文字辨識套件載入失敗，請檢查網路連線"));
-    document.head.appendChild(s);
-  });
-}
-
-function mpBuildCandidates(ocrLines) {
-  return ocrLines
-    .map((l) => ({ text: (l.text || "").trim(), box: l.bbox }))
-    .filter((c) => c.text.length >= 1 && c.text.length <= 30 && c.box);
-}
-// 姓名候選猜測：優先挑 2~5 字的候選段落（一般姓名長度），猜錯的話使用者可在下拉選單重新指定
-function mpGuessName(candidates) {
-  return candidates.find((c) => c.text.length >= 2 && c.text.length <= 5) || candidates[0] || null;
-}
-// 公司名候選猜測：在剩下的候選中，挑面積（近似字級大小 x 字數）最大的一段
-function mpGuessCompany(candidates, nameCand) {
-  const pool = candidates.filter((c) => c !== nameCand && c.text.length >= 2 && c.text.length <= 20);
-  if (!pool.length) return null;
-  return pool.reduce((best, c) => {
-    const area = (c.box.x1 - c.box.x0) * (c.box.y1 - c.box.y0);
-    const bestArea = best ? (best.box.x1 - best.box.x0) * (best.box.y1 - best.box.y0) : -1;
-    return area > bestArea ? c : best;
-  }, null);
-}
-function mpFillCandidateSelect(id, candidates, guess) {
-  const sel = document.getElementById(id);
-  sel.innerHTML = candidates.map((c, i) => '<option value="' + i + '">' + c.text + "</option>").join("");
-  if (guess) {
-    const idx = candidates.indexOf(guess);
-    if (idx >= 0) sel.value = String(idx);
-  }
-}
-
-function mpApplyCandidate(kind) {
-  const selId = kind === "name" ? "mp-name-candidate" : "mp-company-candidate";
-  const scoreId = kind === "name" ? "mp-name-score" : "mp-company-score";
-  const warnId = kind === "name" ? "mp-name-warn" : "mp-company-warn";
-  const sel = document.getElementById(selId);
-  const cand = mpState.candidates[Number(sel.value)];
-  if (!cand) return;
-  const result = mpGridCellsForBox(cand.box, mpState.imgW, mpState.imgH);
-  document.getElementById(scoreId).value = result.score;
-  document.getElementById(warnId).style.display = result.crossed ? "" : "none";
-  if (kind === "name") {
-    mpState.nameCells = result.cells;
-  } else {
-    mpState.companyCells = result.cells;
-    document.getElementById("mp-company").value = cand.text;
-  }
-  mpDrawResultCanvas();
-  mpRecomputeTotal();
-}
-document.getElementById("mp-name-candidate").addEventListener("change", () => mpApplyCandidate("name"));
-document.getElementById("mp-company-candidate").addEventListener("change", () => mpApplyCandidate("company"));
-
-// 右側結果圖：畫出原圖 + 三等分九宮格線＋兩條對角線（比照使用者提供的九宮格參考圖），
-// 姓名命中的宮位用藍色半透明疊色、公司名命中的宮位用綠色半透明疊色
+// 右側結果圖：畫出原圖＋紅線（水平垂直三等分，九宮格線）＋藍線（通過中心點的 8 等分線，第一條在
+// 22.5 度）＋每個宮位中央的紅色分數數字（左上2／左中1／左下8／中上3／正中9／中下7／右上4／右中5／
+// 右下6，中上、中下另外加註「客戶空間」「利潤空間」），使用者自己看圖判斷姓名／公司名落在哪個宮位、
+// 手動把對應分數填進下方欄位。用向量畫線＋畫字而不是套用固定比例的點陣疊圖，才能保證線條角度／
+// 文字位置精準，不會因為照片長寬比不同而跟著跑位
 function mpDrawResultCanvas() {
   const canvas = document.getElementById("mingpianResultCanvas");
   const img = document.getElementById("mingpianPreviewImg");
@@ -1497,14 +1523,8 @@ function mpDrawResultCanvas() {
 
   const cellW = w / 3;
   const cellH = h / 3;
-  function highlightCells(cells, color) {
-    if (!cells) return;
-    ctx.fillStyle = color;
-    cells.forEach((c) => ctx.fillRect(c.col * cellW, c.row * cellH, cellW, cellH));
-  }
-  highlightCells(mpState.nameCells, "rgba(0,90,181,0.35)");
-  highlightCells(mpState.companyCells, "rgba(20,150,80,0.35)");
 
+  // 紅線：水平／垂直三等分線（九宮格的格線本身）
   ctx.strokeStyle = "rgba(234,0,0,0.85)";
   ctx.lineWidth = Math.max(2, w * 0.004);
   ctx.beginPath();
@@ -1514,62 +1534,75 @@ function mpDrawResultCanvas() {
   ctx.moveTo(0, cellH * 2); ctx.lineTo(w, cellH * 2);
   ctx.stroke();
 
-  ctx.strokeStyle = "rgba(0,75,151,0.5)";
-  ctx.lineWidth = Math.max(1, w * 0.002);
+  // 藍線：通過畫面水平／垂直中心點的 8 等分線（4 條線、每條間隔 45 度，第一條在 22.5 度）
+  const cx = w / 2;
+  const cy = h / 2;
+  const diag = Math.sqrt(w * w + h * h);
+  ctx.strokeStyle = "rgba(0,75,151,0.75)";
+  ctx.lineWidth = Math.max(1, w * 0.0025);
   ctx.beginPath();
-  ctx.moveTo(0, 0); ctx.lineTo(w, h);
-  ctx.moveTo(w, 0); ctx.lineTo(0, h);
+  [22.5, 67.5, 112.5, 157.5].forEach((deg) => {
+    const rad = (deg * Math.PI) / 180;
+    const dx = Math.cos(rad) * diag;
+    const dy = Math.sin(rad) * diag;
+    ctx.moveTo(cx - dx, cy - dy);
+    ctx.lineTo(cx + dx, cy + dy);
+  });
   ctx.stroke();
+
+  // 九宮格分數數字（紅字），中上／中下額外加註區塊名稱
+  const fontSize = Math.max(16, Math.round(w * 0.045));
+  ctx.fillStyle = "rgba(234,0,0,0.95)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const cellCenter = (row, col) => ({ x: cellW * (col + 0.5), y: cellH * (row + 0.5) });
+  const labels = [
+    { row: 0, col: 0, score: MP_GRID_SCORE[0][0] },
+    { row: 0, col: 1, score: MP_GRID_SCORE[0][1], zone: "客戶空間" },
+    { row: 0, col: 2, score: MP_GRID_SCORE[0][2] },
+    { row: 1, col: 0, score: MP_GRID_SCORE[1][0] },
+    { row: 1, col: 1, score: MP_GRID_SCORE[1][1] },
+    { row: 1, col: 2, score: MP_GRID_SCORE[1][2] },
+    { row: 2, col: 0, score: MP_GRID_SCORE[2][0] },
+    { row: 2, col: 1, score: MP_GRID_SCORE[2][1], zone: "利潤空間" },
+    { row: 2, col: 2, score: MP_GRID_SCORE[2][2] }
+  ];
+  labels.forEach((l) => {
+    const { x, y } = cellCenter(l.row, l.col);
+    if (l.zone) {
+      ctx.font = "bold " + fontSize + "px sans-serif";
+      ctx.fillText(String(l.score), x, y - fontSize * 0.4);
+      ctx.font = "bold " + Math.round(fontSize * 0.55) + "px sans-serif";
+      ctx.fillText(l.zone, x, y + fontSize * 0.5);
+    } else {
+      ctx.font = "bold " + fontSize + "px sans-serif";
+      ctx.fillText(String(l.score), x, y);
+    }
+  });
 
   canvas.style.display = "";
   document.getElementById("mingpianResultHint").style.display = "none";
 }
 
-document.getElementById("mingpianAnalyzeBtn").addEventListener("click", async function () {
+document.getElementById("mingpianAnalyzeBtn").addEventListener("click", function () {
   const img = document.getElementById("mingpianPreviewImg");
   const statusEl = document.getElementById("mingpianAnalyzeStatus");
   if (!img.src || img.style.display === "none") {
     showToast("請先上傳名片圖片", "error");
     return;
   }
-  const btn = this;
-  btn.disabled = true;
-  try {
-    statusEl.textContent = "正在分析名片底色...";
-    const colorName = mpAnalyzeColor(img);
-    document.getElementById("mp-color").value = colorName;
-    document.getElementById("mp-color-score").value = MP_COLOR_SCORE[colorName];
+  statusEl.textContent = "正在分析名片底色...";
+  const colorName = mpAnalyzeColor(img);
+  document.getElementById("mp-color").value = colorName;
+  document.getElementById("mp-color-score").value = MP_COLOR_SCORE[colorName];
 
-    statusEl.textContent = "正在載入文字辨識模型（第一次使用需下載，請稍候）...";
-    await mpLoadTesseract();
-
-    statusEl.textContent = "正在辨識名片文字...";
-    mpState.imgW = img.naturalWidth;
-    mpState.imgH = img.naturalHeight;
-    const { data } = await Tesseract.recognize(img, "chi_tra+eng");
-    const rawLines = data.lines && data.lines.length ? data.lines : (data.words || []);
-    const candidates = mpBuildCandidates(rawLines);
-
-    if (!candidates.length) {
-      statusEl.textContent = "辨識不到文字，請確認圖片清晰、光線充足，或改用較高解析度重新拍攝。";
-    } else {
-      mpState.candidates = candidates;
-      const nameGuess = mpGuessName(candidates);
-      const companyGuess = mpGuessCompany(candidates, nameGuess);
-      mpFillCandidateSelect("mp-name-candidate", candidates, nameGuess);
-      mpFillCandidateSelect("mp-company-candidate", candidates, companyGuess);
-      document.getElementById("mingpianCandidateRow").style.display = "";
-      mpApplyCandidate("name");
-      mpApplyCandidate("company");
-      statusEl.textContent = "分析完成。系統自動辨識文字位置僅供參考，如姓名／公司名判斷不正確，請於上方下拉選單重新選擇。";
-    }
-    mpRecomputeTotal();
-  } catch (err) {
-    statusEl.textContent = "";
-    showToast("分析失敗：" + err.message, "error");
-  } finally {
-    btn.disabled = false;
-  }
+  mpState.imgW = img.naturalWidth;
+  mpState.imgH = img.naturalHeight;
+  mpDrawResultCanvas();
+  mpRecomputeTotal();
+  statusEl.innerHTML = "分析完成，請對照右側九宮格數字，自行判斷姓名／公司名落在哪個宮位並填入分數。<br>" +
+    "1.公司名不可被紅色字水平或垂直切半，亦不可被藍色線條切到，自行累加跨宮位紅字總分<br>" +
+    "2.姓名不可被紅色字水平或垂直切半，亦不可被藍色線條切到，自行累加跨宮位紅字總分";
 });
 
 document.getElementById("exportMingpianPdfBtn").addEventListener("click", async function () {

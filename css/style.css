@@ -1026,6 +1026,7 @@ footer {
 
 /* 名片風水頁面 */
 .mingpian-card .card-head { justify-content: space-between; }
+h2.mingpian-title { background: #0A502D; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 0; }
 .mingpian-images { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
 .mingpian-image-box { flex: 1 1 260px; min-width: 220px; }
 .mingpian-image-label { font-weight: 700; margin-bottom: 6px; color: var(--text-primary); }
@@ -1043,21 +1044,44 @@ footer {
 }
 .mingpian-image-frame img, .mingpian-image-frame canvas { max-width: 100%; max-height: 100%; object-fit: contain; }
 .mingpian-image-hint { color: var(--text-muted); font-size: 13px; text-align: center; padding: 0 12px; }
-#mingpianFileInput { margin-top: 8px; width: 100%; }
+.mingpian-upload-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+#mingpianFileInput { flex: 1; min-width: 0; }
 #mingpianAnalyzeBtn { margin-top: 4px; }
 .mingpian-analyze-status { font-size: 13px; color: var(--text-secondary); min-height: 18px; margin: 6px 0 0; }
-.mingpian-candidate-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0; }
-.mingpian-candidate-row .field { flex: 1 1 240px; margin-bottom: 0; }
 .mingpian-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 18px; }
+.mingpian-field-full { grid-column: 1 / -1; }
 .mingpian-score-row { display: flex; align-items: center; gap: 8px; }
 .mingpian-score-row input[type="text"] { flex: 1; }
 .mingpian-score-tag { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
 .mingpian-score-row input[type="number"] { width: 64px; flex: none; text-align: center; }
 .mingpian-score-row input[readonly] { background: #f2f2f2; color: var(--text-secondary); }
-.mingpian-line-warn { color: #EA0000; font-weight: 700; margin-top: 4px; }
 .mingpian-total-box { margin-top: 20px; padding: 14px; background: var(--page-bg); border-radius: var(--radius); text-align: center; }
 .mingpian-total-score { font-size: 18px; font-weight: 700; color: var(--text-primary); }
-.mingpian-total-fortune { font-size: 28px; font-weight: 800; color: var(--gold-darker); margin-top: 4px; }
+.mingpian-total-fortune { font-size: 28px; font-weight: 800; color: var(--gold-darker); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+/* 大吉／可／平／凶 徽章，配色取自使用者提供的 24名片風水.png 對照表底色 */
+.mingpian-category-badge { font-size: 15px; font-weight: 700; padding: 3px 12px; border-radius: 999px; }
+.mingpian-category-badge.cat-good { background: #FEC6E6; color: #D2004B; }
+.mingpian-category-badge.cat-ok { background: #BDD7EE; color: #1054A0; }
+.mingpian-category-badge.cat-neutral { background: #EEEEEE; color: #5F5E5A; }
+.mingpian-category-badge.cat-bad { background: #E9EBF5; color: #555a6e; }
+
+/* 自訂拍照畫面：全螢幕深色背景＋置中相機預覽＋9:5.5 白框導引線（用超大 box-shadow 做出遮罩效果） */
+.mingpian-camera-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.mingpian-camera-box { max-width: 480px; width: 100%; text-align: center; }
+.mingpian-camera-video-wrap { position: relative; width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
+.mingpian-camera-video-wrap video { width: 100%; display: block; }
+.mingpian-camera-frame {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 84%; aspect-ratio: 9 / 5.5;
+  border: 3px solid #fff; border-radius: 4px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+  pointer-events: none;
+}
+.mingpian-camera-hint { color: #fff; font-size: 13px; margin: 10px 0; }
+.mingpian-camera-actions { display: flex; gap: 10px; justify-content: center; }
 @media (max-width: 560px) {
   .mingpian-form-grid { grid-template-columns: 1fr; }
 }

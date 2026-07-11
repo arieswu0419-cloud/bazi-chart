@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=83">
+<link rel="stylesheet" href="css/style.css?v=89">
 </head>
 <body>
 
@@ -254,49 +254,63 @@
         <button type="button" class="btn secondary" id="mingpianBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
         <button class="btn secondary" id="exportMingpianPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
       </div>
-      <h2>名片風水分析</h2>
+      <h2 class="mingpian-title">名片風水報告</h2>
 
       <div class="mingpian-images">
         <div class="mingpian-image-box">
-          <div class="mingpian-image-label">上傳名片</div>
+          <div class="mingpian-image-label">上傳個人名片</div>
           <div class="mingpian-image-frame" id="mingpianUploadFrame">
             <img id="mingpianPreviewImg" style="display:none">
             <span class="mingpian-image-hint" id="mingpianUploadHint">請選擇圖片或拍照</span>
           </div>
-          <input type="file" id="mingpianFileInput" accept="image/*" capture="environment" data-html2canvas-ignore="true">
+          <div class="mingpian-upload-actions" data-html2canvas-ignore="true">
+            <input type="file" id="mingpianFileInput" accept="image/*">
+            <button type="button" class="btn secondary" id="mingpianCameraBtn" style="width:auto">拍照</button>
+          </div>
         </div>
         <div class="mingpian-image-box">
-          <div class="mingpian-image-label">九宮格分析結果</div>
+          <div class="mingpian-image-label">套用風水線分析</div>
           <div class="mingpian-image-frame">
             <canvas id="mingpianResultCanvas" style="display:none"></canvas>
-            <span class="mingpian-image-hint" id="mingpianResultHint">按下「風水分析」後顯示</span>
+            <span class="mingpian-image-hint" id="mingpianResultHint">按下「套用分析」後顯示</span>
           </div>
         </div>
       </div>
 
-      <button type="button" class="btn" id="mingpianAnalyzeBtn" data-html2canvas-ignore="true">風水分析</button>
-      <p class="mingpian-analyze-status" id="mingpianAnalyzeStatus"></p>
-
-      <div class="mingpian-candidate-row" id="mingpianCandidateRow" style="display:none" data-html2canvas-ignore="true">
-        <div class="field">
-          <label for="mp-name-candidate">辨識到的姓名文字（如不正確請重選）</label>
-          <select id="mp-name-candidate"></select>
-        </div>
-        <div class="field">
-          <label for="mp-company-candidate">辨識到的公司名文字（如不正確請重選）</label>
-          <select id="mp-company-candidate"></select>
+      <div class="mingpian-camera-overlay" id="mingpianCameraOverlay" style="display:none" data-html2canvas-ignore="true">
+        <div class="mingpian-camera-box">
+          <div class="mingpian-camera-video-wrap" id="mingpianCameraVideoWrap">
+            <video id="mingpianCameraVideo" autoplay playsinline muted></video>
+            <div class="mingpian-camera-frame"></div>
+          </div>
+          <p class="mingpian-camera-hint">請將名片對齊白框（比例 9 x 5.5 公分）拍攝</p>
+          <div class="mingpian-camera-actions">
+            <button type="button" class="btn" id="mingpianCaptureBtn">拍照</button>
+            <button type="button" class="btn secondary" id="mingpianCameraCancelBtn">取消</button>
+          </div>
         </div>
       </div>
 
+      <button type="button" class="btn" id="mingpianAnalyzeBtn" data-html2canvas-ignore="true">套用分析</button>
+      <p class="mingpian-analyze-status" id="mingpianAnalyzeStatus"></p>
+
       <div class="mingpian-form-grid">
+        <div class="field mingpian-field-full">
+          <label for="mp-company">公司名</label>
+          <div class="mingpian-score-row">
+            <input type="text" id="mp-company" placeholder="請輸入公司名稱">
+            <span class="mingpian-score-tag">分數</span>
+            <input type="number" id="mp-company-score" value="0">
+          </div>
+        </div>
+
         <div class="field">
           <label for="mp-name">姓名</label>
           <div class="mingpian-score-row">
             <input type="text" id="mp-name" placeholder="王小明">
             <span class="mingpian-score-tag">分數</span>
-            <input type="number" id="mp-name-score" value="0" readonly>
+            <input type="number" id="mp-name-score" value="0">
           </div>
-          <div class="mingpian-line-warn" id="mp-name-warn" style="display:none">姓名切線</div>
         </div>
 
         <div class="field">
@@ -324,21 +338,14 @@
             <input type="number" id="mp-color-score" value="3">
           </div>
         </div>
-
-        <div class="field">
-          <label for="mp-company">公司名</label>
-          <div class="mingpian-score-row">
-            <input type="text" id="mp-company" placeholder="（風水分析後自動填入）" readonly>
-            <span class="mingpian-score-tag">分數</span>
-            <input type="number" id="mp-company-score" value="0" readonly>
-          </div>
-          <div class="mingpian-line-warn" id="mp-company-warn" style="display:none">名片切線</div>
-        </div>
       </div>
 
       <div class="mingpian-total-box">
-        <div class="mingpian-total-score">風水名片總分：<span id="mp-total-score">0</span></div>
-        <div class="mingpian-total-fortune"><span id="mp-total-fortune">－</span></div>
+        <div class="mingpian-total-score">名片風水總分：<span id="mp-total-score">0</span></div>
+        <div class="mingpian-total-fortune">
+          <span id="mp-total-fortune">－</span>
+          <span class="mingpian-category-badge" id="mp-total-category"></span>
+        </div>
       </div>
     </div>
     </div>
@@ -351,16 +358,16 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=83"></script>
-<script src="js/auth.js?v=83"></script>
+<script src="js/firebase-config.js?v=89"></script>
+<script src="js/auth.js?v=89"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=83"></script>
-<script src="js/renge-engine.js?v=83"></script>
-<script src="js/lifenum-engine.js?v=83"></script>
-<script src="js/mingpian-engine.js?v=83"></script>
-<script src="js/qimen-engine.js?v=83"></script>
+<script src="js/bazi-engine.js?v=89"></script>
+<script src="js/renge-engine.js?v=89"></script>
+<script src="js/lifenum-engine.js?v=89"></script>
+<script src="js/mingpian-engine.js?v=89"></script>
+<script src="js/qimen-engine.js?v=89"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=83"></script>
+<script src="js/app.js?v=89"></script>
 </body>
 </html>

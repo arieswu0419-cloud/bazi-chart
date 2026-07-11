@@ -45,23 +45,19 @@ function mpFortuneText(total) {
   return MP_FORTUNE_TABLE[idx];
 }
 
-// 找一段文字外框（box：{x0,y0,x1,y1} 像素座標）落在 9 宮格的哪一格；
-// 如果外框橫跨三等分線（不管水平或垂直），代表「切線」，涵蓋的每一格分數相加
-function mpGridCellsForBox(box, imgW, imgH) {
-  const vLines = [imgW / 3, (imgW * 2) / 3];
-  const hLines = [imgH / 3, (imgH * 2) / 3];
-  const colOf = (x) => (x < vLines[0] ? 0 : x < vLines[1] ? 1 : 2);
-  const rowOf = (y) => (y < hLines[0] ? 0 : y < hLines[1] ? 1 : 2);
-  const c0 = colOf(box.x0), c1 = colOf(box.x1);
-  const r0 = rowOf(box.y0), r1 = rowOf(box.y1);
-  const cells = [];
-  for (let r = r0; r <= r1; r++) {
-    for (let c = c0; c <= c1; c++) {
-      cells.push({ row: r, col: c, score: MP_GRID_SCORE[r][c] });
-    }
-  }
-  const score = cells.reduce((s, c) => s + c.score, 0);
-  return { cells, crossed: cells.length > 1, score };
+// 大吉／可／平／凶 分類：對照使用者提供的「24名片風水.png」逐格底色比對出來（粉紅=大吉、藍=可、白=平、灰=凶），
+// 跟 MP_FORTUNE_TABLE 同一個索引順序
+const MP_FORTUNE_CATEGORY = [
+  "平", "平", "平", "大吉", "大吉", "平", "可", "平",
+  "大吉", "可", "平", "大吉", "平", "大吉", "平", "平",
+  "可", "大吉", "凶", "大吉", "凶", "平", "大吉", "可"
+];
+const MP_CATEGORY_CLASS = { 大吉: "cat-good", 可: "cat-ok", 平: "cat-neutral", 凶: "cat-bad" };
+
+function mpFortuneCategory(total) {
+  if (!total || total <= 0) return null;
+  const idx = (total - 1) % 24;
+  return MP_FORTUNE_CATEGORY[idx];
 }
 
 // 找像素 rgb 最接近 MP_COLOR_LIST 裡哪一個顏色分類（歐氏距離最短）
