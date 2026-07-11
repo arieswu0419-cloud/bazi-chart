@@ -1112,7 +1112,7 @@ function buildQimenExplain(gong) {
   } else {
     const c = currentQimen.gongs[gong];
     gua = c.gua; xing = c.xing; tianGan = c.tianGan; diGan = c.diGan; men = c.men; shen = c.shen;
-    title = "第" + gong + "宮（" + GONG_INFO[gong].dir + "）";
+    title = gua + "宮（" + GONG_INFO[gong].dir + "）";
   }
   let html = '<div class="qimen-explain-title">' + title + " 解說</div>";
   html += '<table class="qimen-explain-table"><tbody>';
