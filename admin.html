@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>系統維護 - Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=56">
 </head>
 <body>
 
@@ -27,7 +27,11 @@
 
     <div class="card">
       <h2>帳號權限管理</h2>
-      <p class="admin-hint">帳號＝信箱，密碼由使用者自訂。核准後，勾選下方三個報告的權限即可開放使用；未勾選的報告該帳號登入後不會看到。</p>
+      <p class="admin-hint">帳號＝信箱，密碼由使用者自訂。核准後，勾選下方報告／功能的權限即可開放使用；未勾選的項目該帳號登入後不會看到，點擊上方導覽按鍵會提示未開放。</p>
+      <div class="field" style="max-width:320px">
+        <label for="adminSearch">姓名查詢</label>
+        <input type="text" id="adminSearch" placeholder="輸入姓名關鍵字篩選">
+      </div>
       <div class="form-msg" id="adminMsg"></div>
       <div class="admin-table-wrap">
         <table class="admin-table" id="adminTable">
@@ -39,6 +43,12 @@
               <th>八字</th>
               <th>人格解碼</th>
               <th>生命靈數</th>
+              <th>奇門命盤</th>
+              <th>奇門遁甲</th>
+              <th>觀音棋卦</th>
+              <th>濟公棋卦</th>
+              <th>陽宅風水</th>
+              <th>名片風水</th>
               <th>申請時間</th>
             </tr>
           </thead>
@@ -55,8 +65,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=23"></script>
-<script src="js/auth.js?v=23"></script>
-<script src="js/admin.js?v=23"></script>
+<script src="js/firebase-config.js?v=56"></script>
+<script src="js/auth.js?v=56"></script>
+<script src="js/admin.js?v=56"></script>
 </body>
 </html>

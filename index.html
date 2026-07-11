@@ -5,19 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=23">
+<link rel="stylesheet" href="css/style.css?v=56">
 </head>
 <body>
 
+<div class="form-msg nav-toast" id="navToast"></div>
+
 <header class="site-header">
   <div class="container">
-    <div class="brand">
-      <img src="assets/logo.png" alt="Aries logo">
-      <span>Aries9419 八字報告</span>
+    <div class="header-top">
+      <div class="brand">
+        <img src="assets/logo.png" alt="Aries logo">
+        <span>Aries 命理卜卦系統</span>
+      </div>
+      <nav class="nav-links">
+        <a href="admin.html" id="adminLink" class="btn secondary" style="width:auto;display:none">系統維護</a>
+        <button onclick="handleLogout()">登出</button>
+      </nav>
     </div>
-    <nav class="nav-links">
-      <a href="admin.html" id="adminLink" class="btn secondary" style="width:auto;display:none">系統維護</a>
-      <button onclick="handleLogout()">登出</button>
+    <nav class="main-nav" id="mainNav">
+      <a href="index.html" class="main-nav-link active">命理諮詢</a>
+      <button type="button" class="main-nav-link" data-feature="奇門遁甲" data-perm="qimenDunjia">奇門遁甲</button>
+      <button type="button" class="main-nav-link" data-feature="觀音棋卦" data-perm="guanyin">觀音棋卦</button>
+      <button type="button" class="main-nav-link" data-feature="濟公棋卦" data-perm="jigong">濟公棋卦</button>
+      <button type="button" class="main-nav-link" data-feature="陽宅風水" data-perm="fengshui">陽宅風水</button>
+      <button type="button" class="main-nav-link" data-feature="名片風水" data-perm="mingpian">名片風水</button>
     </nav>
   </div>
 </header>
@@ -25,9 +37,9 @@
 <main class="app">
   <div class="container">
 
-    <div class="card">
-      <h2>請輸入個人資料，西元國曆出生年月日時</h2>
-      <form id="baziForm">
+    <form id="baziForm">
+      <div class="form-block">
+        <h2>個人資料，西元國曆出生年/月/日/時</h2>
         <div class="form-grid">
           <div class="field">
             <label for="f-name">姓名</label>
@@ -40,40 +52,66 @@
               <option value="female">女</option>
             </select>
           </div>
+        </div>
+        <div class="form-date-row">
           <div class="field">
-            <label for="f-date">出生日期（國曆）</label>
-            <input type="date" id="f-date" required>
+            <label for="f-byear">出生年（國曆）</label>
+            <select id="f-byear"></select>
           </div>
           <div class="field">
-            <label for="f-time">出生時間</label>
-            <input type="time" id="f-time" required>
+            <label for="f-bmonth">出生月</label>
+            <select id="f-bmonth"></select>
           </div>
           <div class="field">
-            <label for="f-qyear">擇日（人格解碼用）</label>
+            <label for="f-bday">出生日</label>
+            <select id="f-bday"></select>
+          </div>
+          <div class="field">
+            <label for="f-btime">出生時間（24小時）</label>
+            <input type="time" id="f-btime" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-block form-block-dark">
+        <h2>人格解碼專用</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label for="f-qyear">西元</label>
             <select id="f-qyear"></select>
           </div>
           <div class="field">
-            <label for="f-qmonth">&nbsp;</label>
-            <select id="f-qmonth"></select>
-          </div>
-          <div class="field">
-            <label for="f-qday">&nbsp;</label>
-            <select id="f-qday"></select>
+            <div class="field-inline-pair">
+              <div class="field-inline-item">
+                <label for="f-qmonth">月份</label>
+                <select id="f-qmonth"></select>
+              </div>
+              <div class="field-inline-item">
+                <label for="f-qday">日期</label>
+                <select id="f-qday"></select>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div class="form-block">
         <div class="form-actions">
-          <button type="submit" class="btn" id="baziSubmitBtn">產生八字報告</button>
+          <button type="submit" class="btn" id="baziSubmitBtn">八字命卷報告</button>
           <button type="button" class="btn" id="rengeSubmitBtn">人格解碼報告</button>
           <button type="button" class="btn" id="lifenumSubmitBtn">生命靈數報告</button>
+          <button type="button" class="btn" id="qimenSubmitBtn">奇門命盤報告</button>
+          <button type="button" class="btn" id="qimenDivineSubmitBtn">紫微斗數報告</button>
         </div>
         <p class="form-msg show info" id="permissionNote" style="display:none">您的帳號目前沒有任何報告的使用權限，請聯絡管理者開通。</p>
-      </form>
-    </div>
+      </div>
+    </form>
 
     <div class="tabs" id="reportTabs" data-html2canvas-ignore="true">
-      <button class="tab-btn active" id="tabBazi">八字報告</button>
+      <button class="tab-btn active" id="tabBazi">八字命卷報告</button>
       <button class="tab-btn" id="tabRenge">人格解碼報告</button>
       <button class="tab-btn" id="tabLifenum">生命靈數報告</button>
+      <button class="tab-btn" id="tabQimen">奇門命盤報告</button>
     </div>
 
     <div id="printArea">
@@ -195,6 +233,21 @@
       <div class="lifenum-lessoncard" id="lifenumWuxingHealthCard"></div>
     </div>
     </div>
+
+    <div id="qimenTabPanel" style="display:none">
+    <div class="card qimen-card" id="qimenCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end">
+        <button class="btn secondary" id="exportQimenPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+
+      <div class="qimen-top">
+        <div class="qimen-pillars" id="qimenPillars"></div>
+        <div class="qimen-info" id="qimenInfoPanel"></div>
+      </div>
+
+      <div class="qimen-compass" id="qimenCompass"></div>
+    </div>
+    </div>
     </div>
 
   </div>
@@ -205,14 +258,15 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=23"></script>
-<script src="js/auth.js?v=23"></script>
+<script src="js/firebase-config.js?v=56"></script>
+<script src="js/auth.js?v=56"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=23"></script>
-<script src="js/renge-engine.js?v=23"></script>
-<script src="js/lifenum-engine.js?v=23"></script>
+<script src="js/bazi-engine.js?v=56"></script>
+<script src="js/renge-engine.js?v=56"></script>
+<script src="js/lifenum-engine.js?v=56"></script>
+<script src="js/qimen-engine.js?v=56"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=23"></script>
+<script src="js/app.js?v=56"></script>
 </body>
 </html>

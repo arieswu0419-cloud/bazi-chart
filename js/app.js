@@ -3,15 +3,50 @@ let selectedDayun = null;
 let selectedLiunian = null;
 let currentRenge = null;
 let currentLifenum = null;
+let currentQimen = null;
+
+// 右上角浮出提示（取代 alert()，避免整頁被原生對話框卡住），跟 admin.js 的 adminMsg() 同一套 3 秒自動消失邏輯
+function showToast(text, type) {
+  const el = document.getElementById("navToast");
+  el.textContent = text;
+  el.className = "form-msg nav-toast show " + type;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => { el.className = "form-msg nav-toast"; }, 3000);
+}
+
+// 權限計算：跟 js/admin.js 的 effectivePermissions() 是同一套規則，畫面初始狀態才會一致。
+// 帳號完全沒有 permissions 欄位＝這個權限系統上線前就已核准的舊帳號，八字／人格解碼／生命靈數／奇門命盤
+// 沿用舊行為視為開放（那時候就已經在用了，不能讓人一覺醒來被鎖住）；五個新的導覽功能（奇門遁甲／觀音棋卦／
+// 濟公棋卦／陽宅風水／名片風水）本來就沒有上線過，一律預設關閉，要管理者手動開通。
+// 帳號有 permissions 欄位但沒有某個新欄位（簽入舊版三欄位物件的帳號）：qimen 沿用「舊帳號視為開放」的邏輯
+// （避免現有使用者權限系統上線後突然失去奇門命盤的使用權），其餘新欄位一律視為未開放。
+function effectivePermissions(data) {
+  const raw = data.permissions;
+  if (!raw) {
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, guanyin: false, jigong: false, fengshui: false, mingpian: false };
+  }
+  return {
+    bazi: !!raw.bazi,
+    renge: !!raw.renge,
+    lifenum: !!raw.lifenum,
+    qimen: raw.qimen !== undefined ? !!raw.qimen : true,
+    qimenDunjia: !!raw.qimenDunjia,
+    guanyin: !!raw.guanyin,
+    jigong: !!raw.jigong,
+    fengshui: !!raw.fengshui,
+    mingpian: !!raw.mingpian
+  };
+}
+
+let currentPerms = null;
 
 requireApprovedUser(function (user, data) {
   if (user.email === ADMIN_EMAIL) {
     document.getElementById("adminLink").style.display = "";
   }
 
-  // 三個報告權限：帳號資料裡沒有 permissions 欄位的話（這個功能上線前就已核准的舊帳號），
-  // 視為沿用舊行為、三個都開放；新申請的帳號一律會有 permissions 欄位（預設全部關閉，等管理者開通）
-  const perms = data.permissions || { bazi: true, renge: true, lifenum: true };
+  const perms = effectivePermissions(data);
+  currentPerms = perms;
 
   if (!perms.bazi) {
     document.getElementById("baziSubmitBtn").style.display = "none";
@@ -25,22 +60,34 @@ requireApprovedUser(function (user, data) {
     document.getElementById("lifenumSubmitBtn").style.display = "none";
     document.getElementById("tabLifenum").style.display = "none";
   }
+  if (!perms.qimen) {
+    document.getElementById("qimenSubmitBtn").style.display = "none";
+    document.getElementById("tabQimen").style.display = "none";
+  }
 
-  if (!perms.bazi && !perms.renge && !perms.lifenum) {
+  if (!perms.bazi && !perms.renge && !perms.lifenum && !perms.qimen) {
     document.getElementById("permissionNote").style.display = "";
   } else if (!perms.bazi) {
     // 預設頁籤是八字報告，如果這個人沒有八字權限，切到他有權限的第一個頁籤，避免打開就是空白頁
-    setActiveTab(perms.renge ? "renge" : "lifenum");
+    setActiveTab(perms.renge ? "renge" : (perms.lifenum ? "lifenum" : "qimen"));
   }
+
+  // 上方綠色區塊的五個新功能導覽按鍵：有權限就顯示「開發中」提示，沒有權限就提示未開放
+  const navPermKeys = { qimenDunjia: "奇門遁甲", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "陽宅風水", mingpian: "名片風水" };
+  document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
+    const key = btn.dataset.perm;
+    btn.addEventListener("click", function () {
+      if (!perms[key]) {
+        showToast("此功能您未發放權限", "error");
+        return;
+      }
+      showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
+    });
+  });
 });
 
-// 擇日欄位：年/月/日下拉，預設今天
-(function initQChoiceFields() {
-  const today = new Date();
-  const yearSel = document.getElementById("f-qyear");
-  const monthSel = document.getElementById("f-qmonth");
-  const daySel = document.getElementById("f-qday");
-
+// 擇日欄位（選日子）／出生年月日時欄位：都是年/月/日(/時)下拉，預設今天（出生時間也預設現在，使用者可自行修改）
+function fillYearMonthDaySelects(yearSel, monthSel, daySel, today) {
   const thisYear = today.getFullYear();
   let yearHtml = "";
   for (let y = thisYear - 100; y <= thisYear + 10; y++) yearHtml += '<option value="' + y + '">' + y + "</option>";
@@ -57,24 +104,52 @@ requireApprovedUser(function (user, data) {
   yearSel.value = String(thisYear);
   monthSel.value = String(today.getMonth() + 1);
   daySel.value = String(today.getDate());
+}
+(function initDateFields() {
+  const today = new Date();
+  fillYearMonthDaySelects(
+    document.getElementById("f-qyear"), document.getElementById("f-qmonth"), document.getElementById("f-qday"), today
+  );
+  fillYearMonthDaySelects(
+    document.getElementById("f-byear"), document.getElementById("f-bmonth"), document.getElementById("f-bday"), today
+  );
+  // 時間欄位維持單一個 <input type="time">（24 小時制 HH:MM 一欄），不拆成時／分兩個下拉選單；
+  // 分鐘精度還是保留在這欄裡面，24 節氣交界時刻的判斷不受影響
+  document.getElementById("f-btime").value =
+    String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
 })();
 
-// 頁籤切換：八字報告／人格解碼報告／生命靈數
+// 出生日期／時間：組成跟原本 <input type="date">/<input type="time"> 一樣格式的字串（YYYY-MM-DD／HH:MM），
+// 給下面各報告的 submit handler 沿用同一套讀值方式
+function getBirthDateVal() {
+  const y = document.getElementById("f-byear").value;
+  const m = String(document.getElementById("f-bmonth").value).padStart(2, "0");
+  const d = String(document.getElementById("f-bday").value).padStart(2, "0");
+  return y + "-" + m + "-" + d;
+}
+function getBirthTimeVal() {
+  return document.getElementById("f-btime").value;
+}
+
+// 頁籤切換：八字報告／人格解碼報告／生命靈數／奇門遁甲
 function setActiveTab(tab) {
   document.getElementById("tabBazi").classList.toggle("active", tab === "bazi");
   document.getElementById("tabRenge").classList.toggle("active", tab === "renge");
   document.getElementById("tabLifenum").classList.toggle("active", tab === "lifenum");
+  document.getElementById("tabQimen").classList.toggle("active", tab === "qimen");
   document.getElementById("baziTabPanel").style.display = tab === "bazi" ? "" : "none";
   document.getElementById("rengeTabPanel").style.display = tab === "renge" ? "" : "none";
   document.getElementById("lifenumTabPanel").style.display = tab === "lifenum" ? "" : "none";
+  document.getElementById("qimenTabPanel").style.display = tab === "qimen" ? "" : "none";
 }
 document.getElementById("tabBazi").addEventListener("click", function () { setActiveTab("bazi"); });
 document.getElementById("tabRenge").addEventListener("click", function () { setActiveTab("renge"); });
 document.getElementById("tabLifenum").addEventListener("click", function () { setActiveTab("lifenum"); });
+document.getElementById("tabQimen").addEventListener("click", function () { setActiveTab("qimen"); });
 
 document.getElementById("rengeSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();
-  const dateVal = document.getElementById("f-date").value;
+  const dateVal = getBirthDateVal();
   if (!name || !dateVal) {
     alert("請先輸入姓名與出生日期（國曆）");
     return;
@@ -83,8 +158,8 @@ document.getElementById("rengeSubmitBtn").addEventListener("click", function () 
   const qYear = Number(document.getElementById("f-qyear").value);
   const qMonth = Number(document.getElementById("f-qmonth").value);
   const qDay = Number(document.getElementById("f-qday").value);
-  // 0-19 階段數需要出生時辰才能算，跟八字報告共用同一個「出生時間」欄位；沒填就留白，其餘欄位不受影響
-  const timeVal = document.getElementById("f-time").value;
+  // 0-19 階段數需要出生時辰才能算，跟八字報告共用同一個「出生時間」欄位
+  const timeVal = getBirthTimeVal();
   const hour = timeVal ? Number(timeVal.split(":")[0]) : null;
 
   currentRenge = calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name });
@@ -94,7 +169,7 @@ document.getElementById("rengeSubmitBtn").addEventListener("click", function () 
 
 document.getElementById("lifenumSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();
-  const dateVal = document.getElementById("f-date").value;
+  const dateVal = getBirthDateVal();
   if (!name || !dateVal) {
     alert("請先輸入姓名與出生日期（國曆）");
     return;
@@ -107,12 +182,34 @@ document.getElementById("lifenumSubmitBtn").addEventListener("click", function (
   setActiveTab("lifenum");
 });
 
+document.getElementById("qimenSubmitBtn").addEventListener("click", function () {
+  const name = document.getElementById("f-name").value.trim();
+  const dateVal = getBirthDateVal();
+  const timeVal = getBirthTimeVal();
+  if (!name || !dateVal || !timeVal) {
+    alert("請先輸入姓名、出生日期（國曆）與出生時間");
+    return;
+  }
+  const [year, month, day] = dateVal.split("-").map(Number);
+  const [hour, minute] = timeVal.split(":").map(Number);
+  const gender = document.getElementById("f-gender").value;
+
+  currentQimen = calculateQimenHeader({ year, month, day, hour, minute, name, gender });
+  renderQimen(currentQimen);
+  setActiveTab("qimen");
+});
+
+// 紫微斗數報告：功能尚未開發，先放按鍵佔位
+document.getElementById("qimenDivineSubmitBtn").addEventListener("click", function () {
+  showToast("紫微斗數報告功能開發中，敬請期待。", "info");
+});
+
 document.getElementById("baziForm").addEventListener("submit", function (e) {
   e.preventDefault();
   const name = document.getElementById("f-name").value.trim();
   const gender = document.getElementById("f-gender").value;
-  const dateVal = document.getElementById("f-date").value;
-  const timeVal = document.getElementById("f-time").value;
+  const dateVal = getBirthDateVal();
+  const timeVal = getBirthTimeVal();
   if (!dateVal || !timeVal) return;
 
   const [year, month, day] = dateVal.split("-").map(Number);
@@ -706,6 +803,198 @@ function renderLifenum(data) {
     "</table>" +
     (data.star ? '<p class="ln-note">您本身九星五行屬「' + data.star.wuxing + '」，上表粉紅底色請您特別注意器官與情緒。</p>' : "");
 }
+
+// 奇門遁甲：上方四柱表格（時日月年），跟八字報告同一種天干地支呈現方式，但沒有十神／藏干／神煞列
+function buildQimenPillarsTable(siZhu) {
+  let html = '<table class="qimen-pillars-table"><tbody><tr>';
+  siZhu.forEach((p) => { html += '<td class="col-head">' + p.label.replace("柱", "") + "</td>"; });
+  html += "</tr><tr>";
+  siZhu.forEach((p) => { html += "<td>" + charCell(p.gan) + "</td>"; });
+  html += "</tr><tr>";
+  siZhu.forEach((p) => { html += "<td>" + charCell(p.zhi) + "</td>"; });
+  html += "</tr></tbody></table>";
+  return html;
+}
+
+// 右上資訊表格：陽曆／符首、農曆／天乙、時間／值符、格局／值使，兩兩並排（比照參考畫面排版）
+function buildQimenInfoTable(data) {
+  const juText = (data.juInfo.isYang ? "陽遁" : "陰遁") + data.juInfo.ju + "局";
+  const rows = [
+    ["陽曆", data.solarText, "符首", data.xunShou.xun],
+    ["農曆", data.lunarText, "天乙", data.tianYi.zhi + "（" + GONG_INFO[data.tianYi.gong].dir + "）"],
+    ["時間", data.solarText.split(" ")[1], "值符", data.fuShouXing],
+    ["格局", juText, "值使", GONG_INFO[data.menTargetGong].dir]
+  ];
+  let html = '<table class="qimen-info-table"><tbody>';
+  html += '<tr><td class="qi-label">姓名</td><td class="qi-value" colspan="3">' + (data.name || "") + "</td></tr>";
+  rows.forEach((r) => {
+    html += "<tr><td class=\"qi-label\">" + r[0] + '</td><td class="qi-value">' + r[1] +
+      '</td><td class="qi-label">' + r[2] + '</td><td class="qi-value">' + r[3] + "</td></tr>";
+  });
+  html += "</tbody></table>";
+  return html;
+}
+
+// 九宮格排位：跟畫面上實際的方位對應（左上巽4、上離9、右上坤2、左震3、中5、右兌7、左下艮8、下坎1、右下乾6）
+const QIMEN_GRID_LAYOUT = [
+  { g: 4, row: 1, col: 1 }, { g: 9, row: 1, col: 2 }, { g: 2, row: 1, col: 3 },
+  { g: 3, row: 2, col: 1 }, { g: 5, row: 2, col: 2 }, { g: 7, row: 2, col: 3 },
+  { g: 8, row: 3, col: 1 }, { g: 1, row: 3, col: 2 }, { g: 6, row: 3, col: 3 }
+];
+// 八門顏色沿用既有五行色票（休水、死土、傷木、杜木、開金、驚金、生土、景火）
+const QIMEN_MEN_COLOR = { 休: "#185FA5", 死: "#854F0B", 傷: "#3B6D11", 杜: "#3B6D11", 開: "#B8860B", 驚: "#B8860B", 生: "#854F0B", 景: "#A32D2D" };
+// 九星五行（使用者指定）：天蓬水／天衝天輔木／天英火／天任天芮天禽土／天心天柱金
+const QIMEN_XING_WUXING_CLASS = {
+  天蓬: "water", 天衝: "wood", 天輔: "wood", 天英: "fire",
+  天任: "earth", 天芮: "earth", 天禽: "earth", 天心: "metal", 天柱: "metal"
+};
+// 八卦五行（使用者指定）：巽震木／艮坤土／坎水／乾兌金／離火
+const QIMEN_GUA_WUXING_CLASS = {
+  巽: "wood", 震: "wood", 艮: "earth", 坤: "earth",
+  坎: "water", 乾: "metal", 兌: "metal", 離: "fire"
+};
+// 九宮格天盤／地盤干只顯示字本身、依五行上色，不顯示陰陽符號（跟四柱表格的 charCell 不同）
+function qimenGanOnly(gan) {
+  const p = ganPart(gan);
+  return '<span class="qimen-gan-char ' + p.cls + '">' + p.char + "</span>";
+}
+
+// 外層羅盤：8 個方位＋宮位數字（固定位置，7x7 格的 4 角＋4 邊中央）
+const QIMEN_DIR_LAYOUT = [
+  { g: 4, row: 1, col: 1 }, { g: 9, row: 1, col: 4 }, { g: 2, row: 1, col: 7 },
+  { g: 3, row: 4, col: 1 }, { g: 7, row: 4, col: 7 },
+  { g: 8, row: 7, col: 1 }, { g: 1, row: 7, col: 4 }, { g: 6, row: 7, col: 7 }
+];
+// 第二層：十二地支，每個邊（上／下／左／右）各自水平／垂直三等分，中間格放四正（子午卯酉，維持水平字），
+// 兩側格放其餘 8 個地支（水平邊放橫式字、垂直邊放直式字），不再用「角宮兩支疊放」的舊排法
+const QIMEN_ZHI_LAYOUT = [
+  { zhi: "辰", row: 3, col: 2, vertical: true },   // 左側上方（巽四宮外側）
+  { zhi: "巳", row: 2, col: 3, vertical: false },  // 上方左邊（巽四宮外側）
+  { zhi: "午", row: 2, col: 4, vertical: false },  // 上方中間（離九宮，四正）
+  { zhi: "未", row: 2, col: 5, vertical: false },  // 上方右邊（坤二宮外側）
+  { zhi: "申", row: 3, col: 6, vertical: true },   // 右側上方（坤二宮外側）
+  { zhi: "卯", row: 4, col: 2, vertical: false },  // 左側中間（震三宮，四正）
+  { zhi: "酉", row: 4, col: 6, vertical: false },  // 右側中間（兌七宮，四正）
+  { zhi: "寅", row: 5, col: 2, vertical: true },   // 左側下方（艮八宮外側）
+  { zhi: "戌", row: 5, col: 6, vertical: true },   // 右側下方（乾六宮外側）
+  { zhi: "丑", row: 6, col: 3, vertical: false },  // 下方左邊（艮八宮外側）
+  { zhi: "子", row: 6, col: 4, vertical: false },  // 下方中間（坎一宮，四正）
+  { zhi: "亥", row: 6, col: 5, vertical: false }   // 下方右邊（乾六宮外側）
+];
+
+function renderQimen(data) {
+  document.getElementById("qimenCard").style.display = "block";
+
+  document.getElementById("qimenPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
+  document.getElementById("qimenInfoPanel").innerHTML = buildQimenInfoTable(data);
+
+  let gridHtml = "";
+  QIMEN_GRID_LAYOUT.forEach(({ g, row, col }) => {
+    if (g === 5) {
+      // 中宮：跟其它宮位同一套版面（星左上、干右上、卦左下），星固定天禽不動、卦固定坤（中宮寄坤二宮）、
+      // 中間圓圈用「命」取代門名，深灰底白字
+      const centerGan = data.diPan[5];
+      gridHtml +=
+        '<div class="qimen-cell qimen-center" style="grid-row:' + row + ";grid-column:" + col + '">' +
+        '<div class="qimen-xing earth">天禽</div>' +
+        '<div class="qimen-gan-stack">' + qimenGanOnly(centerGan) + qimenGanOnly(centerGan) + "</div>" +
+        '<div class="qimen-cell-center">' +
+        '<div class="qimen-circle-zone">' +
+        '<div class="qimen-men-circle qimen-center-circle">命</div>' +
+        "</div>" +
+        "</div>" +
+        '<div class="qimen-cell-bottom earth">坤</div>' +
+        "</div>";
+      return;
+    }
+    const c = data.gongs[g];
+    const menColor = QIMEN_MEN_COLOR[c.men] || "#666";
+    const xingWx = QIMEN_XING_WUXING_CLASS[c.xing] || "";
+    const guaWx = QIMEN_GUA_WUXING_CLASS[c.gua] || "";
+    const cornerWords = c.cornerWords || [];
+    const wordToSpan = (w) => '<span class="qw-' + w.type + '">' + w.text + "</span>";
+    // 右下角最多放 3 組，第 4 組起改放左下角（八卦字右側），一樣由右往左排列，避免跟中下大運文字擠在一起重疊
+    const cornerWordsHtml = cornerWords.slice(0, 3).map(wordToSpan).join("");
+    const cornerWordsLeftHtml = cornerWords.slice(3).map(wordToSpan).join("");
+    gridHtml +=
+      '<div class="qimen-cell" style="grid-row:' + row + ";grid-column:" + col + '">' +
+      '<div class="qimen-xing ' + xingWx + '">' + (c.xing || "") + "</div>" +
+      (c.isMingGong ? '<div class="qimen-ming-circle">命</div>' : "") +
+      '<div class="qimen-gan-stack">' + qimenGanOnly(c.tianGan) + qimenGanOnly(c.diGan) + "</div>" +
+      '<div class="qimen-shen">' + (c.shen || "") + "</div>" +
+      '<div class="qimen-cell-center">' +
+      '<div class="qimen-circle-zone">' +
+      '<div class="qimen-men-circle" style="background:' + menColor + '">' + (c.men || "") + "</div>" +
+      "</div>" +
+      '<div class="qimen-bottom-info">' +
+      (c.jiXing ? '<div class="qimen-jixing">六儀擊刑</div>' : "") +
+      '<div class="qimen-dayun">' + (c.dayunLabel || "") + "</div>" +
+      "</div>" +
+      "</div>" +
+      '<div class="qimen-cell-bottom ' + guaWx + '">' + c.gua + "</div>" +
+      '<div class="qimen-corner-words">' + cornerWordsHtml + "</div>" +
+      (cornerWordsLeftHtml ? '<div class="qimen-corner-words-left">' + cornerWordsLeftHtml + "</div>" : "") +
+      "</div>";
+  });
+
+  let compassHtml = "";
+  // 十二地支羅盤的連續橘色外框：先鋪一層跨滿整個地支帶（含中間九宮格區域）的金色底＋橘框，
+  // 之後畫的九宮格會蓋住中間，只留下地支帶那一圈是連續的，不會在地支跟地支中間露出空隙
+  compassHtml += '<div class="qc-zhi-frame" style="grid-row:2/7;grid-column:2/7"></div>';
+  const QC_CORNER_GONGS = [2, 4, 6, 8];
+  QIMEN_DIR_LAYOUT.forEach(({ g, row, col }) => {
+    const dir = GONG_INFO[g].dir;
+    if (QC_CORNER_GONGS.includes(g)) {
+      // 四隅方（東南／西南／西北／東北）：直式文字，宮位數字放下方
+      compassHtml += '<div class="qc-dir qc-dir-corner" style="grid-row:' + row + ";grid-column:" + col + '">' +
+        '<span class="qc-dir-text">' + dir + '</span><span class="qc-dir-num">' + g + "</span></div>";
+    } else {
+      // 四正方（東／西／南／北）：拿掉「正」字
+      compassHtml += '<div class="qc-dir" style="grid-row:' + row + ";grid-column:" + col + '">' + dir.replace("正", "") + g + "</div>";
+    }
+  });
+  QIMEN_ZHI_LAYOUT.forEach(({ zhi, row, col, vertical }) => {
+    let badges = "";
+    if (data.kongWang.includes(zhi)) badges += '<span class="qc-badge qc-badge-kong">空</span>';
+    if (data.yiMa === zhi) badges += '<span class="qc-badge qc-badge-yima">馬</span>';
+    compassHtml += '<div class="qc-zhi-ring" style="grid-row:' + row + ";grid-column:" + col + '">' +
+      '<span class="qc-zhi-item"><span' + (vertical ? ' class="qc-zhi-v"' : "") + ">" + zhi + "</span>" + badges + "</span></div>";
+  });
+  compassHtml += '<div class="qimen-grid" id="qimenGrid">' + gridHtml + "</div>";
+  document.getElementById("qimenCompass").innerHTML = compassHtml;
+}
+
+document.getElementById("exportQimenPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries9419 奇門遁甲命盤報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+
+    const qimenSections = Array.from(document.querySelectorAll("#qimenCard > *:not(.card-head)"));
+    await addSectionsToPdf(pdf, qimenSections, margin, pageWidth, pageHeight, 26);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
+
+    const filename = (currentQimen ? currentQimen.name : "奇門遁甲") + "-奇門遁甲命盤報告.pdf";
+    pdf.save(filename);
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
 
 document.getElementById("exportLifenumPdfBtn").addEventListener("click", async function () {
   const btn = this;

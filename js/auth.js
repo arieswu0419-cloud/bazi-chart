@@ -30,8 +30,11 @@ async function handleSignup(e) {
       name: name,
       email: email,
       status: "pending",
-      // 三個報告權限預設全部關閉，審核通過後要由系統維護帳號登入後台手動開啟
-      permissions: { bazi: false, renge: false, lifenum: false },
+      // 九個功能權限預設全部關閉，審核通過後要由系統維護帳號登入後台手動開啟
+      permissions: {
+        bazi: false, renge: false, lifenum: false, qimen: false,
+        qimenDunjia: false, guanyin: false, jigong: false, fengshui: false, mingpian: false
+      },
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     await auth.signOut();
