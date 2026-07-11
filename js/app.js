@@ -1600,9 +1600,10 @@ document.getElementById("mingpianAnalyzeBtn").addEventListener("click", function
   mpState.imgH = img.naturalHeight;
   mpDrawResultCanvas();
   mpRecomputeTotal();
-  statusEl.innerHTML = "分析完成，請對照右側九宮格數字，自行判斷姓名／公司名落在哪個宮位並填入分數。<br>" +
+  statusEl.innerHTML = "分析完成，請對照右側九宮格數字，自行判斷公司名／姓名落在哪個宮位並填入分數。<br>" +
     "1.公司名不可被紅色字水平或垂直切半，亦不可被藍色線條切到，自行累加跨宮位紅字總分<br>" +
-    "2.姓名不可被紅色字水平或垂直切半，亦不可被藍色線條切到，自行累加跨宮位紅字總分";
+    "2.姓名不可被紅色字水平或垂直切半，亦不可被藍色線條切到，自行累加跨宮位紅字總分<br>" +
+    "3.名片底色以佔全部面積超過50%顏色為主。";
 });
 
 document.getElementById("exportMingpianPdfBtn").addEventListener("click", async function () {
