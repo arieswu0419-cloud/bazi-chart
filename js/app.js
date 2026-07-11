@@ -72,13 +72,17 @@ requireApprovedUser(function (user, data) {
     setActiveTab(perms.renge ? "renge" : (perms.lifenum ? "lifenum" : "qimen"));
   }
 
-  // 上方綠色區塊的五個新功能導覽按鍵：有權限就顯示「開發中」提示，沒有權限就提示未開放
+  // 上方綠色區塊的新功能導覽按鍵：名片風水已經開發完成，直接切換到該畫面；其餘還在開發中的功能維持提示
   const navPermKeys = { qimenDunjia: "奇門遁甲", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "陽宅風水", mingpian: "名片風水" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
       if (!perms[key]) {
         showToast("此功能您未發放權限", "error");
+        return;
+      }
+      if (key === "mingpian") {
+        showMingpianView();
         return;
       }
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
@@ -1308,6 +1312,290 @@ document.getElementById("exportLifenumPdfBtn").addEventListener("click", async f
     addPageNumbers(pdf, pageWidth, pageHeight);
 
     const filename = (currentLifenum ? currentLifenum.name : "生命靈數") + "-生命靈數報告.pdf";
+    pdf.save(filename);
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+// ================= 名片風水 =================
+// 姓名的分數由「使用者從 OCR 候選文字挑出哪一段是姓名」決定位置，姓名文字本身是使用者手動輸入（單純記錄用）；
+// 公司名文字與分數則都直接取自使用者挑選的 OCR 候選段落。名片底色分數預設用整張圖片像素分析結果，
+// 使用者仍可手動覆蓋分數欄位（生肖分數則完全鎖定不可調整，因為是固定對照表查出來的）。
+const mpState = { candidates: [], imgW: 0, imgH: 0, nameCells: null, companyCells: null };
+
+function showMingpianView() {
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("mingpianView").style.display = "";
+}
+function hideMingpianView() {
+  document.getElementById("mingpianView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+}
+document.getElementById("mingpianBackBtn").addEventListener("click", hideMingpianView);
+
+(function initMingpianSelects() {
+  const zodiacSel = document.getElementById("mp-zodiac");
+  zodiacSel.innerHTML = MP_ZODIAC_ORDER.map((z) => '<option value="' + z + '">' + z + "</option>").join("");
+  zodiacSel.value = "鼠";
+  document.getElementById("mp-zodiac-score").value = MP_ZODIAC_SCORE["鼠"];
+  zodiacSel.addEventListener("change", function () {
+    document.getElementById("mp-zodiac-score").value = MP_ZODIAC_SCORE[this.value];
+    mpRecomputeTotal();
+  });
+
+  const colorSel = document.getElementById("mp-color");
+  colorSel.innerHTML = MP_COLOR_LIST.map((c) => '<option value="' + c.name + '">' + c.name + "</option>").join("") +
+    '<option value="彩色">彩色</option>';
+  colorSel.value = "白";
+  document.getElementById("mp-color-score").value = MP_COLOR_SCORE["白"];
+  colorSel.addEventListener("change", function () {
+    document.getElementById("mp-color-score").value = MP_COLOR_SCORE[this.value];
+    mpRecomputeTotal();
+  });
+  document.getElementById("mp-color-score").addEventListener("input", mpRecomputeTotal);
+})();
+
+function mpRecomputeTotal() {
+  const n = Number(document.getElementById("mp-name-score").value) || 0;
+  const z = Number(document.getElementById("mp-zodiac-score").value) || 0;
+  const c = Number(document.getElementById("mp-color-score").value) || 0;
+  const co = Number(document.getElementById("mp-company-score").value) || 0;
+  const total = n + z + c + co;
+  document.getElementById("mp-total-score").textContent = total;
+  document.getElementById("mp-total-fortune").textContent = mpFortuneText(total);
+}
+
+// 上傳圖片：預覽並清空上一次分析的結果，避免使用者誤以為新圖片沿用舊分數
+document.getElementById("mingpianFileInput").addEventListener("change", function () {
+  const file = this.files && this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const img = document.getElementById("mingpianPreviewImg");
+    img.src = e.target.result;
+    img.style.display = "";
+    document.getElementById("mingpianUploadHint").style.display = "none";
+
+    document.getElementById("mingpianCandidateRow").style.display = "none";
+    document.getElementById("mingpianAnalyzeStatus").textContent = "";
+    document.getElementById("mingpianResultCanvas").style.display = "none";
+    document.getElementById("mingpianResultHint").style.display = "";
+    document.getElementById("mp-name-score").value = 0;
+    document.getElementById("mp-company").value = "";
+    document.getElementById("mp-company-score").value = 0;
+    document.getElementById("mp-name-warn").style.display = "none";
+    document.getElementById("mp-company-warn").style.display = "none";
+    mpState.candidates = [];
+    mpState.nameCells = null;
+    mpState.companyCells = null;
+    mpRecomputeTotal();
+  };
+  reader.readAsDataURL(file);
+});
+
+// 名片底色：把圖片縮小取樣成 60x60，每個像素找最接近的顏色分類，佔比 50% 以上才採用，否則歸類「彩色」
+function mpAnalyzeColor(img) {
+  const sampleSize = 60;
+  const tmp = document.createElement("canvas");
+  tmp.width = sampleSize;
+  tmp.height = sampleSize;
+  const ctx = tmp.getContext("2d");
+  ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+  const data = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+  const counts = {};
+  for (let i = 0; i < data.length; i += 4) {
+    const name = mpNearestColorName(data[i], data[i + 1], data[i + 2]);
+    counts[name] = (counts[name] || 0) + 1;
+  }
+  const total = sampleSize * sampleSize;
+  let best = null;
+  let bestCount = 0;
+  Object.keys(counts).forEach((name) => {
+    if (counts[name] > bestCount) { bestCount = counts[name]; best = name; }
+  });
+  return best && bestCount / total >= 0.5 ? best : "彩色";
+}
+
+// 用 Tesseract.js 做瀏覽器端 OCR；只有點「風水分析」才會載入，避免拖慢一般使用者的頁面首次載入速度
+function mpLoadTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("文字辨識套件載入失敗，請檢查網路連線"));
+    document.head.appendChild(s);
+  });
+}
+
+function mpBuildCandidates(ocrLines) {
+  return ocrLines
+    .map((l) => ({ text: (l.text || "").trim(), box: l.bbox }))
+    .filter((c) => c.text.length >= 1 && c.text.length <= 30 && c.box);
+}
+// 姓名候選猜測：優先挑 2~5 字的候選段落（一般姓名長度），猜錯的話使用者可在下拉選單重新指定
+function mpGuessName(candidates) {
+  return candidates.find((c) => c.text.length >= 2 && c.text.length <= 5) || candidates[0] || null;
+}
+// 公司名候選猜測：在剩下的候選中，挑面積（近似字級大小 x 字數）最大的一段
+function mpGuessCompany(candidates, nameCand) {
+  const pool = candidates.filter((c) => c !== nameCand && c.text.length >= 2 && c.text.length <= 20);
+  if (!pool.length) return null;
+  return pool.reduce((best, c) => {
+    const area = (c.box.x1 - c.box.x0) * (c.box.y1 - c.box.y0);
+    const bestArea = best ? (best.box.x1 - best.box.x0) * (best.box.y1 - best.box.y0) : -1;
+    return area > bestArea ? c : best;
+  }, null);
+}
+function mpFillCandidateSelect(id, candidates, guess) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = candidates.map((c, i) => '<option value="' + i + '">' + c.text + "</option>").join("");
+  if (guess) {
+    const idx = candidates.indexOf(guess);
+    if (idx >= 0) sel.value = String(idx);
+  }
+}
+
+function mpApplyCandidate(kind) {
+  const selId = kind === "name" ? "mp-name-candidate" : "mp-company-candidate";
+  const scoreId = kind === "name" ? "mp-name-score" : "mp-company-score";
+  const warnId = kind === "name" ? "mp-name-warn" : "mp-company-warn";
+  const sel = document.getElementById(selId);
+  const cand = mpState.candidates[Number(sel.value)];
+  if (!cand) return;
+  const result = mpGridCellsForBox(cand.box, mpState.imgW, mpState.imgH);
+  document.getElementById(scoreId).value = result.score;
+  document.getElementById(warnId).style.display = result.crossed ? "" : "none";
+  if (kind === "name") {
+    mpState.nameCells = result.cells;
+  } else {
+    mpState.companyCells = result.cells;
+    document.getElementById("mp-company").value = cand.text;
+  }
+  mpDrawResultCanvas();
+  mpRecomputeTotal();
+}
+document.getElementById("mp-name-candidate").addEventListener("change", () => mpApplyCandidate("name"));
+document.getElementById("mp-company-candidate").addEventListener("change", () => mpApplyCandidate("company"));
+
+// 右側結果圖：畫出原圖 + 三等分九宮格線＋兩條對角線（比照使用者提供的九宮格參考圖），
+// 姓名命中的宮位用藍色半透明疊色、公司名命中的宮位用綠色半透明疊色
+function mpDrawResultCanvas() {
+  const canvas = document.getElementById("mingpianResultCanvas");
+  const img = document.getElementById("mingpianPreviewImg");
+  if (!img.src || !mpState.imgW) return;
+  const w = mpState.imgW;
+  const h = mpState.imgH;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const cellW = w / 3;
+  const cellH = h / 3;
+  function highlightCells(cells, color) {
+    if (!cells) return;
+    ctx.fillStyle = color;
+    cells.forEach((c) => ctx.fillRect(c.col * cellW, c.row * cellH, cellW, cellH));
+  }
+  highlightCells(mpState.nameCells, "rgba(0,90,181,0.35)");
+  highlightCells(mpState.companyCells, "rgba(20,150,80,0.35)");
+
+  ctx.strokeStyle = "rgba(234,0,0,0.85)";
+  ctx.lineWidth = Math.max(2, w * 0.004);
+  ctx.beginPath();
+  ctx.moveTo(cellW, 0); ctx.lineTo(cellW, h);
+  ctx.moveTo(cellW * 2, 0); ctx.lineTo(cellW * 2, h);
+  ctx.moveTo(0, cellH); ctx.lineTo(w, cellH);
+  ctx.moveTo(0, cellH * 2); ctx.lineTo(w, cellH * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(0,75,151,0.5)";
+  ctx.lineWidth = Math.max(1, w * 0.002);
+  ctx.beginPath();
+  ctx.moveTo(0, 0); ctx.lineTo(w, h);
+  ctx.moveTo(w, 0); ctx.lineTo(0, h);
+  ctx.stroke();
+
+  canvas.style.display = "";
+  document.getElementById("mingpianResultHint").style.display = "none";
+}
+
+document.getElementById("mingpianAnalyzeBtn").addEventListener("click", async function () {
+  const img = document.getElementById("mingpianPreviewImg");
+  const statusEl = document.getElementById("mingpianAnalyzeStatus");
+  if (!img.src || img.style.display === "none") {
+    showToast("請先上傳名片圖片", "error");
+    return;
+  }
+  const btn = this;
+  btn.disabled = true;
+  try {
+    statusEl.textContent = "正在分析名片底色...";
+    const colorName = mpAnalyzeColor(img);
+    document.getElementById("mp-color").value = colorName;
+    document.getElementById("mp-color-score").value = MP_COLOR_SCORE[colorName];
+
+    statusEl.textContent = "正在載入文字辨識模型（第一次使用需下載，請稍候）...";
+    await mpLoadTesseract();
+
+    statusEl.textContent = "正在辨識名片文字...";
+    mpState.imgW = img.naturalWidth;
+    mpState.imgH = img.naturalHeight;
+    const { data } = await Tesseract.recognize(img, "chi_tra+eng");
+    const rawLines = data.lines && data.lines.length ? data.lines : (data.words || []);
+    const candidates = mpBuildCandidates(rawLines);
+
+    if (!candidates.length) {
+      statusEl.textContent = "辨識不到文字，請確認圖片清晰、光線充足，或改用較高解析度重新拍攝。";
+    } else {
+      mpState.candidates = candidates;
+      const nameGuess = mpGuessName(candidates);
+      const companyGuess = mpGuessCompany(candidates, nameGuess);
+      mpFillCandidateSelect("mp-name-candidate", candidates, nameGuess);
+      mpFillCandidateSelect("mp-company-candidate", candidates, companyGuess);
+      document.getElementById("mingpianCandidateRow").style.display = "";
+      mpApplyCandidate("name");
+      mpApplyCandidate("company");
+      statusEl.textContent = "分析完成。系統自動辨識文字位置僅供參考，如姓名／公司名判斷不正確，請於上方下拉選單重新選擇。";
+    }
+    mpRecomputeTotal();
+  } catch (err) {
+    statusEl.textContent = "";
+    showToast("分析失敗：" + err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("exportMingpianPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 名片風水報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+
+    const sections = Array.from(document.querySelectorAll("#mingpianCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
+
+    const filename = (document.getElementById("mp-name").value || "名片風水") + "-名片風水報告.pdf";
     pdf.save(filename);
   } catch (err) {
     alert("匯出失敗：" + err.message);

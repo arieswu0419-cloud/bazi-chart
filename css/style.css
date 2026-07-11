@@ -1023,3 +1023,41 @@ footer {
 /* 中宮：跟其它宮位同一套版面，中間圓圈用深灰底白字取代門的顏色圓圈 */
 .qimen-center-circle { background: #6B6B6B; }
 .admin-status-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* 名片風水頁面 */
+.mingpian-card .card-head { justify-content: space-between; }
+.mingpian-images { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
+.mingpian-image-box { flex: 1 1 260px; min-width: 220px; }
+.mingpian-image-label { font-weight: 700; margin-bottom: 6px; color: var(--text-primary); }
+.mingpian-image-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 5.5;
+  background: #f2f2f2;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.mingpian-image-frame img, .mingpian-image-frame canvas { max-width: 100%; max-height: 100%; object-fit: contain; }
+.mingpian-image-hint { color: var(--text-muted); font-size: 13px; text-align: center; padding: 0 12px; }
+#mingpianFileInput { margin-top: 8px; width: 100%; }
+#mingpianAnalyzeBtn { margin-top: 4px; }
+.mingpian-analyze-status { font-size: 13px; color: var(--text-secondary); min-height: 18px; margin: 6px 0 0; }
+.mingpian-candidate-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0; }
+.mingpian-candidate-row .field { flex: 1 1 240px; margin-bottom: 0; }
+.mingpian-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 18px; }
+.mingpian-score-row { display: flex; align-items: center; gap: 8px; }
+.mingpian-score-row input[type="text"] { flex: 1; }
+.mingpian-score-tag { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+.mingpian-score-row input[type="number"] { width: 64px; flex: none; text-align: center; }
+.mingpian-score-row input[readonly] { background: #f2f2f2; color: var(--text-secondary); }
+.mingpian-line-warn { color: #EA0000; font-weight: 700; margin-top: 4px; }
+.mingpian-total-box { margin-top: 20px; padding: 14px; background: var(--page-bg); border-radius: var(--radius); text-align: center; }
+.mingpian-total-score { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.mingpian-total-fortune { font-size: 28px; font-weight: 800; color: var(--gold-darker); margin-top: 4px; }
+@media (max-width: 560px) {
+  .mingpian-form-grid { grid-template-columns: 1fr; }
+}
