@@ -430,15 +430,17 @@ function buildShenPan(targetGong, isYang) {
 }
 
 // 十年大運：起運宮（1-10 那一格）＝「年支」在外圈地支羅盤上固定對應的宮位，方向依「年干陰陽＋性別」決定
-// （陽男或陰女＝順飛、陰男或陽女＝逆飛，沿用九星八門旋轉用的「空間實際順時針」路徑），從年支落宮開始
-// 依序填入 1-10、11-20...71-80 八個十年區間。用 2026-07-10 01:30（年柱丙午，年支午→離九宮）這筆使用者
-// 提供的正確結果逐宮核對過：8 個宮位完全吻合。原本誤用「日干命宮＋1」當起點，已改正。
+// 方向目前用「男＝順飛、女＝逆飛」（性別本身決定，不看年干陰陽），沿用九星八門旋轉用的「空間實際順時針」路徑，
+// 從年支落宮開始依序填入 1-10、11-20...71-80 八個十年區間。
+// 用兩筆使用者提供的男性正確結果核對過：2026-07-10 01:30（年柱丙午，陽干）跟 2026-01-11 18:31（年柱乙巳，陰干）
+// 都要用「順飛」才對得上，原本「陽男或陰女＝順飛、陰男或陽女＝逆飛」的年干陰陽判斷規則在第二筆（陰干＋男）
+// 這裡對不上（算出離九宮71-80，正確應該是11-20），改成純粹看性別後兩筆都正確。
+// 目前手上兩筆驗證資料都是男性，「女＝逆飛」這半只是沿用最初的說法、還沒有實際女性資料驗證過，如果之後
+// 發現女性應該也是順飛（也就是這套系統其實不分性別一律順飛），請再提供一筆女性資料校正。
 const AGE_DECADE_LABELS = ["1-10", "11-20", "21-30", "31-40", "41-50", "51-60", "61-70", "71-80"];
 const ZHI_TO_GONG_QM = { 子: 1, 丑: 8, 寅: 8, 卯: 3, 辰: 4, 巳: 4, 午: 9, 未: 2, 申: 2, 酉: 7, 戌: 6, 亥: 6 };
 function buildDayun(yearGan, yearZhi, gender) {
-  const yearGanIdx = GAN_ORDER_QM.indexOf(yearGan);
-  const yearGanYang = yearGanIdx % 2 === 0; // 甲丙戊庚壬（偶數索引）為陽干，乙丁己辛癸為陰干
-  const shunFei = (yearGanYang && gender === "male") || (!yearGanYang && gender === "female");
+  const shunFei = gender === "male";
   const order = shunFei ? SPATIAL_CW_ORDER : SPATIAL_CW_ORDER.slice().reverse();
   const startGong = ZHI_TO_GONG_QM[yearZhi];
   const startIdx = order.indexOf(startGong);
@@ -453,28 +455,24 @@ function buildDayun(yearGan, yearZhi, gender) {
 // 1/3. 九星伏吟／反吟：看天盤九星的旋轉量（buildTianPan 算出來的 delta，跟排地盤用的空間順時針順序一致）
 //      delta=0（值符星沒動）＝伏吟；delta=4（轉了半圈、飛到正對面宮位）＝反吟
 // 2/4. 八門伏吟／反吟：同一套邏輯，改看人盤八門的旋轉量（buildRenPan 算出來的 delta）
-// 5. 天干伏吟：任一宮位天盤干＝地盤干（星盤不轉動時，天干必然也跟著疊在原位，所以本質上跟九星伏吟同一個
-//    觸發時機，這裡另外逐宮驗證一次，跟古籍慣用的「戊加戊」講法對應）
-// 6. 天干反吟：任一宮位出現戊辛、己壬、庚癸其中一組天盤地盤干疊合（相沖對應組合）。
-//    丁丁／丙丙／乙乙（三奇同干疊合）不算：用 2026-11-10 04:30 這筆全盤伏吟的資料驗證出來——
-//    這張盤 delta=0，8 個宮位天盤干＝地盤干（含丙加丙），是全盤天干伏吟，不應該同時被判定成反吟；
-//    加上使用者原文自己也註明三奇同干疊合「依派別而定」不是定論，所以只保留三組確定的天干相沖組合
-const FANYIN_GAN_PAIRS = [["戊", "辛"], ["己", "壬"], ["庚", "癸"]];
+// 5/6. 天干伏吟／反吟：天盤干是用跟九星「同一個 delta」轉動的（buildTianPan 裡星跟干一起位移），
+//    所以天干伏吟／反吟本質上跟九星伏吟／反吟是同一個觸發時機，直接共用 xingDelta 判斷，不用逐宮比對。
+//    這裡本來逐宮掃「戊加辛／己加壬／庚加癸」等特定組合，但用兩筆使用者資料交叉驗證後發現：
+//    2026-11-10 04:30（xingDelta=0，全盤伏吟）不該有反吟，2026-02-11 18:31（xingDelta=4，
+//    確認九星反吟成立）反吟裡也要有天干反吟──兩筆資料都指向「天干反吟＝xingDelta===4」這個更簡單、
+//    更一致的判斷方式，逐宮掃描的舊寫法反而漏判了第二筆資料，所以拿掉了。
 const TIANFU_SHI_MAP = { 甲: "甲戌", 己: "甲戌", 乙: "甲申", 庚: "甲申", 丙: "甲午", 辛: "甲午", 丁: "甲辰", 壬: "甲辰", 戊: "甲寅", 癸: "甲寅" };
 const YUNU_SHI_MAP = { 甲: "丙寅", 己: "丙寅", 乙: "辛巳", 庚: "辛巳", 丙: "戊申", 辛: "戊申", 丁: "己亥", 壬: "己亥", 戊: "壬寅", 癸: "壬寅" };
 const WUBUYU_SHI_MAP = { 甲: ["庚午"], 乙: ["辛巳"], 丙: ["壬辰"], 丁: ["癸卯"], 戊: ["甲寅"], 己: ["乙丑"], 庚: ["丙子", "丙戌"], 辛: ["丁酉"], 壬: ["戊申"], 癸: ["己未"] };
 
-function detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan, timeGan, timeZhi }) {
+function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi }) {
   const labels = [];
   if (xingDelta === 0) labels.push("九星伏吟");
   if (menDelta === 0) labels.push("八門伏吟");
   if (xingDelta === 4) labels.push("九星反吟");
   if (menDelta === 4) labels.push("八門反吟");
-  if ([1, 2, 3, 4, 6, 7, 8, 9].every((g) => gongs[g].tianGan === gongs[g].diGan)) labels.push("天干伏吟");
-  if ([1, 2, 3, 4, 6, 7, 8, 9].some((g) => {
-    const { tianGan, diGan } = gongs[g];
-    return FANYIN_GAN_PAIRS.some(([a, b]) => (tianGan === a && diGan === b) || (tianGan === b && diGan === a));
-  })) labels.push("天干反吟");
+  if (xingDelta === 0) labels.push("天干伏吟");
+  if (xingDelta === 4) labels.push("天干反吟");
 
   const timeGanZhi = timeGan + timeZhi;
   if (TIANFU_SHI_MAP[dayGan] === timeGanZhi) labels.push("天輔時");

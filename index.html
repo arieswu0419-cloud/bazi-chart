@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=63">
+<link rel="stylesheet" href="css/style.css?v=71">
 </head>
 <body>
 
@@ -55,19 +55,19 @@
         </div>
         <div class="form-date-row">
           <div class="field">
-            <label for="f-byear">出生年（國曆）</label>
+            <label for="f-byear">西元年</label>
             <select id="f-byear"></select>
           </div>
           <div class="field">
-            <label for="f-bmonth">出生月</label>
+            <label for="f-bmonth">月</label>
             <select id="f-bmonth"></select>
           </div>
           <div class="field">
-            <label for="f-bday">出生日</label>
+            <label for="f-bday">日</label>
             <select id="f-bday"></select>
           </div>
           <div class="field">
-            <label for="f-btime">出生時間（24小時）</label>
+            <label for="f-btime">時間</label>
             <input type="time" id="f-btime" required>
           </div>
         </div>
@@ -77,17 +77,17 @@
         <h2>人格解碼專用</h2>
         <div class="form-grid">
           <div class="field">
-            <label for="f-qyear">西元</label>
-            <select id="f-qyear"></select>
-          </div>
-          <div class="field">
             <div class="field-inline-pair">
               <div class="field-inline-item">
-                <label for="f-qmonth">月份</label>
+                <label for="f-qyear">西元年</label>
+                <select id="f-qyear"></select>
+              </div>
+              <div class="field-inline-item">
+                <label for="f-qmonth">月</label>
                 <select id="f-qmonth"></select>
               </div>
               <div class="field-inline-item">
-                <label for="f-qday">日期</label>
+                <label for="f-qday">日</label>
                 <select id="f-qday"></select>
               </div>
             </div>
@@ -258,15 +258,15 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=63"></script>
-<script src="js/auth.js?v=63"></script>
+<script src="js/firebase-config.js?v=71"></script>
+<script src="js/auth.js?v=71"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=63"></script>
-<script src="js/renge-engine.js?v=63"></script>
-<script src="js/lifenum-engine.js?v=63"></script>
-<script src="js/qimen-engine.js?v=63"></script>
+<script src="js/bazi-engine.js?v=71"></script>
+<script src="js/renge-engine.js?v=71"></script>
+<script src="js/lifenum-engine.js?v=71"></script>
+<script src="js/qimen-engine.js?v=71"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=63"></script>
+<script src="js/app.js?v=71"></script>
 </body>
 </html>

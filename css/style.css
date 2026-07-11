@@ -78,6 +78,7 @@ a { color: var(--gold-darker); }
 .main-nav {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
 }
 .main-nav-link {
@@ -262,6 +263,9 @@ main.app {
 .form-date-row { display: flex; gap: 10px; margin-top: 14px; }
 .form-date-row .field { flex: 1; min-width: 0; }
 .form-date-row .field select, .form-date-row .field input { width: 100%; padding-left: 8px; padding-right: 8px; }
+/* 四個欄位的標籤長度不一樣，窄螢幕有些會換成兩行（如「出生年（國曆）」「出生時間（24小時）」），
+   固定標籤的最小高度讓四個下拉/輸入框的上緣對齊，不會因為標籤行數不同而高低不一 */
+.form-date-row .field label { min-height: 34px; display: block; text-align: center; }
 /* 人格解碼專用的下拉欄位底部加一條深色色塊，跟個人資料區塊的欄位做出區別 */
 .form-block-dark select {
   border-bottom: 4px solid var(--gold-darker);
@@ -270,6 +274,7 @@ main.app {
 .field-inline-pair { display: flex; gap: 6px; }
 .field-inline-item { flex: 1; min-width: 0; }
 .field-inline-item select { width: 100%; }
+.field-inline-item label { text-align: center; }
 .form-actions {
   display: flex;
   gap: 10px;
@@ -814,7 +819,10 @@ footer {
 .admin-status-btn.pending { background: var(--fire-bg); color: var(--fire-text); }
 
 /* 奇門遁甲命盤報告：深藍外框＋橘色中層（比照參考畫面配色） */
-.qimen-card { background: #1F3B73; padding: 16px; border-radius: 12px; }
+.qimen-card { background: #005AB5; padding: 16px; border-radius: 12px; }
+/* 匯出 PDF 按鍵文字改白色，只在奇門卡片裡覆蓋（藍底卡片上金色字不明顯），
+   不動全站共用的 .btn.secondary，避免八字／人格解碼／生命靈數頁面的白底卡片上白字看不到 */
+.qimen-card .btn.secondary { color: #fff; border-color: #fff; }
 /* 四柱八字／個人資訊兩個表格：電腦／平板／匯出 PDF 都固定左右各佔 50%，手機（560px 以下）改上下排列 */
 .qimen-top { display: flex; gap: 12px; margin-bottom: 12px; align-items: stretch; }
 .qimen-pillars, .qimen-info { background: #fff; border-radius: 8px; padding: 10px; flex: 1 1 50%; min-width: 0; }
@@ -826,15 +834,21 @@ footer {
    標題列（時/日/月/年）金色底，比照參考畫面 */
 .qimen-pillars-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .qimen-pillars-table td { text-align: center; padding: 6px 4px; border: 1px solid var(--border); font-size: 11px; }
-.qimen-pillars-table .col-head { background: #D9A441; color: #1a1a1a; font-weight: 700; font-size: 13px; }
+.qimen-pillars-table .col-head { background: #EAC100; color: #1a1a1a; font-weight: 700; font-size: 13px; }
 .qimen-pillars-table .p-char { font-size: 20px; }
+/* 四柱天干地支五行配色，只在奇門卡片覆蓋（不動八字報告共用的 .wood/.fire/.earth/.metal/.water） */
+.qimen-pillars-table .p-char.wood { color: #548C00; }
+.qimen-pillars-table .p-char.fire { color: #EA0000; }
+.qimen-pillars-table .p-char.earth { color: #796400; }
+.qimen-pillars-table .p-char.metal { color: #EAC100; }
+.qimen-pillars-table .p-char.water { color: #004B97; }
 
 /* 右上資訊表格：陽曆／符首、農曆／天乙、時間／值符、格局／值使，兩兩並排一列；
    標籤格（陽曆／符首等）金色底，比照參考畫面 */
 .qimen-info-table { width: 100%; border-collapse: collapse; }
 .qimen-info-table td { padding: 6px 8px; font-size: 12px; color: var(--text-primary); border-bottom: 1px solid var(--border); white-space: nowrap; }
 .qimen-info-table tr:last-child td { border-bottom: none; }
-.qimen-info-table .qi-label { background: #D9A441; color: #1a1a1a; font-weight: 700; width: 1%; text-align: center; }
+.qimen-info-table .qi-label { background: #EAC100; color: #1a1a1a; font-weight: 700; width: 1%; text-align: center; }
 .qimen-info-table .qi-value { font-weight: 600; }
 
 /* 外層羅盤：7x7 格，最外一圈放方位＋宮位數字（深藍底、白字），第二圈放十二地支（金色底、深字），
@@ -844,6 +858,14 @@ footer {
   grid-template-columns: auto auto 1fr 1fr 1fr auto auto;
   grid-template-rows: auto auto 1fr 1fr 1fr auto auto;
   gap: 2px;
+}
+/* 響應式縮放：手機縮小、平板／電腦放大。用 zoom 整體縮放（不是逐一改字級），
+   九宮格內所有文字、圓圈、絕對定位的間距關係會完全維持原比例，不會因為放大縮小而互相重疊 */
+@media (max-width: 560px) {
+  .qimen-compass { zoom: 0.8; }
+}
+@media (min-width: 900px) {
+  .qimen-compass { zoom: 1.2; }
 }
 .qc-dir {
   display: flex; align-items: center; justify-content: center;
@@ -855,7 +877,7 @@ footer {
 .qc-dir-corner .qc-dir-num { font-size: 11px; }
 /* 地支羅盤連續外框：鋪滿整圈地支帶（中間會被九宮格蓋住），四周橘色框線一圈到底、不斷開 */
 .qc-zhi-frame {
-  background: #D9A441;
+  background: #EAC100;
   border: 3px solid #E8821C;
 }
 .qc-zhi-ring {
@@ -903,13 +925,13 @@ footer {
   font-size: 16px; font-weight: 700;
   letter-spacing: 1px;
 }
-/* 奇門頁面內金／火／木三色比全站共用的 --metal-mid/--fire-mid/--wood-mid 更亮，只在這個頁面覆蓋，
-   不動全域變數，避免影響八字／人格解碼／生命靈數頁面已經調過的配色 */
-.qimen-xing.wood { color: #3DA35D; }
-.qimen-xing.fire { color: #DC2626; }
-.qimen-xing.earth { color: var(--earth-mid); }
-.qimen-xing.metal { color: #E0A800; }
-.qimen-xing.water { color: var(--water-mid); }
+/* 奇門頁面的五行顏色用使用者指定色碼，只在這個頁面覆蓋，不動全域變數，
+   避免影響八字／人格解碼／生命靈數頁面已經調過的配色 */
+.qimen-xing.wood { color: #548C00; }
+.qimen-xing.fire { color: #EA0000; }
+.qimen-xing.earth { color: #796400; }
+.qimen-xing.metal { color: #EAC100; }
+.qimen-xing.water { color: #004B97; }
 
 /* 天盤干／地盤干：右上角，上下排列，依五行上色，只顯示字本身（不顯示陰陽符號），不加粗 */
 .qimen-gan-stack { position: absolute; top: 6px; right: 8px; display: flex; flex-direction: column; align-items: center; gap: 0; line-height: 1.15; }
@@ -965,14 +987,16 @@ footer {
 
 /* 八卦（宮位卦名）：固定放在左下角，依五行固定上色（巽震木、艮坤土、坎水、乾兌金、離火），字級加大兩號並加粗 */
 .qimen-cell-bottom { position: absolute; bottom: 6px; left: 8px; font-size: 18px; font-weight: 700; }
-.qimen-cell-bottom.wood { color: #3DA35D; }
-.qimen-cell-bottom.fire { color: #DC2626; }
-.qimen-cell-bottom.earth { color: var(--earth-mid); }
-.qimen-cell-bottom.metal { color: #E0A800; }
-.qimen-cell-bottom.water { color: var(--water-mid); }
-.qimen-gan-char.wood { color: #3DA35D; }
-.qimen-gan-char.fire { color: #DC2626; }
-.qimen-gan-char.metal { color: #E0A800; }
+.qimen-cell-bottom.wood { color: #548C00; }
+.qimen-cell-bottom.fire { color: #EA0000; }
+.qimen-cell-bottom.earth { color: #796400; }
+.qimen-cell-bottom.metal { color: #EAC100; }
+.qimen-cell-bottom.water { color: #004B97; }
+.qimen-gan-char.wood { color: #548C00; }
+.qimen-gan-char.fire { color: #EA0000; }
+.qimen-gan-char.earth { color: #796400; }
+.qimen-gan-char.metal { color: #EAC100; }
+.qimen-gan-char.water { color: #004B97; }
 
 /* 中宮：跟其它宮位同一套版面，中間圓圈用深灰底白字取代門的顏色圓圈 */
 .qimen-center-circle { background: #6B6B6B; }

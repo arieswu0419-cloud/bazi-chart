@@ -841,7 +841,7 @@ const QIMEN_GRID_LAYOUT = [
   { g: 8, row: 3, col: 1 }, { g: 1, row: 3, col: 2 }, { g: 6, row: 3, col: 3 }
 ];
 // 八門顏色沿用既有五行色票（休水、死土、傷木、杜木、開金、驚金、生土、景火）
-const QIMEN_MEN_COLOR = { 休: "#185FA5", 死: "#854F0B", 傷: "#3B6D11", 杜: "#3B6D11", 開: "#B8860B", 驚: "#B8860B", 生: "#854F0B", 景: "#A32D2D" };
+const QIMEN_MEN_COLOR = { 休: "#004B97", 死: "#796400", 傷: "#548C00", 杜: "#548C00", 開: "#EAC100", 驚: "#EAC100", 生: "#796400", 景: "#EA0000" };
 // 九星五行（使用者指定）：天蓬水／天衝天輔木／天英火／天任天芮天禽土／天心天柱金
 const QIMEN_XING_WUXING_CLASS = {
   天蓬: "water", 天衝: "wood", 天輔: "wood", 天英: "fire",
