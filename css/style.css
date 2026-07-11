@@ -815,10 +815,12 @@ footer {
 
 /* 奇門遁甲命盤報告：深藍外框＋橘色中層（比照參考畫面配色） */
 .qimen-card { background: #1F3B73; padding: 16px; border-radius: 12px; }
-.qimen-top { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; align-items: stretch; }
-.qimen-pillars, .qimen-info { background: #fff; border-radius: 8px; padding: 10px; }
-.qimen-pillars { flex: 0 1 340px; }
-.qimen-info { flex: 1 1 320px; }
+/* 四柱八字／個人資訊兩個表格：電腦／平板／匯出 PDF 都固定左右各佔 50%，手機（560px 以下）改上下排列 */
+.qimen-top { display: flex; gap: 12px; margin-bottom: 12px; align-items: stretch; }
+.qimen-pillars, .qimen-info { background: #fff; border-radius: 8px; padding: 10px; flex: 1 1 50%; min-width: 0; }
+@media (max-width: 560px) {
+  .qimen-top { flex-direction: column; }
+}
 
 /* 上方四柱：獨立表格樣式，不吃到 .pillars-table 的 min-width:480px，避免在較窄的容器裡跑位；
    標題列（時/日/月/年）金色底，比照參考畫面 */
@@ -863,6 +865,8 @@ footer {
 .qc-zhi-item { display: inline-flex; align-items: center; gap: 2px; }
 /* 左右兩側（垂直邊）的地支用直式文字，上下兩側（水平邊）維持橫式，badge 圓圈本身不跟著轉向 */
 .qc-zhi-v { writing-mode: vertical-rl; }
+/* 左右兩側欄位很窄（辰卯寅／申酉戌），空亡／驛馬圓圈換行放在地支下方，不放右邊，避免被欄寬擠出去 */
+.qc-zhi-item-stack { flex-direction: column; gap: 2px; }
 /* 空亡／驛馬：地支文字維持原本黑色，另外用小圓圈標記（黑底「空」／金底「馬」），疊在地支旁邊 */
 .qc-badge {
   width: 14px; height: 14px; border-radius: 50%;

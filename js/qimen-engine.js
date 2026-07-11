@@ -355,7 +355,11 @@ function findGongOfStar(tianPanXing, starName) {
 }
 
 // 值符星落宮：找「時干」在地盤上的位置（符首常遺加時幹），中宮寄坤二宮
-function findXingTargetGong(diPan, timeGan) {
+function findXingTargetGong(diPan, timeGan, fuShouGong) {
+  // 時干是「甲」時：甲遁藏於六儀，本身不會出現在地盤上（地盤只有戊己庚辛壬癸丁丙乙九個天干），
+  // findGongOfStem 會找不到、回傳 null；這種時辰本身就是符首所在的那個時辰（甲子／甲寅…都是六甲旬首本時），
+  // 值符星依規則就是留在符首宮不動，直接回傳 fuShouGong，不能讓 null 流到後面的旋轉計算裡
+  if (timeGan === "甲") return fuShouGong;
   let g = findGongOfStem(diPan, timeGan);
   if (g === 5) g = 2;
   return g;
@@ -445,6 +449,41 @@ function buildDayun(yearGan, yearZhi, gender) {
   return { startGong, shunFei, decadeByGong };
 }
 
+// 右上角資訊表格「格局」欄位：十種特殊格局判斷，符合的用逗號分開列出，都不符合顯示「無」
+// 1/3. 九星伏吟／反吟：看天盤九星的旋轉量（buildTianPan 算出來的 delta，跟排地盤用的空間順時針順序一致）
+//      delta=0（值符星沒動）＝伏吟；delta=4（轉了半圈、飛到正對面宮位）＝反吟
+// 2/4. 八門伏吟／反吟：同一套邏輯，改看人盤八門的旋轉量（buildRenPan 算出來的 delta）
+// 5. 天干伏吟：任一宮位天盤干＝地盤干（星盤不轉動時，天干必然也跟著疊在原位，所以本質上跟九星伏吟同一個
+//    觸發時機，這裡另外逐宮驗證一次，跟古籍慣用的「戊加戊」講法對應）
+// 6. 天干反吟：任一宮位出現戊辛、己壬、庚癸其中一組天盤地盤干疊合（相沖對應組合）。
+//    丁丁／丙丙／乙乙（三奇同干疊合）不算：用 2026-11-10 04:30 這筆全盤伏吟的資料驗證出來——
+//    這張盤 delta=0，8 個宮位天盤干＝地盤干（含丙加丙），是全盤天干伏吟，不應該同時被判定成反吟；
+//    加上使用者原文自己也註明三奇同干疊合「依派別而定」不是定論，所以只保留三組確定的天干相沖組合
+const FANYIN_GAN_PAIRS = [["戊", "辛"], ["己", "壬"], ["庚", "癸"]];
+const TIANFU_SHI_MAP = { 甲: "甲戌", 己: "甲戌", 乙: "甲申", 庚: "甲申", 丙: "甲午", 辛: "甲午", 丁: "甲辰", 壬: "甲辰", 戊: "甲寅", 癸: "甲寅" };
+const YUNU_SHI_MAP = { 甲: "丙寅", 己: "丙寅", 乙: "辛巳", 庚: "辛巳", 丙: "戊申", 辛: "戊申", 丁: "己亥", 壬: "己亥", 戊: "壬寅", 癸: "壬寅" };
+const WUBUYU_SHI_MAP = { 甲: ["庚午"], 乙: ["辛巳"], 丙: ["壬辰"], 丁: ["癸卯"], 戊: ["甲寅"], 己: ["乙丑"], 庚: ["丙子", "丙戌"], 辛: ["丁酉"], 壬: ["戊申"], 癸: ["己未"] };
+
+function detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan, timeGan, timeZhi }) {
+  const labels = [];
+  if (xingDelta === 0) labels.push("九星伏吟");
+  if (menDelta === 0) labels.push("八門伏吟");
+  if (xingDelta === 4) labels.push("九星反吟");
+  if (menDelta === 4) labels.push("八門反吟");
+  if ([1, 2, 3, 4, 6, 7, 8, 9].every((g) => gongs[g].tianGan === gongs[g].diGan)) labels.push("天干伏吟");
+  if ([1, 2, 3, 4, 6, 7, 8, 9].some((g) => {
+    const { tianGan, diGan } = gongs[g];
+    return FANYIN_GAN_PAIRS.some(([a, b]) => (tianGan === a && diGan === b) || (tianGan === b && diGan === a));
+  })) labels.push("天干反吟");
+
+  const timeGanZhi = timeGan + timeZhi;
+  if (TIANFU_SHI_MAP[dayGan] === timeGanZhi) labels.push("天輔時");
+  if (YUNU_SHI_MAP[dayGan] === timeGanZhi) labels.push("玉女時");
+  if ((WUBUYU_SHI_MAP[dayGan] || []).includes(timeGanZhi)) labels.push("五不遇時");
+
+  return labels.length ? labels.join("，") : "無";
+}
+
 // ---- 主入口：目前只算到「局數／符首／值符（星）」，值符值使的方位與九宮飛盤還沒做 ----
 function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) {
   const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
@@ -486,7 +525,7 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   const fuShouXing = XING_BEN_WEI[fuShouGong];
 
   // 值符星落宮：時干在地盤上的位置；值使門落宮：符首宮沿洛書飛泊順序走「時辰在旬內順序數」步
-  const xingTargetGong = findXingTargetGong(diPan, timeGan);
+  const xingTargetGong = findXingTargetGong(diPan, timeGan, fuShouGong);
   const hourIndexInXun = xunShou.startIdx === undefined ? 0 : (() => {
     // 時柱在六十甲子中的序數，減去符首（旬首）的序數，就是「時辰在旬內的第幾個」
     const timeGanIdx = GAN_ORDER_QM.indexOf(timeGan);
@@ -499,8 +538,8 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   })();
   const menTargetGong = findMenTargetGong(fuShouGong, hourIndexInXun, juInfo.isYang);
 
-  const { tianPanXing, tianPanGan } = buildTianPan(diPan, fuShouGong, xingTargetGong, juInfo.isYang);
-  const { renPanMen } = buildRenPan(fuShouGong, menTargetGong, juInfo.isYang);
+  const { tianPanXing, tianPanGan, delta: xingDelta } = buildTianPan(diPan, fuShouGong, xingTargetGong, juInfo.isYang);
+  const { renPanMen, delta: menDelta } = buildRenPan(fuShouGong, menTargetGong, juInfo.isYang);
   const shenPan = buildShenPan(xingTargetGong, juInfo.isYang);
   const dayun = buildDayun(ec.getYearGan(), ec.getYearZhi(), gender);
 
@@ -515,7 +554,9 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   };
   const mingGong = findTianPanGong(ec.getDayGan());
   const xiongdiGong = findTianPanGong(ec.getMonthGan());
-  const ziNuGong = findTianPanGong(timeGan);
+  // 時干是「甲」時，findTianPanGong 會因為找不到「甲」而誤寄到天芮宮；甲遁藏於符首儀，本來就該直接算到
+  // 值符星目前所在的宮位（xingTargetGong，時干是甲時已經等於 fuShouGong），不能用同一套「找不到就寄天芮宮」邏輯
+  const ziNuGong = timeGan === "甲" ? xingTargetGong : findTianPanGong(timeGan);
   const yiMaGong = ZHI_TO_GONG_QM[yiMa];
   const tianYi = { gong: ziNuGong, dir: GONG_INFO[ziNuGong].dir };
 
@@ -541,12 +582,15 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
     };
   });
 
+  const patternText = detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan: ec.getDayGan(), timeGan, timeZhi });
+
   return {
     name,
     solarText: year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0") + " " + String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0"),
     lunarText: lunar.toString(),
     siZhu,
     juInfo,
+    patternText,
     xunShou,
     kongWang,
     yiMa,

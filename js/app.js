@@ -818,12 +818,11 @@ function buildQimenPillarsTable(siZhu) {
 
 // 右上資訊表格：陽曆／符首、農曆／天乙、時間／值符、格局／值使，兩兩並排（比照參考畫面排版）
 function buildQimenInfoTable(data) {
-  const juText = (data.juInfo.isYang ? "陽遁" : "陰遁") + data.juInfo.ju + "局";
   const rows = [
     ["陽曆", data.solarText, "符首", data.xunShou.xun],
     ["農曆", data.lunarText, "天乙", data.tianYi.dir],
     ["時間", data.solarText.split(" ")[1], "值符", data.fuShouXing],
-    ["格局", juText, "值使", GONG_INFO[data.menTargetGong].dir]
+    ["格局", data.patternText, "值使", GONG_INFO[data.menTargetGong].dir]
   ];
   let html = '<table class="qimen-info-table"><tbody>';
   html += '<tr><td class="qi-label">姓名</td><td class="qi-value" colspan="3">' + (data.name || "") + "</td></tr>";
@@ -957,8 +956,10 @@ function renderQimen(data) {
     let badges = "";
     if (data.kongWang.includes(zhi)) badges += '<span class="qc-badge qc-badge-kong">空</span>';
     if (data.yiMa === zhi) badges += '<span class="qc-badge qc-badge-yima">馬</span>';
+    // 左右兩側（col 2／6）欄位很窄，空亡／驛馬圓圈要換行放在地支下方，不能像上下兩側那樣放在右邊（會被擠出格子）
+    const isNarrowCol = col === 2 || col === 6;
     compassHtml += '<div class="qc-zhi-ring" style="grid-row:' + row + ";grid-column:" + col + '">' +
-      '<span class="qc-zhi-item"><span' + (vertical ? ' class="qc-zhi-v"' : "") + ">" + zhi + "</span>" + badges + "</span></div>";
+      '<span class="qc-zhi-item' + (isNarrowCol ? " qc-zhi-item-stack" : "") + '"><span' + (vertical ? ' class="qc-zhi-v"' : "") + ">" + zhi + "</span>" + badges + "</span></div>";
   });
   compassHtml += '<div class="qimen-grid" id="qimenGrid">' + gridHtml + "</div>";
   document.getElementById("qimenCompass").innerHTML = compassHtml;
