@@ -1026,7 +1026,7 @@ footer {
 
 /* 名片風水頁面 */
 .mingpian-card .card-head { justify-content: space-between; }
-h2.mingpian-title { background: #0A502D; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 0; }
+h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 0; }
 .mingpian-images { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
 .mingpian-image-box { flex: 1 1 260px; min-width: 220px; }
 .mingpian-image-label { font-weight: 700; margin-bottom: 6px; color: var(--text-primary); }
