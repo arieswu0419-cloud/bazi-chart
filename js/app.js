@@ -316,7 +316,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async function
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries9419 八字報告", 20, "#212529");
+    const title = textToImage("Aries 奇門遁甲命盤報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
     // 逐區塊（命盤資訊／四柱表格／天干地支合沖／五行十神）換頁，避免任何一個表格被硬切一半
@@ -590,7 +590,7 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries9419 人格解碼報告", 20, "#212529");
+    const title = textToImage("Aries 奇門遁甲命盤報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
     // 逐區塊（基本資訊／生日數天賦數主命數／人生階段能量／九宮連線密碼與能量圖）換頁，避免表格被硬切一半
@@ -821,7 +821,7 @@ function buildQimenInfoTable(data) {
   const juText = (data.juInfo.isYang ? "陽遁" : "陰遁") + data.juInfo.ju + "局";
   const rows = [
     ["陽曆", data.solarText, "符首", data.xunShou.xun],
-    ["農曆", data.lunarText, "天乙", data.tianYi.zhi + "（" + GONG_INFO[data.tianYi.gong].dir + "）"],
+    ["農曆", data.lunarText, "天乙", data.tianYi.dir],
     ["時間", data.solarText.split(" ")[1], "值符", data.fuShouXing],
     ["格局", juText, "值使", GONG_INFO[data.menTargetGong].dir]
   ];
@@ -978,7 +978,7 @@ document.getElementById("exportQimenPdfBtn").addEventListener("click", async fun
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries9419 奇門遁甲命盤報告", 20, "#212529");
+    const title = textToImage("Aries 奇門遁甲命盤報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
     const qimenSections = Array.from(document.querySelectorAll("#qimenCard > *:not(.card-head)"));
@@ -1010,7 +1010,7 @@ document.getElementById("exportLifenumPdfBtn").addEventListener("click", async f
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries9419 生命靈數報告", 20, "#212529");
+    const title = textToImage("Aries 奇門遁甲命盤報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
     // 生命靈數報告內容區塊很多（主表格／九宮格個性說明／連線密碼／各種解讀卡片），逐區塊換頁，

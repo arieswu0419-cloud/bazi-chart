@@ -239,23 +239,11 @@ const GEJU_81 = {
   癸癸: ["天網四張", "大凶格。謀事難成，靜觀其變。退一步海闊天空。"]
 };
 
-// 天乙貴人：日干查表（標準淵海子平陽貴／陰貴表），白天用陽貴、夜晚用陰貴（06:00-18:00 算白天，其餘算夜晚），
-// 查出來的地支再用外圈羅盤固定的地支落宮表（跟空亡／驛馬同一張表）換算成宮位。
-// 只有「日干查地支」這一段是確定的古法（用使用者提供的乙日夜貴＝子驗證過）；
-// 「地支落宮」這裡用固定羅盤位置（子→坎一宮），使用者原文最後說這張圖的答案應該是「震三宮」，
-// 但用命宮／符首／值符／值使等已驗證過的旋轉公式都推不出震三宮，找不到能同時兼顧「日干查表」和
-// 「震三宮」兩者的一致規則，所以先用最基本、最沒有爭議的固定羅盤位置，正確性還需要使用者再確認
-const TIANYI_MAP = {
-  甲: { yang: "未", yin: "丑" }, 乙: { yang: "申", yin: "子" }, 丙: { yang: "酉", yin: "亥" },
-  丁: { yang: "亥", yin: "酉" }, 戊: { yang: "丑", yin: "未" }, 己: { yang: "子", yin: "申" },
-  庚: { yang: "丑", yin: "未" }, 辛: { yang: "寅", yin: "午" }, 壬: { yang: "卯", yin: "巳" },
-  癸: { yang: "巳", yin: "卯" }
-};
-function getTianYi(dayGan, hour) {
-  const isDay = hour >= 6 && hour < 18;
-  const zhi = isDay ? TIANYI_MAP[dayGan].yang : TIANYI_MAP[dayGan].yin;
-  return { zhi, gong: ZHI_TO_GONG_QM[zhi], isDay };
-}
+// 天乙：即「天乙值符星」（值符也）目前飛臨的宮位——值符隨時干飛宮，找「時干」目前落在天盤的哪一宮
+// （不是固定地盤位置，天盤干是轉動過的）。跟子女是同一個算式（都是找時干落在天盤的宮位），直接共用
+// calculateQimenHeader 裡已經算好的 ziNuGong，不用另外重算。用 2026-07-11 15:30 丙申時這筆使用者提供
+// 的資料驗證：時干丙，天盤干顯示丙的宮位是坤二宮（圖上丙戊那格），坤二宮方位西南，跟使用者給的答案
+// 「天乙：西南」完全吻合。
 
 function getGeju81(tianGan, diGan) {
   const entry = GEJU_81[tianGan + diGan];
@@ -475,7 +463,6 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   // 兩種算法答案一樣），如果之後發現驛馬應該仍用時柱，請提供一筆能區分兩者的資料再校正。
   const kongWang = getKongWang(ec.getDayGan(), ec.getDayZhi());
   const yiMa = getYiMa(ec.getDayZhi());
-  const tianYi = getTianYi(ec.getDayGan(), hour);
 
   // 上方四柱表格：跟八字報告排盤方式一致，直接沿用 bazi-engine.js 的 ganPart／zhiPart（同一頁全域函式）
   const siZhu = [
@@ -530,6 +517,7 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   const xiongdiGong = findTianPanGong(ec.getMonthGan());
   const ziNuGong = findTianPanGong(timeGan);
   const yiMaGong = ZHI_TO_GONG_QM[yiMa];
+  const tianYi = { gong: ziNuGong, dir: GONG_INFO[ziNuGong].dir };
 
   const gongs = {};
   [1, 2, 3, 4, 6, 7, 8, 9].forEach((g) => {
