@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=71">
+<link rel="stylesheet" href="css/style.css?v=80">
 </head>
 <body>
 
@@ -40,12 +40,12 @@
     <form id="baziForm">
       <div class="form-block">
         <h2>個人資料，西元國曆出生年/月/日/時</h2>
-        <div class="form-grid">
-          <div class="field">
+        <div class="form-name-gender-row">
+          <div class="field form-name-field">
             <label for="f-name">姓名</label>
             <input type="text" id="f-name" placeholder="王小明" required>
           </div>
-          <div class="field">
+          <div class="field form-gender-field">
             <label for="f-gender">性別</label>
             <select id="f-gender">
               <option value="male">男</option>
@@ -69,28 +69,6 @@
           <div class="field">
             <label for="f-btime">時間</label>
             <input type="time" id="f-btime" required>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-block form-block-dark">
-        <h2>人格解碼專用</h2>
-        <div class="form-grid">
-          <div class="field">
-            <div class="field-inline-pair">
-              <div class="field-inline-item">
-                <label for="f-qyear">西元年</label>
-                <select id="f-qyear"></select>
-              </div>
-              <div class="field-inline-item">
-                <label for="f-qmonth">月</label>
-                <select id="f-qmonth"></select>
-              </div>
-              <div class="field-inline-item">
-                <label for="f-qday">日</label>
-                <select id="f-qday"></select>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -165,6 +143,23 @@
     <div class="card renge-card" id="rengeCard" style="display:none">
       <div class="card-head" style="justify-content:flex-end">
         <button class="btn secondary" id="exportRengePdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+
+      <div class="renge-choice-date" data-html2canvas-ignore="true">
+        <div class="field-inline-pair">
+          <div class="field-inline-item">
+            <label for="f-qyear">擇日西元年</label>
+            <select id="f-qyear"></select>
+          </div>
+          <div class="field-inline-item">
+            <label for="f-qmonth">月</label>
+            <select id="f-qmonth"></select>
+          </div>
+          <div class="field-inline-item">
+            <label for="f-qday">日</label>
+            <select id="f-qday"></select>
+          </div>
+        </div>
       </div>
 
       <div class="renge-info" id="rengeInfoPanel"></div>
@@ -246,6 +241,7 @@
       </div>
 
       <div class="qimen-compass" id="qimenCompass"></div>
+      <div class="qimen-explain" id="qimenExplain" style="display:none"></div>
     </div>
     </div>
     </div>
@@ -258,15 +254,15 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=71"></script>
-<script src="js/auth.js?v=71"></script>
+<script src="js/firebase-config.js?v=80"></script>
+<script src="js/auth.js?v=80"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=71"></script>
-<script src="js/renge-engine.js?v=71"></script>
-<script src="js/lifenum-engine.js?v=71"></script>
-<script src="js/qimen-engine.js?v=71"></script>
+<script src="js/bazi-engine.js?v=80"></script>
+<script src="js/renge-engine.js?v=80"></script>
+<script src="js/lifenum-engine.js?v=80"></script>
+<script src="js/qimen-engine.js?v=80"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=71"></script>
+<script src="js/app.js?v=80"></script>
 </body>
 </html>

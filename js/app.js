@@ -858,6 +858,274 @@ function qimenGanOnly(gan) {
   return '<span class="qimen-gan-char ' + p.cls + '">' + p.char + "</span>";
 }
 
+// 點選九宮格解說：八卦／八門／神盤／九星／天干（天盤干、地盤干共用同一組天干解說）意涵，
+// 內容整理自使用者提供的奇門遁甲先修班課程講義（先修班1/2/3.pdf），以白話改寫呈現
+const QIMEN_EXPLAIN = {
+  gua: {
+    乾: "五行屬金，象徵天、剛健與至高統御之力，代表領導、正統、開創與宏觀格局。",
+    坎: "五行屬水，象徵幽深內斂、生機潛藏，代表智慧、蓄勢待發與貴人暗助。",
+    艮: "五行屬土，象徵高山厚重、止靜承載，代表穩固累積、停頓沉澱與轉化樞紐。",
+    震: "五行屬木，象徵雷霆震動、破土而出，代表爆發力、競爭衝勁與威嚴氣勢。",
+    巽: "五行屬木，象徵風之無孔不入、順勢滲透，代表柔性謀略、教化與洞察滲透力。",
+    離: "五行屬火，象徵烈日光明、萬物彰顯，代表文明、名譽、熱情與外顯魅力。",
+    坤: "五行屬土，象徵大地厚德載物，代表包容承載、務實沉澱與終局歸藏。",
+    兌: "五行屬金，象徵澤水喜悅與毀折交鋒，代表言辭辯才、震盪衝擊與人心波動。"
+  },
+  // 八門改成「天賦性格／正面顯化／負面表徵」三維度表格，內容整理自先修班1.pdf 第六章「人盤八門」
+  // 逐門詳解（原文另有「核心特徵」一段，使用者只要求這三個維度，故不收錄）
+  men: {
+    開: {
+      trait: "坦蕩剛毅、宏觀統御、秩序規則——正義感強、光明磊落，具領袖氣場與宏觀視野，抗壓力強，重契約與紀律，習慣建立秩序依規而行。",
+      positive: "商業擴張、品牌打響、貴人扶持財祿亨通；命理主學識淵博、名望卓越，能成為團隊中流砥柱。",
+      negative: "遇門迫易剛愎自用、固步自封；凶局時易生官非訴訟、商業洩密，及頭部與心腦血管疾病。"
+    },
+    休: {
+      trait: "溫和內斂、圓融智慧、注重品質——同理心強，行事低調，以柔克剛化解危機，重情守諾利於長線合作。",
+      positive: "內部機制優化、資產風險對沖、貴人暗中資助；命理主生活優渥、廣結善緣、常得暗助，是團隊定海神針。",
+      negative: "遇門迫易意志消沉、優柔寡斷；凶局時易內部暗鬥、合同拖延破局，及腎臟泌尿系統、慢性疲勞或抑鬱問題。"
+    },
+    生: {
+      trait: "敦厚務實、財富敏銳、穩健固本——重實質利益與結果落地，具長線眼光與控局能力，重信譽利建立長期聯盟。",
+      positive: "投資回報豐厚、資產擴張穩固、財源廣進；命理主財富運勢高，善於理財，是格局宏大的實幹型領袖。",
+      negative: "遇凶格易顧固不化、抗拒變革；凶局時易債務危機、資金鏈斷裂，及脾胃消化系統、代謝或皮膚腫瘤問題。"
+    },
+    傷: {
+      trait: "剛毅果斷、好勝攻堅、重義高效——雷厲風行，不畏挑戰，天生競爭意識強，屬開拓型悍將，重效率與實質結果。",
+      positive: "核心競爭力領先、成功淘汰對手、清理不良資產；命理主魄力驚人、執行力強，多為破局先鋒或高壓管理層。",
+      negative: "遇凶格易獨斷專行、暴躁決策；凶局時易法律訴訟、財務崩塌，及骨折意外、肝膽或神經系統受損。"
+    },
+    杜: {
+      trait: "沉穩內斂、深度鑽研、守密固本——寡言務實，思維縱深，具匠人精神，行事審慎防範意識強，合規操守佳。",
+      positive: "核心技術與商業機密穩固，利於科研製造業擴張；命理主學識深邃技術高超，多為核心專家或風控指揮官。",
+      negative: "遇凶格易固執孤僻、作繭自封；凶局時易全盤停滯、資金鏈被卡，及經絡氣血瘀滯、肝膽或神經系統問題。"
+    },
+    景: {
+      trait: "才華橫溢、重名愛羽、急躁多謀——審美與表達天賦佳，追求榮譽與形象，善整合資源包裝概念，惟情緒易起伏。",
+      positive: "品牌知名度提升、文化產業擴張、合約順利簽署；命理主學識淵博氣質高雅，多為公關發言人或規劃師。",
+      negative: "遇凶格易好大喜功、虛張聲勢；凶局時易名譽爆雷、合同陷阱，及心腦血管、視力系統與熱毒問題。"
+    },
+    死: {
+      trait: "堅韌沉穩、守常執著、內秀長情——耐力包容心強，步步為營重原則，長期默默耕耘累積實力，惟略顯孤僻。",
+      positive: "房地產土地資產穩健收益、抗風險能力強；命理主為人守信重義，多為重資產領域執掌者或風控決策人。",
+      negative: "遇凶格易頑固作繭自封、轉型停滯；凶局時易破產清算、資金套牢，及脾胃病變、腫瘤或慢性疾病。"
+    },
+    驚: {
+      trait: "雄辯果敢、洞察秋毫、剛愎多疑——言辭犀利危機直覺強，善捕捉對手破綻，惟情緒敏感易多疑樹敵。",
+      positive: "法務訴訟勝訴、危機公關逆襲、輿論攻勢奏效；命理主口才絕倫直覺敏銳，多為金牌律師或危機處理專家。",
+      negative: "遇凶格易草木皆兵、決策失誤；凶局時易惡意訴訟、名譽爆雷，及呼吸系統、精神恐慌或牙齒骨骼刑傷。"
+    }
+  },
+  // 神盤／十神改成「天賦性格／正面顯化／負面表徵」三維度表格，內容整理自先修班2.pdf 第八章「易道十神象意」逐神詳解
+  shen: {
+    值符: {
+      trait: "氣宇軒昂、穩健控局、重信厚德——先天氣場宏大自帶領袖氣質，行事光明磊落不屑瑣事，思維具高度系統性，極重契約與社會責任。",
+      positive: "集團架構牢固確立、壟斷性資源對接、重大戰略合作達成；命理主根基尊貴仕途亨通，多為財團掌舵人或行業泰斗。",
+      negative: "遇凶格易獨斷專行、傲慢專橫、官僚主義；凶局或能量失衡時易核心權力劇烈動盪、企業遭遇信任危機。"
+    },
+    騰蛇: {
+      trait: "直覺敏銳、機變多謀、敏感多疑——先天具驚人第六感與環境洞察力，善捕捉常人難察覺的變化，行事柔中帶剛，惟易生危機感。",
+      positive: "虛擬經濟與數位化產業、網絡流量巧妙運用；命理主天資機敏多出奇謀，屬團隊中的戰略奇兵或危機預警核心。",
+      negative: "遇凶格易精神恐慌、草木皆兵、決策流於虛妄；凶局時易合同糾紛、虛假資訊、欺詐爆雷。"
+    },
+    太陰: {
+      trait: "沉穩內斂、思想縝密、靈覺內省——先天具深邃智慧與超然定力，喜怒不形於色行事低調務實，善於在孤寂中保持專注。",
+      positive: "核心技術專利、商業機密、隱名股東與隱性資本；命理主學識深邃德行高尚，多為核心專家或風控最高指揮官。",
+      negative: "遇凶格易孤僻偏激、作繭自封、猜忌內耗；能量失衡時易遭幕後小人中傷、資訊滯後與競爭對手絞殺。"
+    },
+    六合: {
+      trait: "圓融和藹、重諾守信、妥協折中——先天具卓越親和力與社交天賦，行事謙遜寬厚善平衡多方利益，人緣極佳不喜結怨。",
+      positive: "集團合併、招商加盟、團隊凝聚與國際貿易合作；命理主仕途亨通，多為外交家、併購專家或金牌中介人。",
+      negative: "遇凶格易優柔寡斷、受制於人、社交恐懼；凶局時易合同圈套、合夥人背叛清算、股權糾紛。"
+    },
+    勾陳: {
+      trait: "執著守常、務實沉穩、念舊長情——先天具極強耐力守信度與長線專注力，行事務實不輕言放棄，重情重義忠誠度高。",
+      positive: "實體產業、資產配置長期穩定；命理主根基厚重長壽篤實，多為實體工業巨頭或企業風控合規官。",
+      negative: "遇凶格易因循守舊、頑固不化、心理強迫；凶局時易固定資產套牢、資金鏈斷裂、舊帳未清又添新訟。"
+    },
+    朱雀: {
+      trait: "辯才無礙、重名愛羽、思維敏捷——先天具卓越言辭表達與審美天賦，行事雷厲風行極具語言感召力，追求名譽形象。",
+      positive: "品牌知名度確立、網絡流量引爆、合同簽署；命理主學識淵博名望卓越，多為金牌演說家或首席戰略規劃師。",
+      negative: "遇凶格易好大喜功、虛張聲勢、情緒反覆；凶局時易惡意訴訟、名譽爆雷、合同埋藏毀滅性條款。"
+    },
+    九地: {
+      trait: "敦厚務實、長線定力、重信守常——先天具極強耐力包容心與人格韌性，行事低調沉穩注重信譽累積，不貪一時之功。",
+      positive: "土地儲備、資產配置、底層供應鏈建設；命理主根基厚重德行深遠，多為實體工業巨頭或風控合規官。",
+      negative: "遇凶格易優柔寡斷、因循守舊、社交恐懼；凶局時易固定資產套牢、資金流動性匱乏、轉型遲緩被淘汰。"
+    },
+    九天: {
+      trait: "志存高遠、銳意開拓、剛健不息——具宏大格局觀與卓越抱負，行事氣魄宏大自帶領袖氣場，善捕捉商機不懼框架束縛。",
+      positive: "集團架構、品牌提升、核心技術壟斷、國際化網絡拓展；命理主魄力驚人位高權重，多為跨國財團掌舵人。",
+      negative: "遇凶格易好高騖遠、虛張聲勢、急功近利；凶局時易決策脫離實際、財務崩塌、市場信任危機。"
+    },
+    白虎: {
+      trait: "剛毅果斷、雷厲風行、威嚴懾人——無所畏懼具英雄氣概，行事直截了當抗壓力強，自帶不怒自威的強大氣場。",
+      positive: "核心技術壁壘、市場份額搶占；命理主魄力驚人執掌生殺大權，多為開疆悍將或金牌訴訟律師。",
+      negative: "遇凶格易頑固暴躁、獨斷專行、魯莽衝動；凶局時易突發災禍、法律官非、財務崩潰。"
+    },
+    玄武: {
+      trait: "智謀深邃、變通圓融、機敏多謀——先天具極高智商與博弈天賦，行事低調隱秘善解構人性暗流，遇危機能保持冷靜。",
+      positive: "隱名資本募集、供應鏈隱秘打通、知識產權防禦；命理主大智若愚手腕極高，多為金融風投巨擘或高維玄學泰斗。",
+      negative: "遇凶格易偷竊違法、欺詐爆雷、認知偏執；凶局時易核心商業機密洩露、資金遭暗中蠶食、合同欺詐。"
+    }
+  },
+  // 九星改成「天賦性格／正面顯化／負面表徵」三維度表格，內容整理自先修班1.pdf 第七章「天盤九星」逐星詳解
+  xing: {
+    天心: {
+      trait: "格局高遠、睿智嚴謹、仁慈博愛——具卓越宏觀視野與領袖氣場，行事光明磊落，崇尚秩序契約，內心具涵養萬物的胸懷。",
+      positive: "企業核心架構、官方資本、壟斷性資源掌控；奇門風水主門庭威嚴、官貴扶持、加官進爵。",
+      negative: "遇凶格易傲慢專斷、固步自封；健康上主頭部腦部中樞神經問題、肺疾或骨骼系統受創。"
+    },
+    天蓬: {
+      trait: "雄圖大略、逆向破局、吞吐包容——具超越常人膽識與宏觀格局，行事大刀闊斧不畏艱險，善於亂局中洞察商機精準一擊。",
+      positive: "風險投資、跨國供應鏈破局、逆勢崛起兼併收購；奇門風水主暗財大發、水法納吉、名揚海外。",
+      negative: "遇凶格易膽大妄為、孤注一擲；健康上主腎臟泌尿系統衰竭、中毒或生殖系統病變。"
+    },
+    天任: {
+      trait: "厚德包容、穩健長線、忠厚守諾——堅韌不拔任勞任怨，作風沉穩務實，擅長固守宏觀戰略方向，重視團隊基礎建設。",
+      positive: "實體產業、資產穩健增值、土地基建項目；奇門風水主基業穩如泰山、田產豐厚、鎖財聚財。",
+      negative: "遇凶格易固步自封、因循守舊；健康上主脾胃消化系統惡變、脊椎骨骼病變、慢性勞損。"
+    },
+    天衝: {
+      trait: "剛毅果斷、銳意開拓、高效直爽——無所畏懼行事雷厲風行直截了當，長於捕捉對手漏洞正面突擊，注重效率絕不拖泥帶水。",
+      positive: "新產品線快速爆破、攻克競爭壁壘、強勢搶占市場；奇門風水主武職發跡、威名顯赫。",
+      negative: "遇凶格易獨斷專行、魯莽衝動；健康上主急性肝膽系統惡變、肢體神經受損或意外災禍。"
+    },
+    天輔: {
+      trait: "儒雅深邃、深謀遠慮、和合重義——具卓越學識底蘊與文化氣質，思想開闊行事謙遜圓融，善構建多方共贏戰略聯盟。",
+      positive: "企業核心文化、全球化品牌、政企資源對接；奇門風水主文才輩出、家風清正、聚引高端人脈。",
+      negative: "遇凶格易優柔寡斷、閉門造車；健康上主神經功能紊亂、氣血瘀滯、肝膽隱疾或精神抑鬱。"
+    },
+    天英: {
+      trait: "熱誠重名、名望驅動、急躁多謀——具卓越審美表達天賦與敏銳洞察力，作風熱情具領袖感召力，惟情緒易起伏追求表面華麗。",
+      positive: "品牌知名度、文化傳媒產業、國際合同簽署；奇門風水主門庭大發、名望顯赫、官貴臨門。",
+      negative: "遇凶格易急功近利、虛張聲勢；健康上主心腦血管暴裂、視力系統受損、熱毒引發臟腑惡變。"
+    },
+    天芮: {
+      trait: "隱忍嚴謹、善於糾錯、樂學長情——具耐力容納力與危機直覺，善捕捉潛在漏洞深挖根基，具修學天賦精益求精。",
+      positive: "合規審計、核心技術難題攻克、組織架構正向改革；奇門風水主地產物業增值、暗財深藏、出醫療教育之才。",
+      negative: "遇凶格易顧固不化、疑神疑鬼；健康上主脾胃系統病變、免疫系統崩潰、慢性傳染病。"
+    },
+    天柱: {
+      trait: "雄辯剛烈、危機直覺、獨樹一幟——具卓越言辭表達與辯駁天賦，行事犀利果敢直言不諱，善於談判博弈中直擊痛點。",
+      positive: "法務訴訟勝訴、危機公關逆襲、話語權確立；奇門風水主聲名大噪、威震四海、御敵防禦。",
+      negative: "遇凶格易剛愎自用、多疑嫉妒；健康上主呼吸系統惡變、音聲器官受損、牙齒骨骼刑傷。"
+    },
+    天禽: {
+      trait: "剛正統御、穩健控局、重信厚德——天生自帶領袖氣場與中正人格，胸懷寬廣行事光明磊落，具極高道德操守與擔當。",
+      positive: "集團構建、控股權確立、核心主業擴張；奇門風水主中央納吉、八方朝拱、家運昌盛。",
+      negative: "遇凶格易獨斷專行、官僚守舊；健康上主中樞神經系統癱瘓、脾胃消化系統問題、新陳代謝紊亂。"
+    }
+  },
+  // 十天干（天盤干／地盤干共用）改成「天賦性格／正面顯化／負面表徵」三維度表格，
+  // 內容整理自先修班1.pdf 第四章「天地盤干象意」逐干詳解
+  gan: {
+    甲: {
+      trait: "剛毅不阿、宏觀視野、直道而行——性格堅韌如參天大樹，具強烈自尊心與責任擔當，思維具方向性，作風正派重信守諾。",
+      positive: "商戰兵法中代表企業核心競爭力強、佔據市場先機；命理主學識淵博、名望卓越，能成為團隊頂樑柱。",
+      negative: "遇庚金或白虎剋伐、落宮不利時易固執己見、獨斷專行；出頭之木易成眾矢之的，呈現疲憊折損或決策失誤。"
+    },
+    乙: {
+      trait: "隱忍堅篤、審時度勢、依附借力——性格溫和內斂，環境適應力與抗壓韌性強，善於人際協調化解衝突，具合作意識。",
+      positive: "利輕資產運營、品牌策劃、公關危機處理；奇門風水主得女性貴人相助、藝術文化產業大發。",
+      negative: "遇辛金沖剋或落凶格時易猶疑寡斷、糾纏依附；健康上主肝膽功能受損、經絡不通、免疫力低下。"
+    },
+    丙: {
+      trait: "剛烈熱誠、霸道主導、直道攻堅——性格急躁充滿激情，作風雷厲風行，具強烈正義感與領袖氣場，惟易流於急躁自負。",
+      positive: "品牌迅速爆紅、市場擴張、公關全面勝訴；奇門風水主門庭大發、名聲顯赫、貴人權貴扶持。",
+      negative: "遇壬水沖剋或入墓絕之地時易亂衝亂撞、暴躁失控；健康上主心腦血管疾病、血壓暴增、視力神經受損。"
+    },
+    丁: {
+      trait: "外柔內剛、務實高效、靈動多變——性格溫和謙遜實則主見韌性強，思維縝密洞察力佳，善幕後策劃，惟易思慮過重焦慮。",
+      positive: "利核心專利、前沿科技研發、精準營銷；奇門風水主文星高照、智慧啟迪與財富暗滋。",
+      negative: "遇癸水沖剋或落凶格時易孤芳自賞、鑽牛角尖；健康上主心臟機能受損、眼疾、神經衰弱失眠。"
+    },
+    戊: {
+      trait: "敦厚誠信、固執保守、沉穩控局——性格穩重包容、務實守諾，惟主觀傾向維持現狀，缺乏變通力，擅長重資產長線規劃。",
+      positive: "資金鏈充裕、資產運營穩固、房地產擴張；奇門風水主家財萬貫、地產豐厚、聚財鎖財。",
+      negative: "遇四凶或入凶格時易頑固不化、作繭自封；健康上主脾胃消化系統宿疾、皮膚病變、代謝阻滯。"
+    },
+    己: {
+      trait: "寬厚多謀、優柔貪執、迂迴控局——性格包容內斂細膩踏實，善暗中籌謀，惟內心多思敏感易拖泥帶水，缺乏斷然破局魄力。",
+      positive: "利幕後規劃、商業機密防守、創意孵化；奇門風水主家風寬厚、地皮增值、暗財滋生。",
+      negative: "遇凶格時易泥足深陷、糾紛難自拔；健康上主消化系統問題、濕氣聚積慢性病、皮膚或免疫失調。"
+    },
+    庚: {
+      trait: "剛毅果斬、暴戾獨斷、直線強攻——性格剛硬不阿雷厲風行，破壞力與執行力強，惟主觀帶攻擊性缺乏包容迂迴智慧。",
+      positive: "行業壟斷地位確立、強力兼併對手、核心攻堅突破；奇門風水主威武顯赫、掌生殺大權。",
+      negative: "遇四凶或入墓絕之地時主血光刑傷、法律訴訟；健康上主大腸肺部惡疾、骨折刑傷、腦溢血車禍。"
+    },
+    辛: {
+      trait: "剛毅果敢、偏激偏執、精準打擊——高冷孤傲行事狠辣追求完美，對瑕疵零容忍，惟內心敏感多疑易鑽牛角尖。",
+      positive: "核心技術破局、精細化質量控制、合規內審；奇門風水主威嚴赫赫、轉型成功、技術稱雄。",
+      negative: "遇凶格時主決裂分離、牢獄刑罰；健康上主肺部呼吸系統惡疾、骨質增生、針藥中毒或動手術。"
+    },
+    壬: {
+      trait: "寬廣豪邁、隨波流蕩、潮汐控局——性格智謀深遠包容力強，具全球視野，惟過於澎湃易情緒化、方向迷茫，善借勢合圍。",
+      positive: "全球化戰略、跨國供應鏈打通、資金募集；奇門風水主財源滾滾、名揚四海。",
+      negative: "遇凶格時主大勢失控、資金爆雷；健康上主腎臟泌尿系統問題、嚴重水腫。"
+    },
+    癸: {
+      trait: "深謀遠慮、流變陰沉、暗中執棋——性格深沉內斂智計百出，洞察力適應力強，惟因過於深匿易流於多疑敏感、悲觀。",
+      positive: "大數據網絡建設、商業機密布防、隱形壟斷；奇門風水主暗財滋生、謀略深遠、後代聰慧。",
+      negative: "遇凶格時主網絡癱瘓、全盤被動；健康上主生殖泌尿系統惡疾、血液毒素、長期失眠神經衰弱。"
+    }
+  }
+};
+
+function qimenExplainRow(label, char, dict) {
+  const text = char ? (dict[char] || "找不到資料") : "中宮寄坤二宮，請查看坤二宮的解說";
+  return "<tr><td class=\"qe-label\">" + label + '</td><td class="qe-char">' + (char || "－") +
+    '</td><td class="qe-text">' + text + "</td></tr>";
+}
+
+// 八門／九星／天盤干／地盤干解說改成「天賦性格／正面顯化／負面表徵」三維度表格，一項橫跨 3 列，
+// 前兩欄（標籤／字）用 rowspan 合併
+function qimenExplainDimRows(label, char, dict) {
+  const d = char ? dict[char] : null;
+  if (!char) {
+    return "<tr><td class=\"qe-label\">" + label + '</td><td class="qe-char">－</td>' +
+      '<td class="qe-text">中宮寄坤二宮，請查看坤二宮的解說</td></tr>';
+  }
+  if (!d) {
+    return "<tr><td class=\"qe-label\">" + label + '</td><td class="qe-char">' + char + "</td>" +
+      '<td class="qe-text">找不到資料</td></tr>';
+  }
+  const dims = [["天賦性格", d.trait], ["正面顯化", d.positive], ["負面表徵", d.negative]];
+  return dims.map((dim, i) =>
+    "<tr>" +
+    (i === 0 ? '<td class="qe-label" rowspan="3">' + label + '</td><td class="qe-char" rowspan="3">' + char + "</td>" : "") +
+    '<td class="qe-text"><span class="qe-dim">' + dim[0] + "：</span>" + dim[1] + "</td></tr>"
+  ).join("");
+}
+
+// 點選九宮格顯示的解說表格：八卦／八門／神盤／九星／天盤干／地盤干
+function buildQimenExplain(gong) {
+  let gua, men, shen, xing, tianGan, diGan, title;
+  if (gong === 5) {
+    gua = "坤";
+    xing = "天禽";
+    tianGan = currentQimen.diPan[5];
+    diGan = currentQimen.diPan[5];
+    men = null;
+    shen = null;
+    title = "中宮";
+  } else {
+    const c = currentQimen.gongs[gong];
+    gua = c.gua; xing = c.xing; tianGan = c.tianGan; diGan = c.diGan; men = c.men; shen = c.shen;
+    title = "第" + gong + "宮（" + GONG_INFO[gong].dir + "）";
+  }
+  let html = '<div class="qimen-explain-title">' + title + " 解說</div>";
+  html += '<table class="qimen-explain-table"><tbody>';
+  html += qimenExplainRow("八卦", gua, QIMEN_EXPLAIN.gua);
+  html += qimenExplainDimRows("八門", men, QIMEN_EXPLAIN.men);
+  html += qimenExplainDimRows("神盤", shen, QIMEN_EXPLAIN.shen);
+  html += qimenExplainDimRows("九星", xing, QIMEN_EXPLAIN.xing);
+  html += qimenExplainDimRows("天盤干", tianGan, QIMEN_EXPLAIN.gan);
+  html += qimenExplainDimRows("地盤干", diGan, QIMEN_EXPLAIN.gan);
+  html += "</tbody></table>";
+  return html;
+}
+
 // 外層羅盤：8 個方位＋宮位數字（固定位置，7x7 格的 4 角＋4 邊中央）
 const QIMEN_DIR_LAYOUT = [
   { g: 4, row: 1, col: 1 }, { g: 9, row: 1, col: 4 }, { g: 2, row: 1, col: 7 },
@@ -894,7 +1162,7 @@ function renderQimen(data) {
       // 中間圓圈用「命」取代門名，深灰底白字
       const centerGan = data.diPan[5];
       gridHtml +=
-        '<div class="qimen-cell qimen-center" style="grid-row:' + row + ";grid-column:" + col + '">' +
+        '<div class="qimen-cell qimen-center" data-gong="5" style="grid-row:' + row + ";grid-column:" + col + '">' +
         '<div class="qimen-xing earth">天禽</div>' +
         '<div class="qimen-gan-stack">' + qimenGanOnly(centerGan) + qimenGanOnly(centerGan) + "</div>" +
         '<div class="qimen-cell-center">' +
@@ -916,7 +1184,7 @@ function renderQimen(data) {
     const cornerWordsHtml = cornerWords.slice(0, 3).map(wordToSpan).join("");
     const cornerWordsLeftHtml = cornerWords.slice(3).map(wordToSpan).join("");
     gridHtml +=
-      '<div class="qimen-cell" style="grid-row:' + row + ";grid-column:" + col + '">' +
+      '<div class="qimen-cell" data-gong="' + g + '" style="grid-row:' + row + ";grid-column:" + col + '">' +
       '<div class="qimen-xing ' + xingWx + '">' + (c.xing || "") + "</div>" +
       (c.isMingGong ? '<div class="qimen-ming-circle">命</div>' : "") +
       '<div class="qimen-gan-stack">' + qimenGanOnly(c.tianGan) + qimenGanOnly(c.diGan) + "</div>" +
@@ -963,7 +1231,22 @@ function renderQimen(data) {
   });
   compassHtml += '<div class="qimen-grid" id="qimenGrid">' + gridHtml + "</div>";
   document.getElementById("qimenCompass").innerHTML = compassHtml;
+  document.getElementById("qimenExplain").style.display = "none";
+  document.getElementById("qimenExplain").innerHTML = "";
 }
+
+// 點選任一宮位格子，下方顯示該宮八卦／八門／神盤／九星／天盤干／地盤干解說；用 document 事件代理，
+// 因為每次 renderQimen 都會整個重畫 #qimenCompass，個別格子上的監聽器不會保留
+document.addEventListener("click", function (e) {
+  const cell = e.target.closest(".qimen-cell");
+  if (!cell || !currentQimen) return;
+  const gong = Number(cell.dataset.gong);
+  const panel = document.getElementById("qimenExplain");
+  document.querySelectorAll(".qimen-cell.qimen-cell-selected").forEach((el) => el.classList.remove("qimen-cell-selected"));
+  cell.classList.add("qimen-cell-selected");
+  panel.innerHTML = buildQimenExplain(gong);
+  panel.style.display = "block";
+});
 
 document.getElementById("exportQimenPdfBtn").addEventListener("click", async function () {
   const btn = this;
@@ -982,7 +1265,10 @@ document.getElementById("exportQimenPdfBtn").addEventListener("click", async fun
     const title = textToImage("Aries 奇門遁甲命盤報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
-    const qimenSections = Array.from(document.querySelectorAll("#qimenCard > *:not(.card-head)"));
+    // 點選九宮格才會出現的解說區塊沒點開時是 display:none，html2canvas 對 0 大小的元素會產生無效尺寸的
+    // canvas，匯出時要濾掉，否則 jsPDF addImage 會拿到 NaN 高度而出錯
+    const qimenSections = Array.from(document.querySelectorAll("#qimenCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
     await addSectionsToPdf(pdf, qimenSections, margin, pageWidth, pageHeight, 26);
 
     addPageNumbers(pdf, pageWidth, pageHeight);

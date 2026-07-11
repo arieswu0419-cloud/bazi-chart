@@ -258,6 +258,11 @@ main.app {
   gap: 14px;
 }
 .form-grid .full { grid-column: 1 / -1; }
+/* 姓名／性別同一列並排，姓名（長）：性別（短）＝ 7:3，不吃 .form-grid 的響應式欄數斷點，
+   跟出生年月日時那一列一樣，手機版也維持並排不換行 */
+.form-name-gender-row { display: flex; gap: 14px; }
+.form-name-gender-row .form-name-field { flex: 7; min-width: 0; }
+.form-name-gender-row .form-gender-field { flex: 3; min-width: 0; }
 /* 出生年／月／日／時間獨立一列，用 flex 固定 4 欄同一列不換行（不吃 .form-grid 響應式斷點），
    窄螢幕靠欄位本身縮小寬度，不會像 grid 那樣掉到下一列 */
 .form-date-row { display: flex; gap: 10px; margin-top: 14px; }
@@ -274,7 +279,7 @@ main.app {
 .field-inline-pair { display: flex; gap: 6px; }
 .field-inline-item { flex: 1; min-width: 0; }
 .field-inline-item select { width: 100%; }
-.field-inline-item label { text-align: center; }
+.field-inline-item label { display: block; text-align: center; }
 .form-actions {
   display: flex;
   gap: 10px;
@@ -475,6 +480,9 @@ main.app {
   border-color: var(--renge-border);
 }
 .renge-card h2 { color: var(--text-primary); }
+/* 擇日年月日欄位：從表單的「人格解碼專用」區塊移到報告頁籤最上方，維持三欄同寬但整體不要撐滿整個卡片寬度 */
+.renge-choice-date { max-width: 320px; margin-bottom: 16px; }
+.renge-choice-date label { color: var(--text-primary); }
 .renge-info {
   font-size: 15px;
   color: var(--text-primary);
@@ -916,7 +924,21 @@ footer {
   border-radius: 4px;
   min-height: 170px;
   padding: 6px;
+  cursor: pointer;
 }
+.qimen-cell-selected { outline: 3px solid #EA0000; outline-offset: -3px; }
+
+/* 點選九宮格後，下方顯示的解說表格（八卦／八門／神盤／九星／天盤干／地盤干） */
+.qimen-explain { margin-top: 12px; background: #fff; border-radius: 8px; padding: 12px 14px; }
+.qimen-explain-title { font-weight: 700; font-size: 15px; margin-bottom: 8px; color: #16264D; }
+.qimen-explain-table { width: 100%; border-collapse: collapse; }
+.qimen-explain-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+.qimen-explain-table .qe-label { width: 64px; font-weight: 700; color: #16264D; white-space: nowrap; }
+.qimen-explain-table .qe-char { width: 36px; font-weight: 700; font-size: 16px; text-align: center; color: #EA0000; }
+.qimen-explain-table .qe-text { line-height: 1.5; color: #333; }
+.qimen-explain-table .qe-dim { font-weight: 700; color: #16264D; }
+.qimen-explain-table .qe-label, .qimen-explain-table .qe-char { vertical-align: middle; }
+.qimen-explain-table tr:last-child td { border-bottom: none; }
 
 /* 九星：左上角，直式文字（由上往下），依五行上色 */
 .qimen-xing {
