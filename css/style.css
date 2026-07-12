@@ -1049,7 +1049,8 @@ h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border
 .mingpian-upload-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 #mingpianFileInput { flex: 1; min-width: 0; }
 #mingpianAnalyzeBtn { margin-top: 4px; }
-.mingpian-analyze-status { font-size: 13px; color: var(--text-secondary); min-height: 18px; margin: 6px 0 0; }
+.mingpian-analyze-status { font-size: 13px; line-height: 1.9; color: var(--text-secondary); min-height: 18px; margin: 10px 0 0; }
+.mingpian-analyze-status img { max-width: 100%; display: block; margin: 8px 0; border: 1px solid var(--border); border-radius: var(--radius); }
 .mingpian-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 18px; }
 .mingpian-field-full { grid-column: 1 / -1; }
 .mingpian-score-row { display: flex; align-items: center; gap: 8px; }
