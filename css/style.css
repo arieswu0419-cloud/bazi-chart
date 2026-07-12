@@ -1055,7 +1055,26 @@ h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border
 .mingpian-score-row { display: flex; align-items: center; gap: 8px; }
 .mingpian-score-row input[type="text"] { flex: 1; }
 .mingpian-score-tag { font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
-.mingpian-score-row input[type="number"] { width: 64px; flex: none; text-align: center; }
+/* 分數輸入框原本沒吃到全站共用的 input 樣式（那組共用選擇器沒列 type="number"），
+   直接吃瀏覽器原生的數字輸入框樣式（含上下箭頭），html2canvas 匯出PDF時常把原生樣式畫壞、
+   數字被裁切；改成無外框、隱藏原生箭頭、字級跟全站一致，畫面上跟匯出PDF都會完整顯示 */
+.mingpian-score-row input[type="number"] {
+  width: 56px;
+  flex: none;
+  text-align: center;
+  border: none;
+  padding: 8px 4px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: transparent;
+  -moz-appearance: textfield;
+}
+.mingpian-score-row input[type="number"]::-webkit-outer-spin-button,
+.mingpian-score-row input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 .mingpian-score-row input[readonly] { background: #f2f2f2; color: var(--text-secondary); }
 .mingpian-total-box { margin-top: 20px; padding: 14px; background: var(--page-bg); border-radius: var(--radius); text-align: center; }
 .mingpian-total-score { font-size: 18px; font-weight: 700; color: var(--text-primary); }
