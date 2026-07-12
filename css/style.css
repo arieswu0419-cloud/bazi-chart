@@ -1083,7 +1083,6 @@ h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border
 .mingpian-category-badge { font-size: 15px; font-weight: 700; padding: 3px 12px; border-radius: 999px; }
 .mingpian-category-badge.cat-good { background: #FEC6E6; color: #D2004B; }
 .mingpian-category-badge.cat-ok { background: #BDD7EE; color: #1054A0; }
-.mingpian-category-badge.cat-neutral { background: #EEEEEE; color: #5F5E5A; }
 .mingpian-category-badge.cat-bad { background: #E9EBF5; color: #555a6e; }
 
 /* 自訂拍照畫面：全螢幕深色背景＋置中相機預覽＋9:5.5 白框導引線（用超大 box-shadow 做出遮罩效果） */

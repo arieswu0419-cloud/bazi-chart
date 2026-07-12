@@ -52,14 +52,14 @@ function mpFortuneText(total) {
   return MP_FORTUNE_TABLE[idx];
 }
 
-// 大吉／可／平／凶 分類：對照使用者提供的「24名片風水.png」逐格底色比對出來（粉紅=大吉、藍=可、白=平、灰=凶），
-// 跟 MP_FORTUNE_TABLE 同一個索引順序
+// 大吉／平／大凶 分類：對照使用者提供的「24名片風水.png」逐格底色比對出來（粉紅=大吉共8個、
+// 藍=平共4個、白色或灰色合併算大凶共12個），跟 MP_FORTUNE_TABLE 同一個索引順序
 const MP_FORTUNE_CATEGORY = [
-  "平", "平", "平", "大吉", "大吉", "平", "可", "平",
-  "大吉", "可", "平", "大吉", "平", "大吉", "平", "平",
-  "可", "大吉", "凶", "大吉", "凶", "平", "大吉", "可"
+  "大凶", "大凶", "大凶", "大吉", "大吉", "大凶", "平", "大凶",
+  "大吉", "平", "大凶", "大吉", "大凶", "大吉", "大凶", "大凶",
+  "平", "大吉", "大凶", "大吉", "大凶", "大凶", "大吉", "平"
 ];
-const MP_CATEGORY_CLASS = { 大吉: "cat-good", 可: "cat-ok", 平: "cat-neutral", 凶: "cat-bad" };
+const MP_CATEGORY_CLASS = { 大吉: "cat-good", 平: "cat-ok", 大凶: "cat-bad" };
 
 function mpFortuneCategory(total) {
   if (!total || total <= 0) return null;
