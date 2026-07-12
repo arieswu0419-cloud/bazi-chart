@@ -1690,7 +1690,9 @@ document.getElementById("exportMingpianPdfBtn").addEventListener("click", async 
     const title = textToImage("Aries 名片風水報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
-    const sections = Array.from(document.querySelectorAll("#mingpianCard > *:not(.card-head)"))
+    // 按鍵、狀態文字等不該進 PDF 的區塊都標了 data-html2canvas-ignore，這裡也要濾掉，
+    // 不然 html2canvas 對 <button> 這種元素直接截圖會整個匯出失敗（親測會丟例外）
+    const sections = Array.from(document.querySelectorAll("#mingpianCard > *:not(.card-head):not([data-html2canvas-ignore])"))
       .filter((el) => getComputedStyle(el).display !== "none");
     await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
 
