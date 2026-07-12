@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=91">
+<link rel="stylesheet" href="css/style.css?v=93">
 </head>
 <body>
 
@@ -258,7 +258,7 @@
 
       <div class="mingpian-images">
         <div class="mingpian-image-box">
-          <div class="mingpian-image-label">上傳個人名片</div>
+          <div class="mingpian-image-label">上傳個人名片(橫式)</div>
           <div class="mingpian-image-frame" id="mingpianUploadFrame">
             <img id="mingpianPreviewImg" style="display:none">
             <span class="mingpian-image-hint" id="mingpianUploadHint">請選擇圖片或拍照</span>
@@ -273,6 +273,27 @@
           <div class="mingpian-image-frame">
             <canvas id="mingpianResultCanvas" style="display:none"></canvas>
             <span class="mingpian-image-hint" id="mingpianResultHint">按下「套用分析」後顯示</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mingpian-images">
+        <div class="mingpian-image-box">
+          <div class="mingpian-image-label">上傳個人名片(直式)</div>
+          <div class="mingpian-image-frame mingpian-image-frame-v" id="mingpianUploadFrameV">
+            <img id="mingpianPreviewImgV" style="display:none">
+            <span class="mingpian-image-hint" id="mingpianUploadHintV">請選擇圖片或拍照</span>
+          </div>
+          <div class="mingpian-upload-actions" data-html2canvas-ignore="true">
+            <input type="file" id="mingpianFileInputV" accept="image/*">
+            <button type="button" class="btn secondary" id="mingpianCameraBtnV" style="width:auto">拍照</button>
+          </div>
+        </div>
+        <div class="mingpian-image-box">
+          <div class="mingpian-image-label">套用風水線分析</div>
+          <div class="mingpian-image-frame mingpian-image-frame-v">
+            <canvas id="mingpianResultCanvasV" style="display:none"></canvas>
+            <span class="mingpian-image-hint" id="mingpianResultHintV">按下「套用分析」後顯示</span>
           </div>
         </div>
       </div>
@@ -358,16 +379,16 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=91"></script>
-<script src="js/auth.js?v=91"></script>
+<script src="js/firebase-config.js?v=93"></script>
+<script src="js/auth.js?v=93"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=91"></script>
-<script src="js/renge-engine.js?v=91"></script>
-<script src="js/lifenum-engine.js?v=91"></script>
-<script src="js/mingpian-engine.js?v=91"></script>
-<script src="js/qimen-engine.js?v=91"></script>
+<script src="js/bazi-engine.js?v=93"></script>
+<script src="js/renge-engine.js?v=93"></script>
+<script src="js/lifenum-engine.js?v=93"></script>
+<script src="js/mingpian-engine.js?v=93"></script>
+<script src="js/qimen-engine.js?v=93"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=91"></script>
+<script src="js/app.js?v=93"></script>
 </body>
 </html>

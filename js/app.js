@@ -1325,7 +1325,7 @@ document.getElementById("exportLifenumPdfBtn").addEventListener("click", async f
 // 姓名／公司名分數改為使用者自行看著「風水分析」畫出來的九宮格數字圖，自行判斷後手動輸入
 // （原本用 OCR 自動辨識姓名／公司名位置的做法準確度太差，已移除）；名片底色分數則仍用整張圖片
 // 像素分析自動判斷，使用者可手動覆蓋；生肖分數鎖定不可調整（固定對照表查出來的）。
-const mpState = { imgW: 0, imgH: 0 };
+const mpState = { h: { imgW: 0, imgH: 0 }, v: { imgW: 0, imgH: 0 } };
 
 function showMingpianView() {
   document.getElementById("mainView").style.display = "none";
@@ -1377,17 +1377,26 @@ function mpRecomputeTotal() {
   badge.className = "mingpian-category-badge" + (category ? " " + MP_CATEGORY_CLASS[category] : "");
 }
 
+// 橫式（9x5.5）／直式（5.5x9，橫式轉90度）名片各自獨立一組上傳＋結果，ID 後面加 V 代表直式那一組
+const MP_ORIENTATIONS = {
+  h: { img: "mingpianPreviewImg", hint: "mingpianUploadHint", file: "mingpianFileInput", cam: "mingpianCameraBtn", canvas: "mingpianResultCanvas", resultHint: "mingpianResultHint", grid: null, ratio: 9 / 5.5 },
+  v: { img: "mingpianPreviewImgV", hint: "mingpianUploadHintV", file: "mingpianFileInputV", cam: "mingpianCameraBtnV", canvas: "mingpianResultCanvasV", resultHint: "mingpianResultHintV", grid: null, ratio: 5.5 / 9 }
+};
+MP_ORIENTATIONS.h.grid = MP_GRID_SCORE;
+MP_ORIENTATIONS.v.grid = MP_GRID_SCORE_V;
+
 // 換一張新的名片圖片（不管是從檔案選取還是拍照）：預覽並清空上一次分析的結果，
 // 避免使用者誤以為新圖片沿用舊分數
-function mpSetPreviewImage(dataUrl) {
-  const img = document.getElementById("mingpianPreviewImg");
+function mpSetPreviewImage(dataUrl, orientation) {
+  const o = MP_ORIENTATIONS[orientation || "h"];
+  const img = document.getElementById(o.img);
   img.src = dataUrl;
   img.style.display = "";
-  document.getElementById("mingpianUploadHint").style.display = "none";
+  document.getElementById(o.hint).style.display = "none";
 
   document.getElementById("mingpianAnalyzeStatus").textContent = "";
-  document.getElementById("mingpianResultCanvas").style.display = "none";
-  document.getElementById("mingpianResultHint").style.display = "";
+  document.getElementById(o.canvas).style.display = "none";
+  document.getElementById(o.resultHint).style.display = "";
   mpRecomputeTotal();
 }
 
@@ -1395,15 +1404,17 @@ function mpSetPreviewImage(dataUrl) {
 // 不會留在畫面或記憶體裡等下次進來被看到——本來就沒有寫進 Firestore／localStorage，
 // 名片底色分析也是瀏覽器端 canvas 像素分析，圖片不會被上傳到任何伺服器
 function mpResetAll() {
-  const img = document.getElementById("mingpianPreviewImg");
-  img.src = "";
-  img.style.display = "none";
-  document.getElementById("mingpianUploadHint").style.display = "";
-  document.getElementById("mingpianFileInput").value = "";
-
+  ["h", "v"].forEach((key) => {
+    const o = MP_ORIENTATIONS[key];
+    const img = document.getElementById(o.img);
+    img.src = "";
+    img.style.display = "none";
+    document.getElementById(o.hint).style.display = "";
+    document.getElementById(o.file).value = "";
+    document.getElementById(o.canvas).style.display = "none";
+    document.getElementById(o.resultHint).style.display = "";
+  });
   document.getElementById("mingpianAnalyzeStatus").textContent = "";
-  document.getElementById("mingpianResultCanvas").style.display = "none";
-  document.getElementById("mingpianResultHint").style.display = "";
 
   document.getElementById("mp-name").value = "";
   document.getElementById("mp-name-score").value = 0;
@@ -1415,8 +1426,10 @@ function mpResetAll() {
   document.getElementById("mp-company").value = "";
   document.getElementById("mp-company-score").value = 0;
 
-  mpState.imgW = 0;
-  mpState.imgH = 0;
+  mpState.h.imgW = 0;
+  mpState.h.imgH = 0;
+  mpState.v.imgW = 0;
+  mpState.v.imgH = 0;
   mpRecomputeTotal();
 }
 
@@ -1424,13 +1437,22 @@ document.getElementById("mingpianFileInput").addEventListener("change", function
   const file = this.files && this.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function (e) { mpSetPreviewImage(e.target.result); };
+  reader.onload = function (e) { mpSetPreviewImage(e.target.result, "h"); };
+  reader.readAsDataURL(file);
+});
+document.getElementById("mingpianFileInputV").addEventListener("change", function () {
+  const file = this.files && this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (e) { mpSetPreviewImage(e.target.result, "v"); };
   reader.readAsDataURL(file);
 });
 
-// 自訂拍照畫面：用 getUserMedia 開啟相機直接在頁面內預覽，疊加 9:5.5 白色框線導引使用者對齊名片，
-// 拍照時只裁切框線範圍內的畫面，而不是整個鏡頭視野，確保輸出圖片的長寬比跟名片實際比例一致
+// 自訂拍照畫面：用 getUserMedia 開啟相機直接在頁面內預覽，疊加白色框線導引使用者對齊名片
+// （橫式框線比例 9:5.5，直式框線比例 5.5:9），拍照時只裁切框線範圍內的畫面，而不是整個鏡頭視野，
+// 確保輸出圖片的長寬比跟名片實際比例一致
 let mpCameraStream = null;
+let mpCameraOrientation = "h";
 
 function mpStopCamera() {
   if (mpCameraStream) {
@@ -1440,7 +1462,7 @@ function mpStopCamera() {
   document.getElementById("mingpianCameraOverlay").style.display = "none";
 }
 
-document.getElementById("mingpianCameraBtn").addEventListener("click", async function () {
+async function mpOpenCamera(orientation) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showToast("此瀏覽器不支援相機拍照，請改用「選擇圖片」上傳", "error");
     return;
@@ -1451,10 +1473,38 @@ document.getElementById("mingpianCameraBtn").addEventListener("click", async fun
     showToast("無法開啟相機：" + err.message, "error");
     return;
   }
+  mpCameraOrientation = orientation;
+  const frame = document.querySelector(".mingpian-camera-frame");
+  const wrap = document.getElementById("mingpianCameraVideoWrap");
+  const o = MP_ORIENTATIONS[orientation];
+  document.querySelector(".mingpian-camera-hint").textContent = orientation === "v" ?
+    "請將名片對齊白框（比例 5.5 x 9 公分）拍攝" : "請將名片對齊白框（比例 9 x 5.5 公分）拍攝";
   const video = document.getElementById("mingpianCameraVideo");
   video.srcObject = mpCameraStream;
   document.getElementById("mingpianCameraOverlay").style.display = "flex";
-});
+
+  // 相機預覽的長寬比因裝置而異，要等影像metadata載入、wrap真正撐開高度後，才能算出框線在
+  // 「寬」「高」兩個方向都不會超出預覽畫面的最大尺寸（不然直式框線在橫式預覽畫面裡會被裁掉一截）
+  const sizeFrame = () => {
+    const wrapRect = wrap.getBoundingClientRect();
+    const margin = 0.86;
+    let fw = wrapRect.width * margin;
+    let fh = fw / o.ratio;
+    if (fh > wrapRect.height * margin) {
+      fh = wrapRect.height * margin;
+      fw = fh * o.ratio;
+    }
+    frame.style.width = fw + "px";
+    frame.style.height = fh + "px";
+  };
+  if (video.videoWidth) {
+    sizeFrame();
+  } else {
+    video.addEventListener("loadedmetadata", sizeFrame, { once: true });
+  }
+}
+document.getElementById("mingpianCameraBtn").addEventListener("click", () => mpOpenCamera("h"));
+document.getElementById("mingpianCameraBtnV").addEventListener("click", () => mpOpenCamera("v"));
 
 document.getElementById("mingpianCameraCancelBtn").addEventListener("click", mpStopCamera);
 
@@ -1471,14 +1521,15 @@ document.getElementById("mingpianCaptureBtn").addEventListener("click", function
   const sw = frameRect.width * scaleX;
   const sh = frameRect.height * scaleY;
 
-  const outW = 900;
-  const outH = Math.round((outW * 5.5) / 9);
+  const o = MP_ORIENTATIONS[mpCameraOrientation];
+  const outW = mpCameraOrientation === "v" ? 550 : 900;
+  const outH = Math.round(outW / o.ratio);
   const canvas = document.createElement("canvas");
   canvas.width = outW;
   canvas.height = outH;
   canvas.getContext("2d").drawImage(video, sx, sy, sw, sh, 0, 0, outW, outH);
 
-  mpSetPreviewImage(canvas.toDataURL("image/jpeg", 0.92));
+  mpSetPreviewImage(canvas.toDataURL("image/jpeg", 0.92), mpCameraOrientation);
   mpStopCamera();
 });
 
@@ -1506,16 +1557,19 @@ function mpAnalyzeColor(img) {
 }
 
 // 右側結果圖：畫出原圖＋紅線（水平垂直三等分，九宮格線）＋藍線（通過中心點的 8 等分線，第一條在
-// 22.5 度）＋每個宮位中央的紅色分數數字（左上2／左中1／左下8／中上3／正中9／中下7／右上4／右中5／
-// 右下6，中上、中下另外加註「客戶空間」「利潤空間」），使用者自己看圖判斷姓名／公司名落在哪個宮位、
+// 22.5 度）＋每個宮位中央的紅色分數數字（橫式：左上2／左中1／左下8／中上3／正中9／中下7／右上4／
+// 右中5／右下6；直式：左上8／左中7／左下6／中上1／正中9／中下5／右上2／右中3／右下4，兩種排法
+// 都在中上、中下另外加註「客戶空間」「利潤空間」），使用者自己看圖判斷姓名／公司名落在哪個宮位、
 // 手動把對應分數填進下方欄位。用向量畫線＋畫字而不是套用固定比例的點陣疊圖，才能保證線條角度／
 // 文字位置精準，不會因為照片長寬比不同而跟著跑位
-function mpDrawResultCanvas() {
-  const canvas = document.getElementById("mingpianResultCanvas");
-  const img = document.getElementById("mingpianPreviewImg");
-  if (!img.src || !mpState.imgW) return;
-  const w = mpState.imgW;
-  const h = mpState.imgH;
+function mpDrawResultCanvas(orientation) {
+  const o = MP_ORIENTATIONS[orientation];
+  const canvas = document.getElementById(o.canvas);
+  const img = document.getElementById(o.img);
+  const dim = mpState[orientation];
+  if (!img.src || !dim.imgW) return;
+  const w = dim.imgW;
+  const h = dim.imgH;
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
@@ -1551,21 +1605,22 @@ function mpDrawResultCanvas() {
   ctx.stroke();
 
   // 九宮格分數數字（紅字），中上／中下額外加註區塊名稱
+  const grid = o.grid;
   const fontSize = Math.max(16, Math.round(w * 0.045));
   ctx.fillStyle = "rgba(234,0,0,0.95)";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const cellCenter = (row, col) => ({ x: cellW * (col + 0.5), y: cellH * (row + 0.5) });
   const labels = [
-    { row: 0, col: 0, score: MP_GRID_SCORE[0][0] },
-    { row: 0, col: 1, score: MP_GRID_SCORE[0][1], zone: "客戶空間" },
-    { row: 0, col: 2, score: MP_GRID_SCORE[0][2] },
-    { row: 1, col: 0, score: MP_GRID_SCORE[1][0] },
-    { row: 1, col: 1, score: MP_GRID_SCORE[1][1] },
-    { row: 1, col: 2, score: MP_GRID_SCORE[1][2] },
-    { row: 2, col: 0, score: MP_GRID_SCORE[2][0] },
-    { row: 2, col: 1, score: MP_GRID_SCORE[2][1], zone: "利潤空間" },
-    { row: 2, col: 2, score: MP_GRID_SCORE[2][2] }
+    { row: 0, col: 0, score: grid[0][0] },
+    { row: 0, col: 1, score: grid[0][1], zone: "客戶空間" },
+    { row: 0, col: 2, score: grid[0][2] },
+    { row: 1, col: 0, score: grid[1][0] },
+    { row: 1, col: 1, score: grid[1][1] },
+    { row: 1, col: 2, score: grid[1][2] },
+    { row: 2, col: 0, score: grid[2][0] },
+    { row: 2, col: 1, score: grid[2][1], zone: "利潤空間" },
+    { row: 2, col: 2, score: grid[2][2] }
   ];
   labels.forEach((l) => {
     const { x, y } = cellCenter(l.row, l.col);
@@ -1581,24 +1636,36 @@ function mpDrawResultCanvas() {
   });
 
   canvas.style.display = "";
-  document.getElementById("mingpianResultHint").style.display = "none";
+  document.getElementById(o.resultHint).style.display = "none";
 }
 
 document.getElementById("mingpianAnalyzeBtn").addEventListener("click", function () {
-  const img = document.getElementById("mingpianPreviewImg");
+  const imgH = document.getElementById("mingpianPreviewImg");
+  const imgV = document.getElementById("mingpianPreviewImgV");
+  const hasH = imgH.src && imgH.style.display !== "none";
+  const hasV = imgV.src && imgV.style.display !== "none";
   const statusEl = document.getElementById("mingpianAnalyzeStatus");
-  if (!img.src || img.style.display === "none") {
+  if (!hasH && !hasV) {
     showToast("請先上傳名片圖片", "error");
     return;
   }
+
   statusEl.textContent = "正在分析名片底色...";
-  const colorName = mpAnalyzeColor(img);
+  const colorImg = hasH ? imgH : imgV;
+  const colorName = mpAnalyzeColor(colorImg);
   document.getElementById("mp-color").value = colorName;
   document.getElementById("mp-color-score").value = MP_COLOR_SCORE[colorName];
 
-  mpState.imgW = img.naturalWidth;
-  mpState.imgH = img.naturalHeight;
-  mpDrawResultCanvas();
+  if (hasH) {
+    mpState.h.imgW = imgH.naturalWidth;
+    mpState.h.imgH = imgH.naturalHeight;
+    mpDrawResultCanvas("h");
+  }
+  if (hasV) {
+    mpState.v.imgW = imgV.naturalWidth;
+    mpState.v.imgH = imgV.naturalHeight;
+    mpDrawResultCanvas("v");
+  }
   mpRecomputeTotal();
   statusEl.innerHTML = "分析完成，請對照右側九宮格數字，自行判斷公司名／姓名落在哪個宮位並填入分數。<br>" +
     "1.公司名不可被紅色字水平或垂直切半，亦不可被藍色線條切到，自行累加跨宮位紅字總分<br>" +

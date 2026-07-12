@@ -1044,6 +1044,8 @@ h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border
 }
 .mingpian-image-frame img, .mingpian-image-frame canvas { max-width: 100%; max-height: 100%; object-fit: contain; }
 .mingpian-image-hint { color: var(--text-muted); font-size: 13px; text-align: center; padding: 0 12px; }
+/* 直式名片（5.5 x 9 公分，橫式轉90度）框框比例對調，寬度縮小避免框框過高 */
+.mingpian-image-frame-v { aspect-ratio: 5.5 / 9; max-width: 220px; margin: 0 auto; }
 .mingpian-upload-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 #mingpianFileInput { flex: 1; min-width: 0; }
 #mingpianAnalyzeBtn { margin-top: 4px; }
