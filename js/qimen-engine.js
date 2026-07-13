@@ -483,13 +483,28 @@ function buildDayun(yearGan, yearZhi, gender) {
 //    確認九星反吟成立）反吟裡也要有天干反吟──兩筆資料都指向「天干反吟＝xingDelta===4」這個更簡單、
 //    更一致的判斷方式，逐宮掃描的舊寫法反而漏判了第二筆資料，所以拿掉了。
 const TIANFU_SHI_MAP = { 甲: "甲戌", 己: "甲戌", 乙: "甲申", 庚: "甲申", 丙: "甲午", 辛: "甲午", 丁: "甲辰", 壬: "甲辰", 戊: "甲寅", 癸: "甲寅" };
-const YUNU_SHI_MAP = { 甲: "丙寅", 己: "丙寅", 乙: "辛巳", 庚: "辛巳", 丙: "戊申", 辛: "戊申", 丁: "己亥", 壬: "己亥", 戊: "壬寅", 癸: "壬寅" };
+// 玉女守門時：原本用「日干對應固定時柱」查表判斷，已依使用者提供的完整演算法改寫（見下方
+// isYuNuShouMen），這張查表已不再使用，刪除。
 const WUBUYU_SHI_MAP = { 甲: ["庚午"], 乙: ["辛巳"], 丙: ["壬辰"], 丁: ["癸卯"], 戊: ["甲寅"], 己: ["乙丑"], 庚: ["丙子", "丙戌"], 辛: ["丁酉"], 壬: ["戊申"], 癸: ["己未"] };
 // 天網四張：六癸時（時干為癸）依日干五鼠遁對應到哪個癸時，天盤癸會被帶到地盤癸的位置而成局；
 // 戊日／癸日同樣起壬子，都會遇到癸丑時，癸日自己又額外在癸亥時遇到（日干時干都是癸，特別大凶）
 const TIANWANG_SHI_MAP = { 甲: "癸酉", 己: "癸酉", 乙: "癸未", 庚: "癸未", 丙: "癸巳", 辛: "癸巳", 丁: "癸卯", 壬: "癸卯", 戊: "癸丑", 癸: "癸丑" };
 
-function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi }) {
+// 玉女守門時：使用者提供的完整演算法（取代原本查表判斷）——
+// 1. 地盤丁奇：三奇六儀排入地盤後，「丁」固定落在某一宮（地盤本身跟時辰無關，只跟局數有關）
+// 2. 求時辰旬首：時柱所在的甲旬（本檔案 xunShou 已經算好）
+// 3. 鎖定原始值符星／值使門：該旬首六儀在地盤的原始本宮（rawFuShouGong，符首落中宮時是5，
+//    這裡沿用跟值符星顯示一致的「寄二宮」慣例）
+// 4. 飛宮定律：值符星飛到 xingTargetGong（隨時干）、值使門飛到 menTargetGong（隨時辰旬內順序數）
+// 5. 重疊判定：值符星、值使門兩個新宮位都剛好等於步驟1的丁奇宮，才算「玉女守門時」成立
+//    （元帥與將軍一起進門，玉女在門口迎接）
+function isYuNuShouMen(diPan, xingTargetGong, menTargetGong) {
+  const dingGong = findGongOfStem(diPan, "丁");
+  if (dingGong === null) return false;
+  return xingTargetGong === dingGong && menTargetGong === dingGong;
+}
+
+function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, diPan, xingTargetGong, menTargetGong }) {
   const labels = [];
   if (xingDelta === 0) labels.push("九星伏吟");
   if (menDelta === 0) labels.push("八門伏吟");
@@ -500,7 +515,7 @@ function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi }) 
 
   const timeGanZhi = timeGan + timeZhi;
   if (TIANFU_SHI_MAP[dayGan] === timeGanZhi) labels.push("天輔時");
-  if (YUNU_SHI_MAP[dayGan] === timeGanZhi) labels.push("玉女時");
+  if (isYuNuShouMen(diPan, xingTargetGong, menTargetGong)) labels.push("玉女守門時");
   if ((WUBUYU_SHI_MAP[dayGan] || []).includes(timeGanZhi)) labels.push("五不遇時");
   if (TIANWANG_SHI_MAP[dayGan] === timeGanZhi) labels.push("天網四張");
   if (dayGan === "癸" && timeGanZhi === "癸亥") labels.push("天網四張(特別大凶)");
@@ -609,7 +624,7 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
     };
   });
 
-  const patternText = detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan: ec.getDayGan(), timeGan, timeZhi });
+  const patternText = detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan: ec.getDayGan(), timeGan, timeZhi, diPan, xingTargetGong, menTargetGong });
 
   return {
     name,
