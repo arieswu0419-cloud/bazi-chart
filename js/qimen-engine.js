@@ -510,13 +510,14 @@ function isYuNuShouMen(diPan, menTargetGong) {
   return menTargetGong === dingGong;
 }
 
-// 時干入墓：時柱天干（timeGan）落在天盤上的那一宮，如果剛好是該宮（依卦別）的入墓天干，
-// 就在上方格局欄位標註「X入墓」（X＝時干本身）。跟宮位右下角逐宮顯示的入墓文字是同一套
-// RUMU_STEMS 對照表、同一套「只看天盤干」規則，只是這裡只挑「時干」這一柱來檢查、顯示在格局欄。
-// 甲是隱干，天盤上不會出現，時干是甲時這條規則不會觸發。
-function findTimeGanRumuLabel(tianPanGan, timeGan) {
-  if (timeGan === "甲") return null;
-  const gong = findGongOfStem(tianPanGan, timeGan);
+// 時干入墓：查時柱天干（timeGan）落在「地盤」的哪一宮（不是天盤），如果剛好是該宮（依卦別）
+// 的入墓天干，就在上方格局欄位標註「X入墓」（X＝時干本身）。跟宮位右下角逐宮顯示的入墓文字
+// （看天盤干）是不同層——時干入墓用使用者提供的完整演算法＋實測範例改寫：時柱丁丑（時干丁），
+// 丁火墓在丑，丑固定在艮八宮，範例命盤艮八宮地盤干正好是丁，兩者對上即觸發「丁入墓」；
+// RUMU_STEMS 對照表本身不變（已用官方圖核對過），只是這裡改查地盤干、不是天盤干。
+// 甲是隱干，地盤上不會出現，時干是甲時 findGongOfStem 自然找不到、回傳 null，不用特別排除。
+function findTimeGanRumuLabel(diPan, timeGan) {
+  const gong = findGongOfStem(diPan, timeGan);
   if (gong === null) return null;
   const gua = GONG_INFO[gong].gua;
   const rumuList = RUMU_STEMS[gua] || [];
@@ -524,7 +525,7 @@ function findTimeGanRumuLabel(tianPanGan, timeGan) {
   return timeGan + "入墓";
 }
 
-function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, diPan, xingTargetGong, menTargetGong, tianPanGan }) {
+function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, diPan, xingTargetGong, menTargetGong }) {
   const labels = [];
   if (xingDelta === 0) labels.push("九星伏吟");
   if (menDelta === 0) labels.push("八門伏吟");
@@ -536,7 +537,7 @@ function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, di
   const timeGanZhi = timeGan + timeZhi;
   if (TIANFU_SHI_MAP[dayGan] === timeGanZhi) labels.push("天輔時");
   if (isYuNuShouMen(diPan, menTargetGong)) labels.push("玉女時");
-  const timeGanRumuLabel = findTimeGanRumuLabel(tianPanGan, timeGan);
+  const timeGanRumuLabel = findTimeGanRumuLabel(diPan, timeGan);
   if (timeGanRumuLabel) labels.push(timeGanRumuLabel);
   if ((WUBUYU_SHI_MAP[dayGan] || []).includes(timeGanZhi)) labels.push("五不遇時");
   if (TIANWANG_SHI_MAP[dayGan] === timeGanZhi) labels.push("天網四張");
@@ -607,20 +608,25 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   const shenPan = buildShenPan(xingTargetGong, juInfo.isYang);
   const dayun = buildDayun(ec.getYearGan(), ec.getYearZhi(), gender);
 
-  // 命宮／兄弟／子女：分別找日柱／月柱／時柱天干落在天盤的宮位，落中宮（找不到，因為中宮不在天盤 8 宮之列）
-  // 時寄到「天芮星」目前飛到的宮位（不是固定坤二宮）：中宮寄坤二宮是地盤（未轉動前）的慣例，
-  // 天盤干是轉動過的，所以要跟著「天芮」這顆星轉動後的位置走，用 2026-07-10 01:30 這筆資料核對出來
-  // ──時干丁落中宮，此局天芮星轉到震三宮，子女正確應該寄到震三宮，不是坤二宮
+  // 命宮／兄弟／子女：分別找日柱／月柱／時柱天干落在天盤的宮位。這裡有兩種「找不到」要分開處理：
+  // 1. 天干是「甲」：甲遁藏於符首儀，本來就不會出現在天盤上，這種情況要直接算到值符星目前所在的
+  //    宮位（xingTargetGong），不能套用下面第2種的天芮寄宮邏輯。
+  // 2. 天干不是甲，但剛好落中宮（中宮不在天盤 8 宮之列）：寄到「天芮星」目前飛到的宮位（不是固定
+  //    坤二宮）──中宮寄坤二宮是地盤（未轉動前）的慣例，天盤干是轉動過的，所以要跟著「天芮」這顆
+  //    星轉動後的位置走，用 2026-07-10 01:30 這筆資料核對出來──時干丁落中宮，此局天芮星轉到震三宮，
+  //    子女正確應該寄到震三宮，不是坤二宮。
+  // 原本只有子女（時柱）有做「甲→值符宮」的特殊處理，命宮（日柱）、兄弟（月柱）漏掉了，用
+  // 2033-02-14 01:45 這筆資料核對出破綻：月柱甲寅（月干甲），兄弟宮誤寄到天芮宮（艮八宮），
+  // 但官網顯示兄弟應該在值符宮（離九宮）。三個宮位統一改用同一套判斷邏輯後修正。
   const tianRuiGong = findGongOfStar(tianPanXing, "天芮");
   const findTianPanGong = (gan) => {
+    if (gan === "甲") return xingTargetGong;
     const g = findGongOfStem(tianPanGan, gan);
     return g === null ? tianRuiGong : g;
   };
   const mingGong = findTianPanGong(ec.getDayGan());
   const xiongdiGong = findTianPanGong(ec.getMonthGan());
-  // 時干是「甲」時，findTianPanGong 會因為找不到「甲」而誤寄到天芮宮；甲遁藏於符首儀，本來就該直接算到
-  // 值符星目前所在的宮位（xingTargetGong，時干是甲時已經等於 fuShouGong），不能用同一套「找不到就寄天芮宮」邏輯
-  const ziNuGong = timeGan === "甲" ? xingTargetGong : findTianPanGong(timeGan);
+  const ziNuGong = findTianPanGong(timeGan);
   const yiMaGong = ZHI_TO_GONG_QM[yiMa];
   const tianYi = { gong: ziNuGong, dir: GONG_INFO[ziNuGong].dir };
 
@@ -646,7 +652,7 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
     };
   });
 
-  const patternText = detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan: ec.getDayGan(), timeGan, timeZhi, diPan, xingTargetGong, menTargetGong, tianPanGan });
+  const patternText = detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan: ec.getDayGan(), timeGan, timeZhi, diPan, xingTargetGong, menTargetGong });
 
   return {
     name,
