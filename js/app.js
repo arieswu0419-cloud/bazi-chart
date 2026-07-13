@@ -1358,8 +1358,29 @@ function hideShuziView() {
   document.getElementById("shuziStatus").textContent = "";
   document.getElementById("shuziResult").style.display = "none";
   document.getElementById("shuziPairsTable").innerHTML = "";
+  document.querySelector('input[name="shuziCategory"][value="純數字"]').checked = true;
+  shuziUpdateCategoryUi("純數字");
 }
 document.getElementById("shuziBackBtn").addEventListener("click", hideShuziView);
+
+// 類別（單選）：純數字／手機_市話／車牌目前共用同一套滑動配對＋八星查表演算法（PDF裡這三種
+// 都是直接用號碼本身分析）；姓名（筆劃轉換）、身份證號（PDF另一套三位數卦象／流年演算法，
+// 跟八星配對是不同機制）目前還沒有可靠的資料來源可以實作，選到這兩類先提示尚未實作
+const SHUZI_CATEGORY_INFO = {
+  純數字: { label: "請輸入數字", placeholder: "例如：0912345678", implemented: true },
+  姓名: { label: "請輸入姓名筆劃數字", placeholder: "此類別演算法尚未實作，敬請期待", implemented: false },
+  身份證號: { label: "請輸入身份證字號中間數字", placeholder: "此類別演算法尚未實作，敬請期待", implemented: false },
+  手機_市話: { label: "請輸入手機或市話號碼", placeholder: "例如：0912345678", implemented: true },
+  車牌: { label: "請輸入車牌號碼", placeholder: "例如：ABC1234", implemented: true }
+};
+function shuziUpdateCategoryUi(category) {
+  const info = SHUZI_CATEGORY_INFO[category];
+  document.getElementById("shuziInputLabel").textContent = info.label;
+  document.getElementById("shuzi-input").placeholder = info.placeholder;
+}
+document.querySelectorAll('input[name="shuziCategory"]').forEach((radio) => {
+  radio.addEventListener("change", function () { shuziUpdateCategoryUi(this.value); });
+});
 
 // 四吉卦／四凶卦（數字易經.pdf 第2、7頁），用來決定星曜徽章顏色
 const SHUZI_GOOD_STARS = ["伏位", "延年", "生氣", "天醫"];
@@ -1370,6 +1391,7 @@ function shuziStarBadgeHtml(star) {
 }
 
 document.getElementById("shuziAnalyzeBtn").addEventListener("click", function () {
+  const category = document.querySelector('input[name="shuziCategory"]:checked').value;
   const raw = document.getElementById("shuzi-input").value;
   const statusEl = document.getElementById("shuziStatus");
   const digits = raw.replace(/[^0-9]/g, "");
@@ -1378,7 +1400,8 @@ document.getElementById("shuziAnalyzeBtn").addEventListener("click", function ()
     document.getElementById("shuziResult").style.display = "none";
     return;
   }
-  statusEl.textContent = "";
+  statusEl.textContent = SHUZI_CATEGORY_INFO[category].implemented ? "" :
+    "「" + category + "」類別的專屬演算法尚未實作，以下暫以「純數字」滑動配對方式分析您輸入的數字。";
   const result = shuziAnalyze(digits);
 
   document.getElementById("shuziLastCode").textContent = result.lastPair.code;

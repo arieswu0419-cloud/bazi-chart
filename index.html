@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=103">
+<link rel="stylesheet" href="css/style.css?v=104">
 </head>
 <body>
 
@@ -379,7 +379,17 @@
       <h2 class="shuzi-title">數字易經分析</h2>
 
       <div class="field">
-        <label for="shuzi-input">請輸入數字（姓名筆劃、電話、身分證、車牌、門牌等皆可）</label>
+        <label>類別</label>
+        <div class="shuzi-category-row" id="shuziCategoryRow">
+          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="純數字" checked>純數字</label>
+          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="姓名">姓名</label>
+          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="身份證號">身份證號</label>
+          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="手機_市話">手機_市話</label>
+          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="車牌">車牌</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="shuzi-input" id="shuziInputLabel">請輸入數字</label>
         <input type="text" id="shuzi-input" inputmode="numeric" placeholder="例如：0912345678">
       </div>
       <button type="button" class="btn" id="shuziAnalyzeBtn" data-html2canvas-ignore="true">分析</button>
@@ -405,17 +415,17 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=103"></script>
-<script src="js/auth.js?v=103"></script>
+<script src="js/firebase-config.js?v=104"></script>
+<script src="js/auth.js?v=104"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=103"></script>
-<script src="js/renge-engine.js?v=103"></script>
-<script src="js/lifenum-engine.js?v=103"></script>
-<script src="js/mingpian-engine.js?v=103"></script>
-<script src="js/shuzi-engine.js?v=103"></script>
-<script src="js/qimen-engine.js?v=103"></script>
+<script src="js/bazi-engine.js?v=104"></script>
+<script src="js/renge-engine.js?v=104"></script>
+<script src="js/lifenum-engine.js?v=104"></script>
+<script src="js/mingpian-engine.js?v=104"></script>
+<script src="js/shuzi-engine.js?v=104"></script>
+<script src="js/qimen-engine.js?v=104"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=103"></script>
+<script src="js/app.js?v=104"></script>
 </body>
 </html>
