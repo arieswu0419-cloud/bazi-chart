@@ -1027,6 +1027,8 @@ footer {
 /* 名片風水頁面 */
 .mingpian-card .card-head { justify-content: space-between; }
 h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 0; }
+h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
+#changePasswordCard { max-width: 420px; margin: 0 auto; }
 .mingpian-images { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
 .mingpian-image-box { flex: 1 1 260px; min-width: 220px; }
 .mingpian-image-label { font-weight: 700; margin-bottom: 6px; color: var(--text-primary); }
@@ -1105,13 +1107,19 @@ h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border
 .mingpian-camera-actions { display: flex; gap: 10px; justify-content: center; }
 
 /* 數字易經頁面 */
-.shuzi-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
+.card .shuzi-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
 .shuzi-category-row { display: flex; gap: 14px; flex-wrap: wrap; }
 .shuzi-category-item { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 400; color: var(--text-primary); cursor: pointer; }
 .shuzi-category-item input { margin: 0; }
-#shuzi-input { max-width: 360px; }
+#shuzi-input-num, #shuzi-input-name, #shuzi-input-id, #shuzi-input-plate { max-width: 360px; }
 #shuziAnalyzeBtn { margin-top: 14px; width: auto; }
 .shuzi-status { font-size: 13px; color: var(--fire-mid); min-height: 18px; margin: 8px 0 0; }
+.shuzi-item-result { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+.shuzi-item-result:first-child { margin-top: 20px; padding-top: 0; border-top: none; }
+.shuzi-item-heading { margin: 0 0 10px; color: var(--text-primary); }
+.shuzi-raw-input { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+.shuzi-raw-input strong { color: var(--text-primary); }
+.shuzi-sub-heading { margin: 18px 0 8px; color: var(--text-secondary); font-size: 14px; }
 .shuzi-result { margin-top: 20px; }
 .shuzi-last-pair {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -1127,6 +1135,14 @@ h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border
 .shuzi-pairs-table th { background: var(--page-bg); font-weight: 700; }
 .shuzi-pairs-table .shuzi-code { font-size: 16px; }
 .shuzi-sum { margin-top: 14px; font-size: 14px; color: var(--text-secondary); }
+.shuzi-sum-meaning { margin-top: 8px; padding: 10px 14px; background: var(--page-bg); border-radius: var(--radius); font-size: 13px; line-height: 1.7; color: var(--text-primary); }
+.shuzi-sum-meaning .shuzi-star-badge { margin-right: 8px; }
+.shuzi-gua-result { margin-top: 20px; }
+.shuzi-gua-process { font-size: 13px; color: var(--text-secondary); background: var(--page-bg); padding: 10px 14px; border-radius: var(--radius); margin-bottom: 12px; }
+.shuzi-gua-name { margin: 0 0 12px; color: var(--text-primary); }
+.shuzi-gua-field { margin-bottom: 12px; }
+.shuzi-gua-label { display: inline-block; font-weight: 700; background: #5B5B5B; color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 13px; margin-bottom: 4px; }
+.shuzi-gua-field p { margin: 6px 0 0; line-height: 1.7; color: var(--text-primary); }
 
 @media (max-width: 560px) {
   .mingpian-form-grid { grid-template-columns: 1fr; }

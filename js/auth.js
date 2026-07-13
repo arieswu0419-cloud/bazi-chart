@@ -79,7 +79,8 @@ function translateAuthError(err) {
     "auth/wrong-password": "帳號或密碼錯誤",
     "auth/invalid-credential": "帳號或密碼錯誤",
     "auth/user-disabled": "此帳號已被管理者停用，請聯絡管理者",
-    "auth/too-many-requests": "嘗試次數過多，請稍後再試"
+    "auth/too-many-requests": "嘗試次數過多，請稍後再試",
+    "auth/requires-recent-login": "請重新登入後再試一次"
   };
   return map[err.code] || ("發生錯誤：" + err.message);
 }
@@ -116,4 +117,42 @@ function requireAdmin(onReady) {
 async function handleLogout() {
   await auth.signOut();
   window.location.href = "login.html";
+}
+
+// 修改密碼：先用目前密碼重新驗證身份（Firebase 規定改密碼前若登入已久必須重新驗證），
+// 成功後直接登出導回登入頁，並帶一個查詢參數讓登入頁顯示「已修改成功」的提示
+async function handleChangePassword(e) {
+  e.preventDefault();
+  const currentPassword = document.getElementById("cp-current").value;
+  const newPassword = document.getElementById("cp-new").value;
+  const newPassword2 = document.getElementById("cp-new2").value;
+  const msg = document.getElementById("cp-msg");
+  const btn = document.getElementById("changePasswordSubmitBtn");
+
+  if (newPassword !== newPassword2) {
+    showMsg(msg, "兩次輸入的新密碼不一致", "error");
+    return;
+  }
+  if (newPassword.length < 6) {
+    showMsg(msg, "新密碼至少需要 6 個字元", "error");
+    return;
+  }
+
+  const user = auth.currentUser;
+  if (!user) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const cred = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(newPassword);
+    await auth.signOut();
+    window.location.href = "login.html?pwChanged=1";
+  } catch (err) {
+    showMsg(msg, translateAuthError(err), "error");
+    btn.disabled = false;
+  }
 }

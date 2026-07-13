@@ -94,7 +94,23 @@ requireApprovedUser(function (user, data) {
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
     });
   });
+
+  document.getElementById("changePasswordNavBtn").addEventListener("click", showChangePasswordView);
 });
+
+// ================= 修改密碼 =================
+function showChangePasswordView() {
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("changePasswordView").style.display = "";
+}
+function hideChangePasswordView() {
+  document.getElementById("changePasswordView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  document.getElementById("changePasswordForm").reset();
+  document.getElementById("cp-msg").className = "form-msg";
+  document.getElementById("cp-msg").textContent = "";
+}
+document.getElementById("changePasswordBackBtn").addEventListener("click", hideChangePasswordView);
 
 // 擇日欄位（選日子）／出生年月日時欄位：都是年/月/日(/時)下拉，預設今天（出生時間也預設現在，使用者可自行修改）
 function fillYearMonthDaySelects(yearSel, monthSel, daySel, today) {
@@ -122,6 +138,9 @@ function fillYearMonthDaySelects(yearSel, monthSel, daySel, today) {
   );
   fillYearMonthDaySelects(
     document.getElementById("f-byear"), document.getElementById("f-bmonth"), document.getElementById("f-bday"), today
+  );
+  fillYearMonthDaySelects(
+    document.getElementById("shuzi-lunar-year"), document.getElementById("shuzi-lunar-month"), document.getElementById("shuzi-lunar-day"), today
   );
   // 時間欄位維持單一個 <input type="time">（24 小時制 HH:MM 一欄），不拆成時／分兩個下拉選單；
   // 分鐘精度還是保留在這欄裡面，24 節氣交界時刻的判斷不受影響
@@ -1354,33 +1373,17 @@ function hideShuziView() {
   document.getElementById("shuziView").style.display = "none";
   document.getElementById("mainView").style.display = "";
   // 使用者輸入的數字不留存：離開頁面就清空，不會留在畫面或記憶體裡
-  document.getElementById("shuzi-input").value = "";
+  ["shuzi-input-num", "shuzi-input-name", "shuzi-input-id", "shuzi-input-plate"].forEach((id) => {
+    document.getElementById(id).value = "";
+  });
+  fillYearMonthDaySelects(
+    document.getElementById("shuzi-lunar-year"), document.getElementById("shuzi-lunar-month"), document.getElementById("shuzi-lunar-day"), new Date()
+  );
   document.getElementById("shuziStatus").textContent = "";
-  document.getElementById("shuziResult").style.display = "none";
-  document.getElementById("shuziPairsTable").innerHTML = "";
-  document.querySelector('input[name="shuziCategory"][value="純數字"]').checked = true;
-  shuziUpdateCategoryUi("純數字");
+  document.getElementById("shuziResults").innerHTML = "";
+  document.querySelectorAll('input[name="shuziItem"]').forEach((cb) => { cb.checked = true; });
 }
 document.getElementById("shuziBackBtn").addEventListener("click", hideShuziView);
-
-// 類別（單選）：純數字／手機_市話／車牌目前共用同一套滑動配對＋八星查表演算法（PDF裡這三種
-// 都是直接用號碼本身分析）；姓名（筆劃轉換）、身份證號（PDF另一套三位數卦象／流年演算法，
-// 跟八星配對是不同機制）目前還沒有可靠的資料來源可以實作，選到這兩類先提示尚未實作
-const SHUZI_CATEGORY_INFO = {
-  純數字: { label: "請輸入數字", placeholder: "例如：0912345678", implemented: true },
-  姓名: { label: "請輸入姓名筆劃數字", placeholder: "此類別演算法尚未實作，敬請期待", implemented: false },
-  身份證號: { label: "請輸入身份證字號中間數字", placeholder: "此類別演算法尚未實作，敬請期待", implemented: false },
-  手機_市話: { label: "請輸入手機或市話號碼", placeholder: "例如：0912345678", implemented: true },
-  車牌: { label: "請輸入車牌號碼", placeholder: "例如：ABC1234", implemented: true }
-};
-function shuziUpdateCategoryUi(category) {
-  const info = SHUZI_CATEGORY_INFO[category];
-  document.getElementById("shuziInputLabel").textContent = info.label;
-  document.getElementById("shuzi-input").placeholder = info.placeholder;
-}
-document.querySelectorAll('input[name="shuziCategory"]').forEach((radio) => {
-  radio.addEventListener("change", function () { shuziUpdateCategoryUi(this.value); });
-});
 
 // 四吉卦／四凶卦（數字易經.pdf 第2、7頁），用來決定星曜徽章顏色
 const SHUZI_GOOD_STARS = ["伏位", "延年", "生氣", "天醫"];
@@ -1390,31 +1393,205 @@ function shuziStarBadgeHtml(star) {
   return '<span class="shuzi-star-badge ' + cls + '">' + star + "</span>";
 }
 
-document.getElementById("shuziAnalyzeBtn").addEventListener("click", function () {
-  const category = document.querySelector('input[name="shuziCategory"]:checked').value;
-  const raw = document.getElementById("shuzi-input").value;
-  const statusEl = document.getElementById("shuziStatus");
-  const digits = raw.replace(/[^0-9]/g, "");
-  if (digits.length < 2) {
-    statusEl.textContent = "請輸入至少 2 位數字";
-    document.getElementById("shuziResult").style.display = "none";
-    return;
-  }
-  statusEl.textContent = SHUZI_CATEGORY_INFO[category].implemented ? "" :
-    "「" + category + "」類別的專屬演算法尚未實作，以下暫以「純數字」滑動配對方式分析您輸入的數字。";
+// 八星滑動配對結果區塊（純數字／姓名／身份證號／車牌共用）
+function shuziPairBlockHtml(digits) {
   const result = shuziAnalyze(digits);
-
-  document.getElementById("shuziLastCode").textContent = result.lastPair.code;
-  document.getElementById("shuziLastStar").innerHTML = shuziStarBadgeHtml(result.lastPair.star);
-
+  if (!result) return '<p class="shuzi-status">至少需要 2 位數字才能配對</p>';
   const rows = result.pairs.map((p, i) =>
     "<tr><td>第" + (i + 1) + "組</td><td class=\"shuzi-code\">" + p.code + "</td><td>" + shuziStarBadgeHtml(p.star) + "</td></tr>"
   ).join("");
-  document.getElementById("shuziPairsTable").innerHTML =
-    "<tr><th>順序</th><th>配對</th><th>八星</th></tr>" + rows;
+  const meaning = shuziSumMeaning(result.sum);
+  const meaningHtml = meaning
+    ? '<div class="shuzi-sum-meaning"><span class="shuzi-star-badge ' + (meaning.luck === "吉" ? "good" : meaning.luck === "凶" ? "bad" : "") + '">' + meaning.luck + '</span>' + meaning.text + '</div>'
+    : '';
+  return (
+    '<div class="shuzi-result">' +
+      '<div class="shuzi-last-pair">' +
+        '<span class="shuzi-result-label">末二碼（磁場最終結論）</span>' +
+        '<span class="shuzi-code">' + result.lastPair.code + '</span>' +
+        shuziStarBadgeHtml(result.lastPair.star) +
+      '</div>' +
+      '<table class="shuzi-pairs-table"><tr><th>順序</th><th>配對</th><th>八星</th></tr>' + rows + '</table>' +
+      '<div class="shuzi-sum">數字總和：' + result.sum + '</div>' +
+      meaningHtml +
+    '</div>'
+  );
+}
 
-  document.getElementById("shuziSumValue").textContent = result.sum;
-  document.getElementById("shuziResult").style.display = "";
+// 身份證號卦象結果區塊
+function shuziGuaBlockHtml(r) {
+  return (
+    '<div class="shuzi-gua-result">' +
+      '<div class="shuzi-gua-process">中間6碼 ' + r.middle.join("") + '　→　' + r.sums.join("、") + '　→　最終 ' + r.finalDigits.join("、") + '（' + r.pattern + '）</div>' +
+      '<h3 class="shuzi-gua-name">' + r.gua.name + '</h3>' +
+      '<div class="shuzi-gua-field"><span class="shuzi-gua-label">性格</span><p>' + r.gua.personality + '</p></div>' +
+      '<div class="shuzi-gua-field"><span class="shuzi-gua-label">愛情</span><p>' + r.gua.love + '</p></div>' +
+      '<div class="shuzi-gua-field"><span class="shuzi-gua-label">事業</span><p>' + r.gua.career + '</p></div>' +
+      '<div class="shuzi-gua-field"><span class="shuzi-gua-label">未來</span><p>' + r.gua.future + '</p></div>' +
+    '</div>'
+  );
+}
+
+function shuziItemChecked(name) {
+  return document.querySelector('input[name="shuziItem"][value="' + name + '"]').checked;
+}
+
+// 使用者原始輸入的文字／數字直接寫進畫面跟 PDF，避免用 innerHTML 拼接時被當成 HTML 標籤解析
+function shuziEscapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+function shuziRawInputHtml(label, raw) {
+  return '<div class="shuzi-raw-input">您輸入的' + label + '：<strong>' + shuziEscapeHtml(raw) + '</strong></div>';
+}
+// 使用者若不小心貼上含 <b>、</b> 等標籤文字，要先清掉，不然字母 b 會被誤當成車牌／身份證號的英文字母去參與運算
+function shuziStripTags(str) {
+  return str.replace(/<\/?[a-zA-Z][^>]*>/g, "");
+}
+
+document.getElementById("shuziAnalyzeBtn").addEventListener("click", function () {
+  const statusEl = document.getElementById("shuziStatus");
+  const blocks = [];
+  const errors = [];
+
+  if (shuziItemChecked("純數字")) {
+    const raw = shuziStripTags(document.getElementById("shuzi-input-num").value);
+    const digits = raw.replace(/[^0-9]/g, "");
+    if (digits) {
+      if (digits.length < 2) {
+        errors.push("純數字：請輸入至少 2 位數字");
+      } else {
+        blocks.push(
+          '<section class="shuzi-item-result"><h3 class="shuzi-item-heading">純數字（市話手機末6碼）</h3>' +
+          shuziRawInputHtml("純數字（市話手機末6碼）", raw) +
+          shuziPairBlockHtml(digits) +
+          '</section>'
+        );
+      }
+    }
+  }
+
+  if (shuziItemChecked("姓名")) {
+    const raw = shuziStripTags(document.getElementById("shuzi-input-name").value.trim());
+    if (raw) {
+      const nameResult = shuziNameToDigits(raw);
+      if (nameResult.error) {
+        errors.push("姓名：" + nameResult.error);
+      } else {
+        const breakdown = nameResult.breakdown.map((b) => b.char + "(" + b.strokes + "畫)").join(" ");
+        blocks.push(
+          '<section class="shuzi-item-result"><h3 class="shuzi-item-heading">姓名</h3>' +
+          shuziRawInputHtml("姓名", raw) +
+          '<div class="shuzi-gua-process">' + breakdown + '　→　' + nameResult.digits + '</div>' +
+          shuziPairBlockHtml(nameResult.digits) +
+          '</section>'
+        );
+      }
+    }
+  }
+
+  if (shuziItemChecked("身份證號")) {
+    const raw = shuziStripTags(document.getElementById("shuzi-input-id").value.trim());
+    if (raw) {
+      const r = shuziIdCardCombinedAnalyze(raw);
+      if (r.error) {
+        errors.push("身份證號：" + r.error);
+      } else {
+        blocks.push(
+          '<section class="shuzi-item-result"><h3 class="shuzi-item-heading">身份證號</h3>' +
+          shuziRawInputHtml("身份證號", raw) +
+          '<div class="shuzi-gua-process">字母 ' + r.letter + ' 對應數字 ' + r.letterNum + '，併入號碼後：' + r.mergedDigits + '</div>' +
+          shuziPairBlockHtml(r.mergedDigits) +
+          '<h4 class="shuzi-sub-heading">卦象分析</h4>' +
+          shuziGuaBlockHtml(r.gua) +
+          '</section>'
+        );
+      }
+    }
+  }
+
+  if (shuziItemChecked("農曆生日")) {
+    const gYear = document.getElementById("shuzi-lunar-year").value;
+    const gMonth = document.getElementById("shuzi-lunar-month").value;
+    const gDay = document.getElementById("shuzi-lunar-day").value;
+    const rawLabel = "西元" + gYear + "年" + gMonth + "月" + gDay + "日";
+    const lb = shuziLunarBirthdayToDigits(gYear, gMonth, gDay);
+    if (lb.error) {
+      errors.push("農曆生日：" + lb.error);
+    } else {
+      blocks.push(
+        '<section class="shuzi-item-result"><h3 class="shuzi-item-heading">農曆生日</h3>' +
+        shuziRawInputHtml("西元出生年/月/日", rawLabel) +
+        '<div class="shuzi-gua-process">換算農曆：民國' + lb.rocYear + '年' + lb.lunar.lMonth + '月' + lb.lunar.lDay + '日' + (lb.lunar.isLeap ? "（閏月）" : "") + '　→　' + lb.digits + '</div>' +
+        shuziPairBlockHtml(lb.digits) +
+        '</section>'
+      );
+    }
+  }
+
+  if (shuziItemChecked("車牌")) {
+    const raw = shuziStripTags(document.getElementById("shuzi-input-plate").value.trim());
+    if (raw) {
+      const plateResult = shuziPlateToDigits(raw);
+      if (plateResult.error) {
+        errors.push("車牌：" + plateResult.error);
+      } else if (plateResult.digits.length < 2) {
+        errors.push("車牌：請輸入至少 2 碼英數字");
+      } else {
+        blocks.push(
+          '<section class="shuzi-item-result"><h3 class="shuzi-item-heading">車牌</h3>' +
+          shuziRawInputHtml("車牌", raw) +
+          '<div class="shuzi-gua-process">英文字母對應數字後：' + plateResult.digits + '</div>' +
+          shuziPairBlockHtml(plateResult.digits) +
+          '</section>'
+        );
+      }
+    }
+  }
+
+  if (!blocks.length && !errors.length) {
+    statusEl.textContent = "請至少勾選一個項目並輸入內容";
+    document.getElementById("shuziResults").innerHTML = "";
+    return;
+  }
+  statusEl.textContent = errors.join("；");
+  document.getElementById("shuziResults").innerHTML = blocks.join("");
+});
+
+document.getElementById("exportShuziPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  if (!document.getElementById("shuziResults").innerHTML.trim()) {
+    document.getElementById("shuziStatus").textContent = "請先產生分析結果再匯出 PDF";
+    return;
+  }
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 數字易經分析報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+
+    const sections = Array.from(document.querySelectorAll("#shuziResults > *"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("數字易經分析報告.pdf");
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 });
 
 (function initMingpianSelects() {

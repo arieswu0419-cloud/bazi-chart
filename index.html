@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=104">
+<link rel="stylesheet" href="css/style.css?v=112">
 </head>
 <body>
 
@@ -20,6 +20,7 @@
       </div>
       <nav class="nav-links">
         <a href="admin.html" id="adminLink" class="btn secondary" style="width:auto;display:none">系統維護</a>
+        <button type="button" class="btn secondary" style="width:auto" id="changePasswordNavBtn">修改密碼</button>
         <button onclick="handleLogout()">登出</button>
       </nav>
     </div>
@@ -375,35 +376,85 @@
     <div class="card shuzi-card" id="shuziCard">
       <div class="card-head">
         <button type="button" class="btn secondary" id="shuziBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+        <button class="btn secondary" id="exportShuziPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
       </div>
       <h2 class="shuzi-title">數字易經分析</h2>
 
       <div class="field">
-        <label>類別</label>
+        <label>項目（可複選）</label>
         <div class="shuzi-category-row" id="shuziCategoryRow">
-          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="純數字" checked>純數字</label>
-          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="姓名">姓名</label>
-          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="身份證號">身份證號</label>
-          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="手機_市話">手機_市話</label>
-          <label class="shuzi-category-item"><input type="radio" name="shuziCategory" value="車牌">車牌</label>
+          <label class="shuzi-category-item"><input type="checkbox" name="shuziItem" value="純數字" checked>純數字（市話手機末6碼）</label>
+          <label class="shuzi-category-item"><input type="checkbox" name="shuziItem" value="姓名" checked>姓名</label>
+          <label class="shuzi-category-item"><input type="checkbox" name="shuziItem" value="身份證號" checked>身份證號</label>
+          <label class="shuzi-category-item"><input type="checkbox" name="shuziItem" value="農曆生日" checked>農曆生日</label>
+          <label class="shuzi-category-item"><input type="checkbox" name="shuziItem" value="車牌" checked>車牌</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="shuzi-input-num">純數字（市話手機末6碼）</label>
+        <input type="text" id="shuzi-input-num" inputmode="numeric" placeholder="請輸入數字">
+      </div>
+      <div class="field">
+        <label for="shuzi-input-name">姓名</label>
+        <input type="text" id="shuzi-input-name" placeholder="王小明">
+      </div>
+      <div class="field">
+        <label for="shuzi-input-id">身份證號</label>
+        <input type="text" id="shuzi-input-id" placeholder="A1201234567">
+      </div>
+      <div class="field">
+        <label>西元出生年/月/日</label>
+        <div class="field-inline-pair">
+          <div class="field-inline-item">
+            <label for="shuzi-lunar-year">年</label>
+            <select id="shuzi-lunar-year"></select>
+          </div>
+          <div class="field-inline-item">
+            <label for="shuzi-lunar-month">月</label>
+            <select id="shuzi-lunar-month"></select>
+          </div>
+          <div class="field-inline-item">
+            <label for="shuzi-lunar-day">日</label>
+            <select id="shuzi-lunar-day"></select>
+          </div>
         </div>
       </div>
       <div class="field">
-        <label for="shuzi-input" id="shuziInputLabel">請輸入數字</label>
-        <input type="text" id="shuzi-input" inputmode="numeric" placeholder="例如：0912345678">
+        <label for="shuzi-input-plate">車牌</label>
+        <input type="text" id="shuzi-input-plate" placeholder="ABC-1234">
       </div>
-      <button type="button" class="btn" id="shuziAnalyzeBtn" data-html2canvas-ignore="true">分析</button>
+
+      <button type="button" class="btn" id="shuziAnalyzeBtn" data-html2canvas-ignore="true">數字易經分析</button>
       <p class="shuzi-status" id="shuziStatus"></p>
 
-      <div class="shuzi-result" id="shuziResult" style="display:none">
-        <div class="shuzi-last-pair">
-          <span class="shuzi-result-label">末二碼（磁場最終結論）</span>
-          <span class="shuzi-code" id="shuziLastCode"></span>
-          <span id="shuziLastStar"></span>
-        </div>
-        <table class="shuzi-pairs-table" id="shuziPairsTable"></table>
-        <div class="shuzi-sum">數字總和：<span id="shuziSumValue"></span></div>
+      <div id="shuziResults"></div>
+    </div>
+    </div>
+
+    <div id="changePasswordView" style="display:none">
+    <div class="card" id="changePasswordCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="changePasswordBackBtn" style="width:auto">← 返回</button>
       </div>
+      <h2 class="change-pw-title">修改密碼</h2>
+
+      <form id="changePasswordForm" onsubmit="handleChangePassword(event)">
+        <div class="field">
+          <label for="cp-current">目前密碼</label>
+          <input type="password" id="cp-current" required>
+        </div>
+        <div class="field">
+          <label for="cp-new">新密碼</label>
+          <input type="password" id="cp-new" required minlength="6">
+        </div>
+        <div class="field">
+          <label for="cp-new2">確認新密碼</label>
+          <input type="password" id="cp-new2" required minlength="6">
+        </div>
+        <div class="form-msg" id="cp-msg"></div>
+        <button type="submit" class="btn" id="changePasswordSubmitBtn">確認修改</button>
+      </form>
     </div>
     </div>
 
@@ -415,17 +466,19 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=104"></script>
-<script src="js/auth.js?v=104"></script>
+<script src="js/firebase-config.js?v=112"></script>
+<script src="js/auth.js?v=112"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=104"></script>
-<script src="js/renge-engine.js?v=104"></script>
-<script src="js/lifenum-engine.js?v=104"></script>
-<script src="js/mingpian-engine.js?v=104"></script>
-<script src="js/shuzi-engine.js?v=104"></script>
-<script src="js/qimen-engine.js?v=104"></script>
+<script src="js/bazi-engine.js?v=112"></script>
+<script src="js/renge-engine.js?v=112"></script>
+<script src="js/lifenum-engine.js?v=112"></script>
+<script src="js/mingpian-engine.js?v=112"></script>
+<script src="js/name-strokes-data.js?v=112"></script>
+<script src="js/lunar-convert.js?v=112"></script>
+<script src="js/shuzi-engine.js?v=112"></script>
+<script src="js/qimen-engine.js?v=112"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=104"></script>
+<script src="js/app.js?v=112"></script>
 </body>
 </html>

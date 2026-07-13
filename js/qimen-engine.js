@@ -367,16 +367,20 @@ function findXingTargetGong(diPan, timeGan, fuShouGong) {
   return g;
 }
 
-// 值使門落宮：沿著「洛書飛泊順序」（排地盤用的那個順序，不是空間順序）從符首所在宮（fuShouGong）走
-// 「時辰在符首旬內的順序數」步（符首本身時辰＝第 0 步）。陽遁順此順序走、陰遁逆此順序走──
-// 用 2026-07-10 01:30 陰二局這筆逐宮核對過的官網資料修正：原本陰遁誤用「從值符星新宮起走＋固定順走」，
-// 拿這筆資料算出來的八門整組跟官網對不上（8 個宮全部錯位）；改成「起點固定用 fuShouGong、
-// 陰遁逆走洛書飛泊順序」之後，8 個宮的八門逐一核對完全吻合（用地盤三奇六儀的排法反推得到這個新公式，
-// 陽遁分支不變，之前驗證過的陽遁資料不受影響）。
+// 值使門落宮：沿著「洛書飛泊順序」（排地盤用的那個順序，不是空間順序）從符首所在宮（fuShouGong）走。
+// 陽遁：順此順序走「時辰在符首旬內的順序數」步（符首本身時辰＝第 0 步）。
+// 陰遁：改用「原始（非反向）洛書飛泊順序」，但走「順序數的兩倍」步——
+// 用兩筆陰遁資料交叉核對出來的修正公式：
+//   1. 2026-07-10 01:30（陰二局，fuShouGong=1，順序數3）→ 值使門落7宮
+//   2. 林振豪 1982-07-26 18:00（陰七局，fuShouGong=2，順序數1）→ 值使門落4宮（使用者提供命盤圖核對）
+// 原本「陰遁逆走洛書飛泊順序＋走1倍步數」的舊公式只用第1筆資料驗證過（註解本身已標明信心不足），
+// 拿第2筆資料代入後8個宮的八門全部錯位，改成「原始順序＋2倍步數」後兩筆資料都完全吻合。
+// 陽遁分支未變動，之前驗證過的陽遁資料不受影響。
 function findMenTargetGong(fuShouGong, hourIndexInXun, isYang) {
-  const order = isYang ? FEI_BO_ORDER : FEI_BO_ORDER.slice().reverse();
+  const order = FEI_BO_ORDER;
   const startIdx = order.indexOf(fuShouGong);
-  let g = order[(startIdx + hourIndexInXun) % 9];
+  const steps = isYang ? hourIndexInXun : 2 * hourIndexInXun;
+  let g = order[(startIdx + steps) % 9];
   if (g === 5) g = 2;
   return g;
 }
