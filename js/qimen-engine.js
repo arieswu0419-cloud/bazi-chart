@@ -464,6 +464,9 @@ function buildDayun(yearGan, yearZhi, gender) {
 const TIANFU_SHI_MAP = { 甲: "甲戌", 己: "甲戌", 乙: "甲申", 庚: "甲申", 丙: "甲午", 辛: "甲午", 丁: "甲辰", 壬: "甲辰", 戊: "甲寅", 癸: "甲寅" };
 const YUNU_SHI_MAP = { 甲: "丙寅", 己: "丙寅", 乙: "辛巳", 庚: "辛巳", 丙: "戊申", 辛: "戊申", 丁: "己亥", 壬: "己亥", 戊: "壬寅", 癸: "壬寅" };
 const WUBUYU_SHI_MAP = { 甲: ["庚午"], 乙: ["辛巳"], 丙: ["壬辰"], 丁: ["癸卯"], 戊: ["甲寅"], 己: ["乙丑"], 庚: ["丙子", "丙戌"], 辛: ["丁酉"], 壬: ["戊申"], 癸: ["己未"] };
+// 天網四張：六癸時（時干為癸）依日干五鼠遁對應到哪個癸時，天盤癸會被帶到地盤癸的位置而成局；
+// 戊日／癸日同樣起壬子，都會遇到癸丑時，癸日自己又額外在癸亥時遇到（日干時干都是癸，特別大凶）
+const TIANWANG_SHI_MAP = { 甲: "癸酉", 己: "癸酉", 乙: "癸未", 庚: "癸未", 丙: "癸巳", 辛: "癸巳", 丁: "癸卯", 壬: "癸卯", 戊: "癸丑", 癸: "癸丑" };
 
 function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi }) {
   const labels = [];
@@ -478,6 +481,8 @@ function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi }) 
   if (TIANFU_SHI_MAP[dayGan] === timeGanZhi) labels.push("天輔時");
   if (YUNU_SHI_MAP[dayGan] === timeGanZhi) labels.push("玉女時");
   if ((WUBUYU_SHI_MAP[dayGan] || []).includes(timeGanZhi)) labels.push("五不遇時");
+  if (TIANWANG_SHI_MAP[dayGan] === timeGanZhi) labels.push("天網四張");
+  if (dayGan === "癸" && timeGanZhi === "癸亥") labels.push("天網四張(特別大凶)");
 
   return labels.length ? labels.join("，") : "無";
 }
