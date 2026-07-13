@@ -257,17 +257,21 @@ function getGeju81(tianGan, diGan) {
 
 // 六儀擊刑：固定的儀→宮對照（跟排地盤的局數無關，是六儀本身「隱藏的甲」與該宮地支構成三刑的固定關係）
 // 甲子戊落震三宮、甲戌己落坤二宮、甲申庚落艮八宮、甲午辛落離九宮、甲辰壬落巽四宮、甲寅癸落巽四宮
-// 判斷條件是「該儀天盤干、地盤干同時都是目標天干」（等於該儀在該宮沒有被時干旋轉帶走，真正落定在
-// 擊刑位上），不是「天盤或地盤任一層出現該天干就算」──原本用「或」判斷，用 1988-04-14 03:31
-// 這筆資料核對出破綻：離9宮天盤干辛（但地盤干乙）、坤2宮地盤干己（但天盤干乙），這兩宮官網都沒有
-// 六儀擊刑，代表只有單一層符合並不算數。改成「兩層都要符合」後，這筆資料離9、坤2都正確不觸發；
-// 原本驗證用的 1992-02-02 00:01 那筆資料剛好整盤天地盤干相同（伏吟盤），改成「與」判斷結果不變，
-// 離9（辛辛）、艮8（庚庚）依然正確觸發，兩筆資料都吻合。
+// 判斷條件：天盤干要是目標天干（該儀真正落到這個宮位上）；地盤干如果是三奇（乙丙丁）則視為被奇
+// 化解、不算擊刑，地盤干是任何一個儀（不論跟目標天干是否同一個）都不算化解、擊刑照樣成立。
+// 原本誤用「天地盤干要同時是目標天干」（見下方修正紀錄），用 2013-04-14 03:45 這筆資料核對出破綻：
+// 離9宮天盤干辛（符合）、地盤干癸（是另一個儀，不是奇），官網仍然標示六儀擊刑，可是「同時符合」的
+// 舊判斷式要求地盤干也要是辛，這裡地盤干是癸就被誤判成不成立。改成「地盤干只有是奇才化解」之後，
+// 這筆資料離9正確觸發；先前用來抓出「或」判斷破綻的 1988-04-14 03:31 那筆資料（離9天盤干辛、
+// 地盤干乙＝奇，官網沒有擊刑；坤2天盤干乙不符合目標己，本來就不該觸發）用新判斷式重新核對依然正確；
+// 最早驗證用的 1992-02-02 00:01（整盤伏吟，離9辛辛、艮8庚庚，地盤干都不是奇）也依然正確觸發。
 const JI_XING_MAP = { 3: ["戊"], 2: ["己"], 8: ["庚"], 9: ["辛"], 4: ["壬", "癸"] };
+const QI_STEMS_JI_XING = ["乙", "丙", "丁"];
 function hasJiXing(gong, tianGan, diGan) {
   const targets = JI_XING_MAP[gong];
   if (!targets) return false;
-  return targets.includes(tianGan) && targets.includes(diGan);
+  if (!targets.includes(tianGan)) return false;
+  return !QI_STEMS_JI_XING.includes(diGan);
 }
 
 // 空亡：時柱天干地支代入公式算出旬空的兩個地支（跟符首一樣用時柱，時家之學），
@@ -374,20 +378,26 @@ function findXingTargetGong(diPan, timeGan, fuShouGong) {
   return g;
 }
 
-// 值使門落宮：沿著「洛書飛泊順序」（排地盤用的那個順序，不是空間順序）從符首所在宮（fuShouGong）走。
-// 陽遁：順此順序走「時辰在符首旬內的順序數」步（符首本身時辰＝第 0 步）。
-// 陰遁：改用「原始（非反向）洛書飛泊順序」，但走「順序數的兩倍」步——
-// 用兩筆陰遁資料交叉核對出來的修正公式：
-//   1. 2026-07-10 01:30（陰二局，fuShouGong=1，順序數3）→ 值使門落7宮
-//   2. 林振豪 1982-07-26 18:00（陰七局，fuShouGong=2，順序數1）→ 值使門落4宮（使用者提供命盤圖核對）
-// 原本「陰遁逆走洛書飛泊順序＋走1倍步數」的舊公式只用第1筆資料驗證過（註解本身已標明信心不足），
-// 拿第2筆資料代入後8個宮的八門全部錯位，改成「原始順序＋2倍步數」後兩筆資料都完全吻合。
-// 陽遁分支未變動，之前驗證過的陽遁資料不受影響。
-function findMenTargetGong(fuShouGong, hourIndexInXun, isYang) {
+// 值使門落宮：沿著「洛書飛泊順序」（排地盤用的那個順序，不是空間順序），從符首「原始」所在宮
+// （rawFuShouGong，符首落中宮時這裡仍是5，不能先寄二宮）走「時辰在符首旬內的順序數」步，
+// 陽遁順此順序走、陰遁逆此順序走，走完之後才套用「5寄二宮」。
+// 關鍵修正：起點要用「原始」符首宮（可能是5），不是已經寄二宮之後的 fuShouGong——
+// 用 5 筆資料交叉核對出來：
+//   1. 1988-04-14 03:31（陽一局，raw符首宮1，順序數2）→ 值使門落3宮
+//   2. 1982-05-30 10:45（陽五局，raw符首宮1，順序數3）→ 值使門落4宮
+//   3. 2013-04-14 03:45（陽四局，raw符首宮5→寄2，順序數4）→ 值使門落9宮
+//      （這筆是關鍵：如果用寄宮後的2當起點，陽遁原本的公式會算出6宮，
+//      跟使用者提供的命盤圖對不上；改用原始5當起點，走4步剛好落9宮，完全吻合）
+//   4. 林振豪 1982-07-26 18:00（陰七局，raw符首宮5→寄2，順序數1）→ 值使門落4宮
+//   5. 2026-07-10 01:30（陰二局，raw符首宮1，順序數3）→ 值使門落7宮
+// 五筆資料用「原始符首宮起走、陽順陰逆、只走1倍順序數」這個更簡單的公式完全吻合，
+// 不需要先前陰遁「走2倍步數」的權宜修正（那個修正只是湊巧讓當時手上兩筆陰遁資料對上，
+// 拿新資料代入才發現真正缺的環節是起點要用原始符首宮，不是寄宮後的）。
+function findMenTargetGong(rawFuShouGong, hourIndexInXun, isYang) {
   const order = FEI_BO_ORDER;
-  const startIdx = order.indexOf(fuShouGong);
-  const steps = isYang ? hourIndexInXun : 2 * hourIndexInXun;
-  let g = order[(startIdx + steps) % 9];
+  const startIdx = order.indexOf(rawFuShouGong);
+  const steps = isYang ? hourIndexInXun : -hourIndexInXun;
+  let g = order[((startIdx + steps) % 9 + 9) % 9];
   if (g === 5) g = 2;
   return g;
 }
@@ -532,9 +542,12 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   const juInfo = determineJu(jieQiName, yuanIdx);
 
   const diPan = buildDiPan(juInfo.ju, juInfo.isYang);
-  let fuShouGong = findGongOfStem(diPan, xunShou.yi);
+  const rawFuShouGong = findGongOfStem(diPan, xunShou.yi);
   // 中宮沒有自己的星（五宮無星無門），符首落中宮時寄坤二宮一起計算
   // （拿 2025-08-20 15:30 陰八局的實測資料核對出來：符首辛落中宮，官網顯示值符是天芮＝坤二宮固定星）
+  // 這個寄宮後的 fuShouGong 用在值符星／值使門「顯示」的地方；值使門「走幾步」的計算則要用
+  // 寄宮前的 rawFuShouGong（見 findMenTargetGong 註解）
+  let fuShouGong = rawFuShouGong;
   if (fuShouGong === 5) fuShouGong = 2;
   const fuShouXing = XING_BEN_WEI[fuShouGong];
 
@@ -550,7 +563,7 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
     }
     return timeJiaZiIdx - xunShou.startIdx;
   })();
-  const menTargetGong = findMenTargetGong(fuShouGong, hourIndexInXun, juInfo.isYang);
+  const menTargetGong = findMenTargetGong(rawFuShouGong, hourIndexInXun, juInfo.isYang);
 
   const { tianPanXing, tianPanGan, delta: xingDelta } = buildTianPan(diPan, fuShouGong, xingTargetGong, juInfo.isYang);
   const { renPanMen, delta: menDelta } = buildRenPan(fuShouGong, menTargetGong, juInfo.isYang);
