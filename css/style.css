@@ -1022,6 +1022,22 @@ footer {
 
 /* 中宮：跟其它宮位同一套版面，中間圓圈用深灰底白字取代門的顏色圓圈 */
 .qimen-center-circle { background: #6B6B6B; }
+
+/* 手機版九宮格內文字整體再改小1號（在上面 .qimen-compass zoom:0.8 縮放的基礎上，字級再單獨降一階）。
+   這個區塊要放在上面各個 .qimen-xing 等基礎字級規則「之後」，同層級選擇器才會在 cascade 裡蓋過去
+   （media query 本身不會加分數，放前面反而會被後面的桌面版基礎規則蓋掉，之前就是踩到這個坑）。
+   只調文字大小，不動絕對定位的座標，避免跟圓圈／間距的相對關係跑掉 */
+@media (max-width: 560px) {
+  .qimen-xing { font-size: 15px; }
+  .qimen-gan-char { font-size: 15px; }
+  .qimen-shen { font-size: 18px; }
+  .qimen-men-circle { font-size: 25px; }
+  .qimen-jixing { font-size: 9px; }
+  .qimen-dayun { font-size: 10px; }
+  .qimen-corner-words span, .qimen-corner-words-left span { font-size: 8px; }
+  .qimen-cell-bottom { font-size: 17px; }
+  .qimen-ming-circle { font-size: 12px; }
+}
 .admin-status-btn:disabled { opacity: 0.6; cursor: default; }
 
 /* 名片風水頁面 */
