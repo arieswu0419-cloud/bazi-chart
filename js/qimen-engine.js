@@ -609,24 +609,29 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   const dayun = buildDayun(ec.getYearGan(), ec.getYearZhi(), gender);
 
   // 命宮／兄弟／子女：分別找日柱／月柱／時柱天干落在天盤的宮位。這裡有兩種「找不到」要分開處理：
-  // 1. 天干是「甲」：甲遁藏於符首儀，本來就不會出現在天盤上，這種情況要直接算到值符星目前所在的
-  //    宮位（xingTargetGong），不能套用下面第2種的天芮寄宮邏輯。
+  // 1. 天干是「甲」：甲遁藏於六儀，本來就不會出現在天盤上。甲只會跟子、戌、申、午、辰、寅這6個地支
+  //    搭配（六甲旬首：甲子戊、甲戌己、甲申庚、甲午辛、甲辰壬、甲寅癸），所以先用該柱的地支查出
+  //    對應的儀，再找這個儀目前落在天盤的哪一宮，就是甲該去的宮位。原本誤用「值符星目前所在宮位」
+  //    （xingTargetGong），用 2033-02-14 01:45 這筆資料核對出錯：月柱甲寅，儀是癸，天盤癸落在
+  //    乾六宮，兄弟應該在乾六宮，但值符星那時在離九宮，兩者不是同一宮，可見不能直接套用值符星宮位。
   // 2. 天干不是甲，但剛好落中宮（中宮不在天盤 8 宮之列）：寄到「天芮星」目前飛到的宮位（不是固定
   //    坤二宮）──中宮寄坤二宮是地盤（未轉動前）的慣例，天盤干是轉動過的，所以要跟著「天芮」這顆
   //    星轉動後的位置走，用 2026-07-10 01:30 這筆資料核對出來──時干丁落中宮，此局天芮星轉到震三宮，
   //    子女正確應該寄到震三宮，不是坤二宮。
-  // 原本只有子女（時柱）有做「甲→值符宮」的特殊處理，命宮（日柱）、兄弟（月柱）漏掉了，用
-  // 2033-02-14 01:45 這筆資料核對出破綻：月柱甲寅（月干甲），兄弟宮誤寄到天芮宮（艮八宮），
-  // 但官網顯示兄弟應該在值符宮（離九宮）。三個宮位統一改用同一套判斷邏輯後修正。
   const tianRuiGong = findGongOfStar(tianPanXing, "天芮");
-  const findTianPanGong = (gan) => {
-    if (gan === "甲") return xingTargetGong;
+  const JIA_XUN_YI_BY_ZHI = { 子: "戊", 戌: "己", 申: "庚", 午: "辛", 辰: "壬", 寅: "癸" };
+  const findTianPanGong = (gan, zhi) => {
+    if (gan === "甲") {
+      const yi = JIA_XUN_YI_BY_ZHI[zhi];
+      const g = findGongOfStem(tianPanGan, yi);
+      return g === null ? tianRuiGong : g;
+    }
     const g = findGongOfStem(tianPanGan, gan);
     return g === null ? tianRuiGong : g;
   };
-  const mingGong = findTianPanGong(ec.getDayGan());
-  const xiongdiGong = findTianPanGong(ec.getMonthGan());
-  const ziNuGong = findTianPanGong(timeGan);
+  const mingGong = findTianPanGong(ec.getDayGan(), ec.getDayZhi());
+  const xiongdiGong = findTianPanGong(ec.getMonthGan(), ec.getMonthZhi());
+  const ziNuGong = findTianPanGong(timeGan, timeZhi);
   const yiMaGong = ZHI_TO_GONG_QM[yiMa];
   const tianYi = { gong: ziNuGong, dir: GONG_INFO[ziNuGong].dir };
 
