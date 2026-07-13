@@ -261,8 +261,10 @@ function shuziLunarBirthdayToDigits(gYear, gMonth, gDay) {
   return { lunar, rocYear, digits: String(rocYear) + monthStr + dayStr };
 }
 
-// 姓名筆劃：逐字查 js/name-strokes-data.js 的康熙校正筆劃字典，把筆劃數字串接成數字字串，
-// 之後跟純數字／車牌一樣走八星滑動配對（PDF只提到「姓名→筆劃」是輸入來源之一，沒有另外的專屬演算法）
+// 姓名筆劃：逐字查 js/name-strokes-data.js 的教育部《國語辭典簡編本》筆畫索引字典
+// （https://dict.concised.moe.edu.tw/searchS.jsp，逐一畫數擷取官方收錄字表），把筆劃數字
+// 串接成數字字串，之後跟純數字／車牌一樣走八星滑動配對（PDF只提到「姓名→筆劃」是輸入來源之一，
+// 沒有另外的專屬演算法）
 function shuziNameToDigits(name) {
   const chars = Array.from(String(name).trim()).filter((c) => c.trim() !== "");
   if (!chars.length) return { error: "請輸入姓名" };
