@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=101">
+<link rel="stylesheet" href="css/style.css?v=103">
 </head>
 <body>
 
@@ -28,7 +28,7 @@
       <button type="button" class="main-nav-link" data-feature="奇門遁甲" data-perm="qimenDunjia">奇門遁甲</button>
       <button type="button" class="main-nav-link" data-feature="觀音棋卦" data-perm="guanyin">觀音棋卦</button>
       <button type="button" class="main-nav-link" data-feature="濟公棋卦" data-perm="jigong">濟公棋卦</button>
-      <button type="button" class="main-nav-link" data-feature="陽宅風水" data-perm="fengshui">陽宅風水</button>
+      <button type="button" class="main-nav-link" data-feature="數字易經" data-perm="fengshui">數字易經</button>
       <button type="button" class="main-nav-link" data-feature="名片風水" data-perm="mingpian">名片風水</button>
     </nav>
   </div>
@@ -371,6 +371,32 @@
     </div>
     </div>
 
+    <div id="shuziView" style="display:none">
+    <div class="card shuzi-card" id="shuziCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="shuziBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="shuzi-title">數字易經分析</h2>
+
+      <div class="field">
+        <label for="shuzi-input">請輸入數字（姓名筆劃、電話、身分證、車牌、門牌等皆可）</label>
+        <input type="text" id="shuzi-input" inputmode="numeric" placeholder="例如：0912345678">
+      </div>
+      <button type="button" class="btn" id="shuziAnalyzeBtn" data-html2canvas-ignore="true">分析</button>
+      <p class="shuzi-status" id="shuziStatus"></p>
+
+      <div class="shuzi-result" id="shuziResult" style="display:none">
+        <div class="shuzi-last-pair">
+          <span class="shuzi-result-label">末二碼（磁場最終結論）</span>
+          <span class="shuzi-code" id="shuziLastCode"></span>
+          <span id="shuziLastStar"></span>
+        </div>
+        <table class="shuzi-pairs-table" id="shuziPairsTable"></table>
+        <div class="shuzi-sum">數字總和：<span id="shuziSumValue"></span></div>
+      </div>
+    </div>
+    </div>
+
   </div>
 </main>
 
@@ -379,16 +405,17 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=101"></script>
-<script src="js/auth.js?v=101"></script>
+<script src="js/firebase-config.js?v=103"></script>
+<script src="js/auth.js?v=103"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=101"></script>
-<script src="js/renge-engine.js?v=101"></script>
-<script src="js/lifenum-engine.js?v=101"></script>
-<script src="js/mingpian-engine.js?v=101"></script>
-<script src="js/qimen-engine.js?v=101"></script>
+<script src="js/bazi-engine.js?v=103"></script>
+<script src="js/renge-engine.js?v=103"></script>
+<script src="js/lifenum-engine.js?v=103"></script>
+<script src="js/mingpian-engine.js?v=103"></script>
+<script src="js/shuzi-engine.js?v=103"></script>
+<script src="js/qimen-engine.js?v=103"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=101"></script>
+<script src="js/app.js?v=103"></script>
 </body>
 </html>

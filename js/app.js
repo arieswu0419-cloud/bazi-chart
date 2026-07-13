@@ -17,7 +17,8 @@ function showToast(text, type) {
 // 權限計算：跟 js/admin.js 的 effectivePermissions() 是同一套規則，畫面初始狀態才會一致。
 // 帳號完全沒有 permissions 欄位＝這個權限系統上線前就已核准的舊帳號，八字／人格解碼／生命靈數／奇門命盤
 // 沿用舊行為視為開放（那時候就已經在用了，不能讓人一覺醒來被鎖住）；五個新的導覽功能（奇門遁甲／觀音棋卦／
-// 濟公棋卦／陽宅風水／名片風水）本來就沒有上線過，一律預設關閉，要管理者手動開通。
+// 濟公棋卦／數字易經／名片風水）本來就沒有上線過，一律預設關閉，要管理者手動開通。
+// （數字易經沿用舊的 fengshui 權限欄位名稱，只改畫面上顯示的名稱，避免已核准帳號的權限跟著跑掉）
 // 帳號有 permissions 欄位但沒有某個新欄位（簽入舊版三欄位物件的帳號）：qimen 沿用「舊帳號視為開放」的邏輯
 // （避免現有使用者權限系統上線後突然失去奇門命盤的使用權），其餘新欄位一律視為未開放。
 function effectivePermissions(data) {
@@ -72,8 +73,9 @@ requireApprovedUser(function (user, data) {
     setActiveTab(perms.renge ? "renge" : (perms.lifenum ? "lifenum" : "qimen"));
   }
 
-  // 上方綠色區塊的新功能導覽按鍵：名片風水已經開發完成，直接切換到該畫面；其餘還在開發中的功能維持提示
-  const navPermKeys = { qimenDunjia: "奇門遁甲", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "陽宅風水", mingpian: "名片風水" };
+  // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
+  // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
+  const navPermKeys = { qimenDunjia: "奇門遁甲", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
@@ -83,6 +85,10 @@ requireApprovedUser(function (user, data) {
       }
       if (key === "mingpian") {
         showMingpianView();
+        return;
+      }
+      if (key === "fengshui") {
+        showShuziView();
         return;
       }
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
@@ -1338,6 +1344,55 @@ function hideMingpianView() {
   mpResetAll();
 }
 document.getElementById("mingpianBackBtn").addEventListener("click", hideMingpianView);
+
+// ================= 數字易經 =================
+function showShuziView() {
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("shuziView").style.display = "";
+}
+function hideShuziView() {
+  document.getElementById("shuziView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  // 使用者輸入的數字不留存：離開頁面就清空，不會留在畫面或記憶體裡
+  document.getElementById("shuzi-input").value = "";
+  document.getElementById("shuziStatus").textContent = "";
+  document.getElementById("shuziResult").style.display = "none";
+  document.getElementById("shuziPairsTable").innerHTML = "";
+}
+document.getElementById("shuziBackBtn").addEventListener("click", hideShuziView);
+
+// 四吉卦／四凶卦（數字易經.pdf 第2、7頁），用來決定星曜徽章顏色
+const SHUZI_GOOD_STARS = ["伏位", "延年", "生氣", "天醫"];
+function shuziStarBadgeHtml(star) {
+  if (!star) return "－";
+  const cls = SHUZI_GOOD_STARS.includes(star) ? "good" : "bad";
+  return '<span class="shuzi-star-badge ' + cls + '">' + star + "</span>";
+}
+
+document.getElementById("shuziAnalyzeBtn").addEventListener("click", function () {
+  const raw = document.getElementById("shuzi-input").value;
+  const statusEl = document.getElementById("shuziStatus");
+  const digits = raw.replace(/[^0-9]/g, "");
+  if (digits.length < 2) {
+    statusEl.textContent = "請輸入至少 2 位數字";
+    document.getElementById("shuziResult").style.display = "none";
+    return;
+  }
+  statusEl.textContent = "";
+  const result = shuziAnalyze(digits);
+
+  document.getElementById("shuziLastCode").textContent = result.lastPair.code;
+  document.getElementById("shuziLastStar").innerHTML = shuziStarBadgeHtml(result.lastPair.star);
+
+  const rows = result.pairs.map((p, i) =>
+    "<tr><td>第" + (i + 1) + "組</td><td class=\"shuzi-code\">" + p.code + "</td><td>" + shuziStarBadgeHtml(p.star) + "</td></tr>"
+  ).join("");
+  document.getElementById("shuziPairsTable").innerHTML =
+    "<tr><th>順序</th><th>配對</th><th>八星</th></tr>" + rows;
+
+  document.getElementById("shuziSumValue").textContent = result.sum;
+  document.getElementById("shuziResult").style.display = "";
+});
 
 (function initMingpianSelects() {
   const zodiacSel = document.getElementById("mp-zodiac");

@@ -1103,6 +1103,28 @@ h2.mingpian-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border
 }
 .mingpian-camera-hint { color: #fff; font-size: 13px; margin: 10px 0; }
 .mingpian-camera-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* 數字易經頁面 */
+.shuzi-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
+#shuzi-input { max-width: 360px; }
+#shuziAnalyzeBtn { margin-top: 14px; width: auto; }
+.shuzi-status { font-size: 13px; color: var(--fire-mid); min-height: 18px; margin: 8px 0 0; }
+.shuzi-result { margin-top: 20px; }
+.shuzi-last-pair {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 14px; background: var(--page-bg); border-radius: var(--radius); margin-bottom: 16px;
+}
+.shuzi-result-label { font-weight: 700; color: var(--text-primary); }
+.shuzi-code { font-size: 22px; font-weight: 800; color: var(--text-primary); letter-spacing: 1px; }
+.shuzi-star-badge { font-size: 14px; font-weight: 700; padding: 3px 12px; border-radius: 999px; }
+.shuzi-star-badge.good { background: #DCEFD9; color: #2C6B2F; }
+.shuzi-star-badge.bad { background: #F7DADA; color: #A32D2D; }
+.shuzi-pairs-table { width: 100%; border-collapse: collapse; }
+.shuzi-pairs-table th, .shuzi-pairs-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: center; font-size: 14px; }
+.shuzi-pairs-table th { background: var(--page-bg); font-weight: 700; }
+.shuzi-pairs-table .shuzi-code { font-size: 16px; }
+.shuzi-sum { margin-top: 14px; font-size: 14px; color: var(--text-secondary); }
+
 @media (max-width: 560px) {
   .mingpian-form-grid { grid-template-columns: 1fr; }
 }
