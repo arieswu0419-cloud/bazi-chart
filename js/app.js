@@ -721,9 +721,9 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
     const pageWidth = 210;
     const pageHeight = 297;
     const margin = 10;
-    const RENGE_BG = "#F5D800";
+    const RENGE_BG = "#ffffff";
 
-    // 整頁先鋪金黃色底（跟畫面上的人格解碼配色一致），要在畫logo／標題之前先鋪好，不然會蓋掉
+    // 整頁鋪白色底（含個人資料等各區塊自己的透明底色也是用這個顏色補），要在畫logo／標題之前先鋪好，不然會蓋掉
     fillPdfPageBg(pdf, pageWidth, pageHeight, RENGE_BG);
 
     const logoImg = document.querySelector(".brand img");
