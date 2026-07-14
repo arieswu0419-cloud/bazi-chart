@@ -510,20 +510,8 @@ function isYuNuShouMen(diPan, menTargetGong) {
   return menTargetGong === dingGong;
 }
 
-// 時干入墓：查時柱天干（timeGan）落在「地盤」的哪一宮（不是天盤），如果剛好是該宮（依卦別）
-// 的入墓天干，就在上方格局欄位標註「X入墓」（X＝時干本身）。跟宮位右下角逐宮顯示的入墓文字
-// （看天盤干）是不同層——時干入墓用使用者提供的完整演算法＋實測範例改寫：時柱丁丑（時干丁），
-// 丁火墓在丑，丑固定在艮八宮，範例命盤艮八宮地盤干正好是丁，兩者對上即觸發「丁入墓」；
-// RUMU_STEMS 對照表本身不變（已用官方圖核對過），只是這裡改查地盤干、不是天盤干。
-// 甲是隱干，地盤上不會出現，時干是甲時 findGongOfStem 自然找不到、回傳 null，不用特別排除。
-function findTimeGanRumuLabel(diPan, timeGan) {
-  const gong = findGongOfStem(diPan, timeGan);
-  if (gong === null) return null;
-  const gua = GONG_INFO[gong].gua;
-  const rumuList = RUMU_STEMS[gua] || [];
-  if (!rumuList.includes(timeGan)) return null;
-  return timeGan + "入墓";
-}
+// 「時干入墓」上方格局欄位這個判斷已經拿掉（多筆資料驗證後發現常常誤判，例如時干乙的情況官網
+// 並不會顯示），改成只保留宮位右下角逐宮顯示的入墓文字（看天盤干，RUMU_STEMS 對照表不變）。
 
 function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, diPan, xingTargetGong, menTargetGong }) {
   const labels = [];
@@ -537,8 +525,6 @@ function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, di
   const timeGanZhi = timeGan + timeZhi;
   if (TIANFU_SHI_MAP[dayGan] === timeGanZhi) labels.push("天輔時");
   if (isYuNuShouMen(diPan, menTargetGong)) labels.push("玉女時");
-  const timeGanRumuLabel = findTimeGanRumuLabel(diPan, timeGan);
-  if (timeGanRumuLabel) labels.push(timeGanRumuLabel);
   if ((WUBUYU_SHI_MAP[dayGan] || []).includes(timeGanZhi)) labels.push("五不遇時");
   if (TIANWANG_SHI_MAP[dayGan] === timeGanZhi) labels.push("天網四張");
   if (dayGan === "癸" && timeGanZhi === "癸亥") labels.push("天網四張(特別大凶)");
