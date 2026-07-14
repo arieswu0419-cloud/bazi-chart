@@ -624,6 +624,35 @@ function rengeBulletList(arr) {
   return "<ul>" + arr.map((x) => "<li>" + x + "</li>").join("") + "</ul>";
 }
 
+// 數字對照表整張表格太高，一定會跨頁；把每一列複製成獨立的暫存表格（離屏放置，寬度跟現有表格對齊），
+// 讓 addSectionsToPdf 逐列判斷要不要換頁，換頁時才不會把同一列從中間切斷。用完要記得 cleanup 移除暫存節點。
+function buildRengeRowSections() {
+  const valueEl = document.getElementById("rengeReferenceTable");
+  const tableEl = valueEl ? valueEl.querySelector("table.renge-ref-table") : null;
+  const panel = valueEl ? valueEl.closest(".renge-panel") : null;
+  if (!tableEl || !panel) return { panel, sections: [], cleanup: () => {} };
+
+  const tempEls = [];
+  const sections = [];
+  const titleEl = panel.querySelector(".renge-box-title");
+  if (titleEl) sections.push(titleEl);
+
+  const tableWidth = tableEl.offsetWidth;
+  // 用 .rows（HTMLTableElement 原生屬性）取全部 <tr>，不用 .children——瀏覽器解析表格時會自動幫裸 <tr> 包一層
+  // 隱性的 <tbody>，.children 只會拿到那個 <tbody> 本身，不是逐列的 <tr>
+  Array.from(tableEl.rows).forEach((tr) => {
+    const wrapper = document.createElement("table");
+    wrapper.className = "renge-ref-table";
+    wrapper.style.cssText = "position:absolute;left:-9999px;top:0;width:" + tableWidth + "px";
+    wrapper.appendChild(tr.cloneNode(true));
+    document.body.appendChild(wrapper);
+    tempEls.push(wrapper);
+    sections.push(wrapper);
+  });
+
+  return { panel, sections, cleanup: () => tempEls.forEach((el) => el.remove()) };
+}
+
 function buildRengeReferenceHtml(ref) {
   const rows = [];
   const row = (label, html) =>
@@ -705,8 +734,15 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
     // 逐區塊（基本資訊／生日數天賦數主命數／人生階段能量／九宮連線密碼與能量圖）換頁，避免表格被硬切一半；
     // 擇日下拉選單那個區塊標了 data-html2canvas-ignore，不該進 PDF（html2canvas 對 <select> 這種原生表單
     // 元件常常渲染不出來，之前沒濾掉會讓 PDF 最上面出現一塊空白或錯位的區域）
-    const rengeSections = Array.from(document.querySelectorAll("#rengeCard > *:not(.card-head):not([data-html2canvas-ignore])"));
-    await addSectionsToPdf(pdf, rengeSections, margin, pageWidth, pageHeight, 26, RENGE_BG, RENGE_BG);
+    const topSections = Array.from(document.querySelectorAll("#rengeCard > *:not(.card-head):not([data-html2canvas-ignore])"));
+    // 數字對照表那個大表格改成逐列拆開（見 buildRengeRowSections），避免換頁時把某一列從中間切斷
+    const { panel: refPanel, sections: refRowSections, cleanup: cleanupRefRows } = buildRengeRowSections();
+    const rengeSections = topSections.flatMap((el) => (el === refPanel ? refRowSections : [el]));
+    try {
+      await addSectionsToPdf(pdf, rengeSections, margin, pageWidth, pageHeight, 26, RENGE_BG, RENGE_BG);
+    } finally {
+      cleanupRefRows();
+    }
 
     addPageNumbers(pdf, pageWidth, pageHeight);
 
