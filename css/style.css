@@ -667,6 +667,10 @@ main.app {
 .renge-ref-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .renge-ref-table tr { border-bottom: 1px solid var(--renge-border); }
 .renge-ref-table tr:last-child { border-bottom: none; }
+/* PDF 匯出時把數字對照表拆成一列一個暫存表格（見 app.js buildRengeRowSections），每個暫存表格裡
+   該列都是唯一一列，如果沿用 .renge-ref-table 的 tr:last-child 規則底線會被拿掉；這裡固定畫底線 */
+.renge-pdf-row { width: 100%; border-collapse: collapse; font-size: 13px; }
+.renge-pdf-row tr { border-bottom: 1px solid var(--renge-border); }
 .renge-ref-label {
   width: 130px;
   min-width: 130px;

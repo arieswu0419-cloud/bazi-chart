@@ -314,11 +314,14 @@ async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, st
   const maxHeight = pageHeight - margin * 2;
   let y = startY;
   for (const el of sections) {
+    // 區塊間距預設 6mm；元素標了 data-pdf-gap 就改用那個值（例如數字對照表逐列匯出時設成 0，
+    // 讓列與列之間只靠各自的底線分隔，不會多出一段空白看起來像是斷開的區塊）
+    const gap = el.dataset && el.dataset.pdfGap !== undefined ? Number(el.dataset.pdfGap) : 6;
     const canvas = await html2canvas(el, { scale: 1.5, backgroundColor: backgroundColor || "#ffffff" });
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     if (imgHeight > maxHeight) {
       if (y > startY) { pdf.addPage(); fillPdfPageBg(pdf, pageWidth, pageHeight, pageBg); y = margin; }
-      y = addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, y, pageBg) + 6;
+      y = addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, y, pageBg) + gap;
       continue;
     }
     if (y + imgHeight > pageHeight - margin) {
@@ -327,7 +330,7 @@ async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, st
       y = margin;
     }
     pdf.addImage(canvas.toDataURL("image/jpeg", 0.85), "JPEG", margin, y, imgWidth, imgHeight);
-    y += imgHeight + 6;
+    y += imgHeight + gap;
   }
   return y;
 }
@@ -640,10 +643,15 @@ function buildRengeRowSections() {
   const tableWidth = tableEl.offsetWidth;
   // 用 .rows（HTMLTableElement 原生屬性）取全部 <tr>，不用 .children——瀏覽器解析表格時會自動幫裸 <tr> 包一層
   // 隱性的 <tbody>，.children 只會拿到那個 <tbody> 本身，不是逐列的 <tr>
+  // 每一列拆成獨立表格後，該列在自己的暫存表格裡會變成唯一一列，觸發 .renge-ref-table 的
+  // 「tr:last-child 不畫底線」規則，導致分隔線消失、只靠 addSectionsToPdf 的區塊間距撐開視覺——
+  // 改用專屬的 renge-pdf-row 樣式（見 style.css），底線一律都畫，並把區塊間距歸零（data-pdf-gap="0"），
+  // 這樣列與列之間才會是「一條分隔線」而不是「一段空白」。
   Array.from(tableEl.rows).forEach((tr) => {
     const wrapper = document.createElement("table");
-    wrapper.className = "renge-ref-table";
+    wrapper.className = "renge-pdf-row";
     wrapper.style.cssText = "position:absolute;left:-9999px;top:0;width:" + tableWidth + "px";
+    wrapper.dataset.pdfGap = "0";
     wrapper.appendChild(tr.cloneNode(true));
     document.body.appendChild(wrapper);
     tempEls.push(wrapper);
