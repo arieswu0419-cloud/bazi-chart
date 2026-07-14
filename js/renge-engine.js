@@ -217,6 +217,15 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
     return { text: full, matched: false };
   };
 
+  // 人生階段數說明：目前歲數所在那一欄（currentBracketRaw）化簡到底的個位數，直接對照「年數能量」1-9 表
+  const currentStageDigit = reduceToSingle(currentBracketRaw);
+  const stageExplain = typeof RENGE_YEAR_ENERGY !== "undefined" ? {
+    digit: currentStageDigit,
+    ageLabel: stages[currentBracketIndex].label.replace("\n", " "),
+    stageValue: stages[currentBracketIndex].value,
+    content: RENGE_YEAR_ENERGY[currentStageDigit]
+  } : null;
+
   const reference = typeof RENGE_TRAITS !== "undefined" ? {
     mainNumber,
     talentDisplay,
@@ -231,7 +240,8 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
     masterNumber: masterNumberInfo,
     comparison: RENGE_COMPARISON_GROUPS[mainNumber],
     attraction: RENGE_ATTRACTION[mainNumber],
-    circleMeanings
+    circleMeanings,
+    stageExplain
   } : null;
 
   return {

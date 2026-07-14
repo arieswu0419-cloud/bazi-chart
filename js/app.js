@@ -707,6 +707,16 @@ function buildRengeReferenceHtml(ref) {
     rows.push(row("主命中有的數字<br>九宮能量圖圈數含義", cmHtml));
   }
 
+  if (ref.stageExplain && ref.stageExplain.content) {
+    const s = ref.stageExplain;
+    const stageHtml =
+      '<div class="renge-cmp-head">生態循環</div>' + rengeBulletList(s.content.cycle) +
+      '<div class="renge-cmp-head" style="margin-top:8px">事業</div>' + rengeBulletList(s.content.career) +
+      '<div class="renge-cmp-head" style="margin-top:8px">感情</div>' + rengeBulletList(s.content.love) +
+      '<div class="renge-cmp-head" style="margin-top:8px">總能量和策略</div>' + rengeBulletList(s.content.overall);
+    rows.push(row("人生階段數（" + s.stageValue + "，" + s.ageLabel + "歲）說明", stageHtml));
+  }
+
   return '<table class="renge-ref-table">' + rows.join("") + "</table>";
 }
 
