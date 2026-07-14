@@ -629,7 +629,7 @@ function buildRengeReferenceHtml(ref) {
   const row = (label, html) =>
     '<tr><td class="renge-ref-label">' + label + '</td><td class="renge-ref-value">' + html + "</td></tr>";
 
-  rows.push(row(ref.name + "（1~9數字特性）", rengeBulletList(ref.traits.characteristics)));
+  rows.push(row(ref.mainNumber + " " + ref.name, rengeBulletList(ref.traits.characteristics)));
   rows.push(row(ref.name + "（主命數）正面", rengeBulletList(ref.traits.positive)));
   rows.push(row(ref.name + "（主命數）負面", rengeBulletList(ref.traits.negative)));
   rows.push(row("致命傷", "「" + ref.traits.fatalFlaw + "」"));
@@ -639,7 +639,7 @@ function buildRengeReferenceHtml(ref) {
   rows.push(row("感情篇", rengeBulletList(ref.relationship)));
   rows.push(row("投資理財觀", rengeBulletList(ref.investment)));
   rows.push(row("工作觀職位配對", rengeBulletList(ref.career)));
-  rows.push(row("天賦數", "<p>" + ref.talent.split("／").join("</p><p>") + "</p>"));
+  rows.push(row("天賦數 " + ref.talentDisplay, "<p>" + ref.talent.text + "</p>"));
 
   if (ref.masterNumber) {
     rows.push(row("天賦卓越數（" + ref.masterNumber.number + "）", "<p>" + ref.masterNumber.text + "</p>"));
@@ -667,7 +667,7 @@ function buildRengeReferenceHtml(ref) {
       rengeBulletList(ref.attraction.text) +
       '<div class="renge-cmp-head" style="margin-top:8px">貴人能量</div>' +
       rengeBulletList(ref.attraction.lucky);
-    rows.push(row("吸引力法則｜貴人能量", attrHtml));
+    rows.push(row("吸引力法則<br>貴人能量", attrHtml));
   }
 
   if (ref.circleMeanings && ref.circleMeanings.length) {
@@ -675,7 +675,7 @@ function buildRengeReferenceHtml(ref) {
       "<table class=\"renge-ref-subtable\"><tr><th>數字</th><th>圈數</th><th>含義</th></tr>" +
       ref.circleMeanings.map((m) => "<tr><td>" + m.digit + "</td><td>" + m.count + "</td><td>" + m.text + "</td></tr>").join("") +
       "</table>";
-    rows.push(row("主命中有的數字｜九宮能量圖圈數含義", cmHtml));
+    rows.push(row("主命中有的數字<br>九宮能量圖圈數含義", cmHtml));
   }
 
   return '<table class="renge-ref-table">' + rows.join("") + "</table>";

@@ -200,7 +200,26 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
         })
     : [];
 
+  // 天賦數細項說明：官方教材同一個主命數底下，依「化簡前的兩位數」（10/19/28/37/46…，每次＋9）分成好幾段
+  // 更精確的描述；用 talentChain 的原始值（尚未化簡的那個兩位數，例如「37/10」的 37）反推屬於第幾段，
+  // 對不上（例如天賦數本身就是個位數、沒有兩位數可以比對）就整段都顯示，不強行猜測。
+  const pickTalentSegment = (num, chain) => {
+    const full = typeof RENGE_TALENT !== "undefined" ? RENGE_TALENT[num] : null;
+    if (!full) return null;
+    const segments = full.split("／");
+    if (!chain.length) return { text: full, matched: false };
+    const precursor = chain[0];
+    const base = num + 9;
+    const idx = Math.round((precursor - base) / 9);
+    if (idx >= 0 && idx < segments.length && base + idx * 9 === precursor) {
+      return { text: segments[idx], matched: true };
+    }
+    return { text: full, matched: false };
+  };
+
   const reference = typeof RENGE_TRAITS !== "undefined" ? {
+    mainNumber,
+    talentDisplay,
     name: RENGE_NUMBER_NAMES[mainNumber],
     traits: RENGE_TRAITS[mainNumber],
     investment: RENGE_INVESTMENT[mainNumber],
@@ -208,7 +227,7 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
     recruiting: RENGE_RECRUITING[mainNumber],
     relationship: RENGE_RELATIONSHIP[mainNumber],
     career: RENGE_CAREER[mainNumber],
-    talent: RENGE_TALENT[mainNumber],
+    talent: pickTalentSegment(mainNumber, talentChain),
     masterNumber: masterNumberInfo,
     comparison: RENGE_COMPARISON_GROUPS[mainNumber],
     attraction: RENGE_ATTRACTION[mainNumber],
