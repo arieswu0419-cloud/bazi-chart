@@ -663,6 +663,35 @@ main.app {
 }
 .renge-energy-legend span { display: inline-flex; align-items: center; gap: 4px; }
 
+/* 數字對照表（主命數/天賦數詳解）：官方教材內容整理成的大表格，放在人格解碼報告最下方 */
+.renge-ref-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.renge-ref-table tr { border-bottom: 1px solid var(--renge-border); }
+.renge-ref-table tr:last-child { border-bottom: none; }
+.renge-ref-label {
+  width: 130px;
+  min-width: 130px;
+  vertical-align: top;
+  padding: 10px 8px;
+  font-weight: 700;
+  background: var(--renge-box-dark);
+  color: #fff;
+}
+.renge-ref-value { padding: 10px 12px; vertical-align: top; color: var(--text-primary); }
+.renge-ref-value ul { margin: 0; padding-left: 18px; }
+.renge-ref-value li { margin: 2px 0; }
+.renge-ref-value p { margin: 0 0 8px; line-height: 1.6; }
+.renge-ref-value p:last-child { margin-bottom: 0; }
+.renge-ref-subtable { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
+.renge-ref-subtable td, .renge-ref-subtable th {
+  border: 1px solid var(--renge-border);
+  padding: 6px 8px;
+  text-align: left;
+}
+.renge-ref-subtable th { background: var(--renge-box); }
+.renge-cmp-pair { display: flex; flex-wrap: wrap; gap: 16px; }
+.renge-cmp-pair > div { flex: 1 1 200px; min-width: 180px; }
+.renge-cmp-head { font-weight: 700; margin-bottom: 4px; color: var(--renge-text-gold); }
+
 /* 色點：比照參考網站在生日數/天賦數/主命數/階段數/年數能量標籤旁邊標示對應的九宮能量圖類別顏色 */
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 4px; vertical-align: middle; }
 .dot.blue { background: var(--eg-blue); }

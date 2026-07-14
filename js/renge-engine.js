@@ -174,6 +174,47 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
     purple: energyCounts.purple[d] || 0
   }));
 
+  // 天賦卓越數：天賦數化簡過程中出現 11/22/33/44 才觸發；11 另外依「化簡前一步」（29/38/47）挑更細緻的版本
+  const masterHit = talentChain.find((v) => v === 11 || v === 22 || v === 33 || v === 44);
+  let masterNumberInfo = null;
+  if (masterHit && typeof RENGE_MASTER_NUMBERS !== "undefined") {
+    const idx = talentChain.indexOf(masterHit);
+    const precursor = idx > 0 ? talentChain[idx - 1] : null;
+    const entry = RENGE_MASTER_NUMBERS[masterHit];
+    const subText = masterHit === 11 && precursor && entry.subs && entry.subs[precursor] ? entry.subs[precursor] : null;
+    masterNumberInfo = { number: masterHit, text: subText || entry.generic };
+  }
+
+  // 主命中有的數字（九宮能量圖圈數 > 0）逐一列出圈數含義：0/1/2 圈用通用說明，3-4 圈與 5 圈以上用各數字專屬說明
+  const circleMeanings = typeof RENGE_CIRCLE_MEANING_BY_DIGIT !== "undefined"
+    ? energyGrid
+        .map((g) => ({ digit: g.digit, total: g.blue + g.pink + g.green + g.orange + g.purple }))
+        .filter((g) => g.total > 0)
+        .map((g) => {
+          const info = RENGE_CIRCLE_MEANING_BY_DIGIT[g.digit];
+          let text;
+          if (g.total <= 2) text = RENGE_CIRCLE_MEANING_GENERAL.find((x) => x.range === String(g.total)).text;
+          else if (g.total <= 4) text = info.high;
+          else text = info.over;
+          return { digit: g.digit, count: g.total, text };
+        })
+    : [];
+
+  const reference = typeof RENGE_TRAITS !== "undefined" ? {
+    name: RENGE_NUMBER_NAMES[mainNumber],
+    traits: RENGE_TRAITS[mainNumber],
+    investment: RENGE_INVESTMENT[mainNumber],
+    sales: RENGE_SALES[mainNumber],
+    recruiting: RENGE_RECRUITING[mainNumber],
+    relationship: RENGE_RELATIONSHIP[mainNumber],
+    career: RENGE_CAREER[mainNumber],
+    talent: RENGE_TALENT[mainNumber],
+    masterNumber: masterNumberInfo,
+    comparison: RENGE_COMPARISON_GROUPS[mainNumber],
+    attraction: RENGE_ATTRACTION[mainNumber],
+    circleMeanings
+  } : null;
+
   return {
     name,
     birthDisplay: year + " " + month + " " + day,
@@ -186,6 +227,7 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
     stages,
     gapNumbers,
     codeLines,
-    energyGrid
+    energyGrid,
+    reference
   };
 }

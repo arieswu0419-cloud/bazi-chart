@@ -274,9 +274,18 @@ function textToImage(text, fontPx, color) {
   return { dataUrl: canvas.toDataURL("image/png"), widthMM: width * PX_TO_MM, heightMM: height * PX_TO_MM };
 }
 
+// 整頁鋪滿底色（用在頁面本身有主題色的報告，例如人格解碼的金黃色），要在該頁任何文字／圖片
+// 畫上去之前呼叫，不然會蓋掉已經畫好的內容
+function fillPdfPageBg(pdf, pageWidth, pageHeight, color) {
+  if (!color) return;
+  pdf.setFillColor(color);
+  pdf.rect(0, 0, pageWidth, pageHeight, "F");
+}
+
 // 把一個區塊 canvas 貼進 PDF，太高會自動分頁；回傳「最後一頁內容畫到哪個 Y 位置」，
-// 讓呼叫端知道要接著從哪裡往下放東西（例如結尾文字）
-function addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, startY) {
+// 讓呼叫端知道要接著從哪裡往下放東西（例如結尾文字）。pageBg 有給值時，新分頁也會先鋪底色
+// （第一頁的底色要由呼叫端自己在畫任何內容之前先鋪好，這裡只處理「新分頁」的情況）
+function addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, startY, pageBg) {
   const imgData = canvas.toDataURL("image/jpeg", 0.85);
   const imgWidth = pageWidth - margin * 2;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -287,6 +296,7 @@ function addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, startY) {
   while (heightLeft > 0) {
     position = heightLeft - imgHeight;
     pdf.addPage();
+    fillPdfPageBg(pdf, pageWidth, pageHeight, pageBg);
     pdf.addImage(imgData, "JPEG", margin, position, imgWidth, imgHeight);
     heightLeft -= pageHeight;
     lastBottom = position + imgHeight;
@@ -297,7 +307,9 @@ function addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, startY) {
 // 依「區塊」逐一畫進 PDF：每個區塊（例如一個表格／一張卡片）先各自 html2canvas 轉成圖片，
 // 如果整塊放不進當頁剩餘空間，就直接整塊換到下一頁，不會像單一大圖那樣被硬切一半；
 // 只有單一區塊本身就比一整頁還高時，才不得已用 addCanvasToPdf 的切頁邏輯畫（沒有更好的辦法）。
-async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, startY, backgroundColor) {
+// backgroundColor 是每個區塊自己 html2canvas 時的底色（填補區塊內透明的地方）；pageBg 則是
+// 整張 PDF 頁面（含區塊間空白）的底色，兩者通常給同一個顏色，但概念上是不同層。
+async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, startY, backgroundColor, pageBg) {
   const imgWidth = pageWidth - margin * 2;
   const maxHeight = pageHeight - margin * 2;
   let y = startY;
@@ -305,12 +317,13 @@ async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, st
     const canvas = await html2canvas(el, { scale: 1.5, backgroundColor: backgroundColor || "#ffffff" });
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     if (imgHeight > maxHeight) {
-      if (y > startY) { pdf.addPage(); y = margin; }
-      y = addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, y) + 6;
+      if (y > startY) { pdf.addPage(); fillPdfPageBg(pdf, pageWidth, pageHeight, pageBg); y = margin; }
+      y = addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, y, pageBg) + 6;
       continue;
     }
     if (y + imgHeight > pageHeight - margin) {
       pdf.addPage();
+      fillPdfPageBg(pdf, pageWidth, pageHeight, pageBg);
       y = margin;
     }
     pdf.addImage(canvas.toDataURL("image/jpeg", 0.85), "JPEG", margin, y, imgWidth, imgHeight);
@@ -603,6 +616,69 @@ function renderRenge(data) {
       '<div class="renge-energy-bar">' + segs.join("") + "</div></div>"
     );
   }).join("");
+
+  document.getElementById("rengeReferenceTable").innerHTML = data.reference ? buildRengeReferenceHtml(data.reference) : "";
+}
+
+function rengeBulletList(arr) {
+  return "<ul>" + arr.map((x) => "<li>" + x + "</li>").join("") + "</ul>";
+}
+
+function buildRengeReferenceHtml(ref) {
+  const rows = [];
+  const row = (label, html) =>
+    '<tr><td class="renge-ref-label">' + label + '</td><td class="renge-ref-value">' + html + "</td></tr>";
+
+  rows.push(row(ref.name + "（1~9數字特性）", rengeBulletList(ref.traits.characteristics)));
+  rows.push(row(ref.name + "（主命數）正面", rengeBulletList(ref.traits.positive)));
+  rows.push(row(ref.name + "（主命數）負面", rengeBulletList(ref.traits.negative)));
+  rows.push(row("致命傷", "「" + ref.traits.fatalFlaw + "」"));
+  rows.push(row("忠言", "「" + ref.traits.motto + "」"));
+  rows.push(row("增聘人才", rengeBulletList(ref.recruiting)));
+  rows.push(row("銷售", rengeBulletList(ref.sales)));
+  rows.push(row("感情篇", rengeBulletList(ref.relationship)));
+  rows.push(row("投資理財觀", rengeBulletList(ref.investment)));
+  rows.push(row("工作觀職位配對", rengeBulletList(ref.career)));
+  rows.push(row("天賦數", "<p>" + ref.talent.split("／").join("</p><p>") + "</p>"));
+
+  if (ref.masterNumber) {
+    rows.push(row("天賦卓越數（" + ref.masterNumber.number + "）", "<p>" + ref.masterNumber.text + "</p>"));
+  }
+
+  if (ref.comparison) {
+    let cmpHtml;
+    if (ref.comparison.special) {
+      cmpHtml = "<table class=\"renge-ref-subtable\">" + ref.comparison.rows.map((r) =>
+        "<tr><td>" + r.digit + "</td><td>" + r.text + "</td></tr>"
+      ).join("") + "</table>";
+    } else {
+      // 直接列出「自己」與「對比數字」兩欄，欄名用實際數字
+      cmpHtml =
+        '<div class="renge-cmp-pair">' +
+        '<div><div class="renge-cmp-head">自己的數字傾向</div>' + rengeBulletList(ref.comparison.self) + "</div>" +
+        '<div><div class="renge-cmp-head">對比數字 ' + ref.comparison.partner + " 的傾向</div>" + rengeBulletList(ref.comparison.other) + "</div>" +
+        "</div>";
+    }
+    rows.push(row("人格解碼比較", cmpHtml));
+  }
+
+  if (ref.attraction) {
+    const attrHtml =
+      rengeBulletList(ref.attraction.text) +
+      '<div class="renge-cmp-head" style="margin-top:8px">貴人能量</div>' +
+      rengeBulletList(ref.attraction.lucky);
+    rows.push(row("吸引力法則｜貴人能量", attrHtml));
+  }
+
+  if (ref.circleMeanings && ref.circleMeanings.length) {
+    const cmHtml =
+      "<table class=\"renge-ref-subtable\"><tr><th>數字</th><th>圈數</th><th>含義</th></tr>" +
+      ref.circleMeanings.map((m) => "<tr><td>" + m.digit + "</td><td>" + m.count + "</td><td>" + m.text + "</td></tr>").join("") +
+      "</table>";
+    rows.push(row("主命中有的數字｜九宮能量圖圈數含義", cmHtml));
+  }
+
+  return '<table class="renge-ref-table">' + rows.join("") + "</table>";
 }
 
 document.getElementById("exportRengePdfBtn").addEventListener("click", async function () {
@@ -616,6 +692,10 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
     const pageWidth = 210;
     const pageHeight = 297;
     const margin = 10;
+    const RENGE_BG = "#F5D800";
+
+    // 整頁先鋪金黃色底（跟畫面上的人格解碼配色一致），要在畫logo／標題之前先鋪好，不然會蓋掉
+    fillPdfPageBg(pdf, pageWidth, pageHeight, RENGE_BG);
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
@@ -626,7 +706,7 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
     // 擇日下拉選單那個區塊標了 data-html2canvas-ignore，不該進 PDF（html2canvas 對 <select> 這種原生表單
     // 元件常常渲染不出來，之前沒濾掉會讓 PDF 最上面出現一塊空白或錯位的區域）
     const rengeSections = Array.from(document.querySelectorAll("#rengeCard > *:not(.card-head):not([data-html2canvas-ignore])"));
-    await addSectionsToPdf(pdf, rengeSections, margin, pageWidth, pageHeight, 26, "#F5D800");
+    await addSectionsToPdf(pdf, rengeSections, margin, pageWidth, pageHeight, 26, RENGE_BG, RENGE_BG);
 
     addPageNumbers(pdf, pageWidth, pageHeight);
 
