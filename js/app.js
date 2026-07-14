@@ -619,11 +619,13 @@ document.getElementById("exportRengePdfBtn").addEventListener("click", async fun
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 奇門遁甲命盤報告", 20, "#212529");
+    const title = textToImage("Aries 人格解碼報告", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
-    // 逐區塊（基本資訊／生日數天賦數主命數／人生階段能量／九宮連線密碼與能量圖）換頁，避免表格被硬切一半
-    const rengeSections = Array.from(document.querySelectorAll("#rengeCard > *:not(.card-head)"));
+    // 逐區塊（基本資訊／生日數天賦數主命數／人生階段能量／九宮連線密碼與能量圖）換頁，避免表格被硬切一半；
+    // 擇日下拉選單那個區塊標了 data-html2canvas-ignore，不該進 PDF（html2canvas 對 <select> 這種原生表單
+    // 元件常常渲染不出來，之前沒濾掉會讓 PDF 最上面出現一塊空白或錯位的區域）
+    const rengeSections = Array.from(document.querySelectorAll("#rengeCard > *:not(.card-head):not([data-html2canvas-ignore])"));
     await addSectionsToPdf(pdf, rengeSections, margin, pageWidth, pageHeight, 26, "#F5D800");
 
     addPageNumbers(pdf, pageWidth, pageHeight);
