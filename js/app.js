@@ -701,7 +701,7 @@ function buildRengeReferenceHtml(ref) {
 
   if (ref.circleMeanings && ref.circleMeanings.length) {
     const cmHtml =
-      "<table class=\"renge-ref-subtable\"><tr><th>數字</th><th>圈數</th><th>含義</th></tr>" +
+      "<table class=\"renge-ref-subtable renge-circle-table\"><tr><th>數字</th><th>圈數</th><th>含義</th></tr>" +
       ref.circleMeanings.map((m) => "<tr><td>" + m.digit + "</td><td>" + m.count + "</td><td>" + m.text + "</td></tr>").join("") +
       "</table>";
     rows.push(row("主命中有的數字<br>九宮能量圖圈數含義", cmHtml));

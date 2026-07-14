@@ -688,6 +688,11 @@ main.app {
   text-align: left;
 }
 .renge-ref-subtable th { background: var(--renge-box); }
+/* 九宮能量圖圈數含義表：數字／圈數兩欄置中，含義欄維持靠左方便閱讀長文字 */
+.renge-circle-table td:nth-child(1), .renge-circle-table th:nth-child(1),
+.renge-circle-table td:nth-child(2), .renge-circle-table th:nth-child(2) {
+  text-align: center;
+}
 .renge-cmp-pair { display: flex; flex-wrap: wrap; gap: 16px; }
 .renge-cmp-pair > div { flex: 1 1 200px; min-width: 180px; }
 .renge-cmp-head { font-weight: 700; margin-bottom: 4px; color: var(--renge-text-gold); }
