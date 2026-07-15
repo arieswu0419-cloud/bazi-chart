@@ -1692,6 +1692,12 @@ const QI_YOU_LU_WEI_RULES = [
   { tianGan: "丙", guas: ["巽"] },
   { tianGan: "丁", guas: ["離"] }
 ];
+
+// 受刑：天盤干丙／丁落入坎宮（水），丙丁屬火，水火相沖，跟使用者提供的4筆真實盤核對出來
+// （2026-06-05／2009-08-08／2029-06-06 丙落坎宮、2018-06-05 丁落坎宮，4筆都只出現這個
+// 宮位這個提示，沒有例外）。坎宮不在 RUMU_STEMS／SHENG_DIAN_RULES／QI_YOU_LU_WEI_RULES
+// 任何一個既有規則的宮位清單裡，不會互相衝突
+const SHOU_XING_TEXT = { 丙: "丙奇受刑", 丁: "丁奇受刑" };
 function qimenDunjiaBottomLabel(c) {
   const geju = getGeju81(c.tianGan, c.diGan);
   const gejuName = geju ? geju.name : "";
@@ -1703,6 +1709,7 @@ function qimenDunjiaBottomLabel(c) {
   if (shengDian) extraLines.push(shengDian.text);
   const qiYouLuWei = QI_YOU_LU_WEI_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
   if (qiYouLuWei) extraLines.push("奇遊祿位");
+  if (SHOU_XING_TEXT[c.tianGan] && c.gua === "坎") extraLines.push(SHOU_XING_TEXT[c.tianGan]);
   if (!extraLines.length) return gejuName;
   return gejuName ? extraLines.join("<br>") + "<br>" + gejuName : extraLines.join("<br>");
 }
