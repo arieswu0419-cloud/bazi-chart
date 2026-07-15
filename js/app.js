@@ -252,7 +252,7 @@ document.getElementById("qimenSubmitBtn").addEventListener("click", function () 
   const [hour, minute] = timeVal.split(":").map(Number);
   const gender = document.getElementById("f-gender").value;
 
-  currentQimen = calculateQimenHeader({ year, month, day, hour, minute, name, gender, yiMaBasis: "day" });
+  currentQimen = calculateQimenHeader({ year, month, day, hour, minute, name, gender, yiMaBasis: "day", kongWangBasis: "day" });
   renderQimen(currentQimen);
   setActiveTab("qimen");
 });
@@ -1769,7 +1769,7 @@ document.getElementById("qimenDunjiaBackBtn").addEventListener("click", hideQime
 // 這個獨立頁面不收姓名／性別（只用來起盤查詢，不是命盤），gender 只是 calculateQimenHeader 內部
 // buildDayun 需要的參數，這裡不會顯示大運（九宮格中下方已改顯示格局名稱），隨便帶哪個值都不影響結果
 function runQimenDunjia(year, month, day, hour, minute) {
-  currentQimenDunjia = calculateQimenHeader({ year, month, day, hour, minute, name: "", gender: "male", yiMaBasis: "time" });
+  currentQimenDunjia = calculateQimenHeader({ year, month, day, hour, minute, name: "", gender: "male", yiMaBasis: "time", kongWangBasis: "time" });
   renderQimenDunjia(currentQimenDunjia);
 }
 
