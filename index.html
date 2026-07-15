@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=142">
+<link rel="stylesheet" href="css/style.css?v=143">
 </head>
 <body>
 
@@ -437,6 +437,55 @@
     </div>
     </div>
 
+    <div id="jigongView" style="display:none">
+    <div class="card jigong-card" id="jigongCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="jigongBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+        <button class="btn secondary" id="exportJigongPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+      <h2 class="jigong-title">濟公棋卦・前世因果</h2>
+      <p class="jigong-intro">
+        前世因果卦：五子棋卦。<br>
+        範例：我與ＸＸＸ最接近這一世或曾經為人的那一世關係如何？<br>
+        請依號碼順序將棋排入。
+      </p>
+
+      <div class="jigong-layout">
+        <div class="jigong-controls" data-html2canvas-ignore="true">
+          <p class="jigong-gender-row">
+            卜卦人性別：
+            <label><input type="radio" name="jigongGender" value="male" checked> 男</label>
+            <label><input type="radio" name="jigongGender" value="female"> 女</label>
+          </p>
+          <p class="jigong-select-status">選棋子：目前已選擇 <span id="jigongSelectedLabel">尚未選擇</span></p>
+          <div class="jigong-piece-palette" id="jigongPiecePalette"></div>
+          <div class="jigong-btn-row">
+            <button type="button" class="btn secondary" id="jigongClearBtn">清空</button>
+            <button type="button" class="btn secondary" id="jigongRandom5Btn">🎲 隨機抽五棋</button>
+            <button type="button" class="btn secondary" id="jigongRandomNextBtn">🎲 隨機抽一棋</button>
+          </div>
+        </div>
+
+        <div class="jigong-board-result-row">
+          <div class="jigong-panel jigong-board-panel">
+            <div class="jigong-panel-title">前世因果卦盤</div>
+            <div class="jigong-board" id="jigongBoard">
+              <div class="jigong-pos jigong-pos-top" data-pos="top"><span class="jigong-pos-num">4</span><span class="jigong-pos-piece"></span><span class="jigong-pos-label">上</span></div>
+              <div class="jigong-pos jigong-pos-left" data-pos="left"><span class="jigong-pos-num">2</span><span class="jigong-pos-piece"></span><span class="jigong-pos-label">左</span></div>
+              <div class="jigong-pos jigong-pos-center" data-pos="center"><span class="jigong-pos-num">1</span><span class="jigong-pos-piece"></span><span class="jigong-pos-label">中宮</span></div>
+              <div class="jigong-pos jigong-pos-right" data-pos="right"><span class="jigong-pos-num">3</span><span class="jigong-pos-piece"></span><span class="jigong-pos-label">右</span></div>
+              <div class="jigong-pos jigong-pos-bottom" data-pos="bottom"><span class="jigong-pos-num">5</span><span class="jigong-pos-piece"></span><span class="jigong-pos-label">下</span></div>
+            </div>
+          </div>
+
+          <div class="jigong-panel jigong-result-panel" id="jigongResult">
+            <p class="jigong-placeholder">請放上 5 支棋。第一支（中宮）決定前世性別與身分。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
     <div id="changePasswordView" style="display:none">
     <div class="card" id="changePasswordCard">
       <div class="card-head">
@@ -471,20 +520,21 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=142"></script>
-<script src="js/auth.js?v=142"></script>
+<script src="js/firebase-config.js?v=143"></script>
+<script src="js/auth.js?v=143"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=142"></script>
-<script src="js/renge-content.js?v=142"></script>
-<script src="js/renge-engine.js?v=142"></script>
-<script src="js/lifenum-engine.js?v=142"></script>
-<script src="js/mingpian-engine.js?v=142"></script>
-<script src="js/name-strokes-data.js?v=142"></script>
-<script src="js/lunar-convert.js?v=142"></script>
-<script src="js/shuzi-engine.js?v=142"></script>
-<script src="js/qimen-engine.js?v=142"></script>
+<script src="js/bazi-engine.js?v=143"></script>
+<script src="js/renge-content.js?v=143"></script>
+<script src="js/renge-engine.js?v=143"></script>
+<script src="js/lifenum-engine.js?v=143"></script>
+<script src="js/mingpian-engine.js?v=143"></script>
+<script src="js/name-strokes-data.js?v=143"></script>
+<script src="js/lunar-convert.js?v=143"></script>
+<script src="js/shuzi-engine.js?v=143"></script>
+<script src="js/jigong-engine.js?v=143"></script>
+<script src="js/qimen-engine.js?v=143"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=142"></script>
+<script src="js/app.js?v=143"></script>
 </body>
 </html>

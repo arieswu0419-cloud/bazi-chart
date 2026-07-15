@@ -1201,3 +1201,109 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 @media (max-width: 560px) {
   .mingpian-form-grid { grid-template-columns: 1fr; }
 }
+
+/* 濟公棋卦・前世因果頁面 */
+.card .jigong-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
+.jigong-intro { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
+.jigong-layout { display: flex; flex-direction: column; gap: 20px; }
+.jigong-panel { background: var(--page-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.jigong-panel-title { background: var(--gold); color: #fff; text-align: center; font-weight: 700; padding: 10px; }
+/* 卦盤＋解釋說明並排，各佔 50% 寬度：用 flex-basis:0 讓寬度平分不受 gap 影響，
+   min-width:0 避免內容（例如解釋文字）撐開造成換行、進而讓卦盤獨佔整列 */
+.jigong-board-result-row { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.jigong-board-panel { flex: 1 1 0; min-width: 0; }
+.jigong-result-panel { flex: 1 1 0; min-width: 0; }
+.jigong-board {
+  background: #6B4A2E;
+  padding: 12px 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  justify-items: center;
+  align-items: center;
+  row-gap: 5px;
+}
+.jigong-pos { position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+.jigong-pos-top { grid-column: 2; grid-row: 1; }
+.jigong-pos-left { grid-column: 1; grid-row: 2; }
+.jigong-pos-center { grid-column: 2; grid-row: 2; }
+.jigong-pos-right { grid-column: 3; grid-row: 2; }
+.jigong-pos-bottom { grid-column: 2; grid-row: 3; }
+.jigong-pos-num {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  background: #fff;
+  color: #6B4A2E;
+  border: 2px solid #6B4A2E;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  font-size: 8px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.jigong-pos-piece {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #EDE0C8;
+  border: 2px solid #EDE0C8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: transparent;
+}
+.jigong-pos-piece.filled.red { color: #C0392B; border-color: #C0392B; background: #fff; }
+.jigong-pos-piece.filled.black { color: #212529; border-color: #212529; background: #fff; }
+.jigong-pos-label { font-size: 10px; color: #EDE0C8; margin-top: 2px; }
+.jigong-controls { margin-bottom: 4px; }
+.jigong-select-status { font-size: 13px; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.jigong-selected-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--eg-orange);
+  font-size: 14px;
+  font-weight: 700;
+}
+.jigong-selected-icon.red { border: 2px solid #C0392B; color: #C0392B; }
+.jigong-selected-icon.black { border: 2px solid #212529; color: #212529; }
+.jigong-piece-palette { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.jigong-piece-row { display: flex; gap: 5px; flex-wrap: wrap; }
+.jigong-piece-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.jigong-piece-btn.red { border: 2px solid #C0392B; color: #C0392B; }
+.jigong-piece-btn.black { border: 2px solid #212529; color: #212529; }
+.jigong-piece-btn.selected { background: var(--gold); color: #fff; border-color: var(--gold-dark); }
+.jigong-btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.jigong-btn-row .btn { width: auto; }
+.jigong-gender-row { font-size: 13px; color: var(--text-primary); display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.jigong-gender-row label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.jigong-result-panel { padding: 16px; min-height: 200px; }
+.jigong-placeholder { color: var(--text-secondary); font-size: 14px; }
+.jigong-result-block { margin-bottom: 20px; }
+.jigong-result-block:last-child { margin-bottom: 0; }
+.jigong-result-block h3 { margin: 0 0 10px; color: var(--gold-darker); font-size: 15px; border-left: 3px solid var(--gold); padding-left: 8px; }
+.jigong-result-highlight { background: #EAF2FB; padding: 8px 12px; border-radius: var(--radius); margin: 0 0 8px; font-size: 14px; }
+.jigong-relation-line { background: #EAF2FB; padding: 8px 12px; border-radius: var(--radius); margin: 0 0 8px; font-size: 14px; line-height: 1.6; }
+.jigong-reminder-block p { font-size: 13px; color: var(--text-secondary); background: var(--page-bg); padding: 10px 14px; border-radius: var(--radius); margin: 0; }
+
+@media (max-width: 560px) {
+  .jigong-board-panel { flex: 1 1 100%; width: 100%; }
+}

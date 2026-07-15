@@ -5,6 +5,20 @@ let currentRenge = null;
 let currentLifenum = null;
 let currentQimen = null;
 
+// 上方綠色導覽列的「目前所在頁面」反白狀態：離開「命理諮詢」進到名片風水/數字易經/濟公棋卦等子頁面時，
+// 該子頁面的按鍵要換成反白（跟命理諮詢原本的樣式一樣，見 .main-nav-link.active），命理諮詢本身要跟著
+// 退回一般樣式；傳 null 代表回到命理諮詢（首頁）。
+function setActiveNav(feature) {
+  document.querySelectorAll(".main-nav-link").forEach((el) => el.classList.remove("active"));
+  if (feature) {
+    const btn = document.querySelector('.main-nav-link[data-feature="' + feature + '"]');
+    if (btn) btn.classList.add("active");
+  } else {
+    const homeLink = document.querySelector(".main-nav-link:not([data-feature])");
+    if (homeLink) homeLink.classList.add("active");
+  }
+}
+
 // 右上角浮出提示（取代 alert()，避免整頁被原生對話框卡住），跟 admin.js 的 adminMsg() 同一套 3 秒自動消失邏輯
 function showToast(text, type) {
   const el = document.getElementById("navToast");
@@ -89,6 +103,10 @@ requireApprovedUser(function (user, data) {
       }
       if (key === "fengshui") {
         showShuziView();
+        return;
+      }
+      if (key === "jigong") {
+        showJigongView();
         return;
       }
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
@@ -1491,10 +1509,12 @@ const mpState = { h: { imgW: 0, imgH: 0 }, v: { imgW: 0, imgH: 0 } };
 function showMingpianView() {
   document.getElementById("mainView").style.display = "none";
   document.getElementById("mingpianView").style.display = "";
+  setActiveNav("名片風水");
 }
 function hideMingpianView() {
   document.getElementById("mingpianView").style.display = "none";
   document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
   mpStopCamera();
   mpResetAll();
 }
@@ -1504,10 +1524,12 @@ document.getElementById("mingpianBackBtn").addEventListener("click", hideMingpia
 function showShuziView() {
   document.getElementById("mainView").style.display = "none";
   document.getElementById("shuziView").style.display = "";
+  setActiveNav("數字易經");
 }
 function hideShuziView() {
   document.getElementById("shuziView").style.display = "none";
   document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
   // 使用者輸入的數字不留存：離開頁面就清空，不會留在畫面或記憶體裡
   ["shuzi-input-num", "shuzi-input-name", "shuzi-input-id", "shuzi-input-plate"].forEach((id) => {
     document.getElementById(id).value = "";
@@ -1729,6 +1751,183 @@ document.getElementById("exportShuziPdfBtn").addEventListener("click", async fun
     btn.textContent = originalLabel;
   }
 });
+
+// ================= 濟公棋卦・前世因果 =================
+function showJigongView() {
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("jigongView").style.display = "";
+  setActiveNav("濟公棋卦");
+}
+function hideJigongView() {
+  document.getElementById("jigongView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+  jigongClearBoard();
+}
+document.getElementById("jigongBackBtn").addEventListener("click", hideJigongView);
+
+const JIGONG_POS_ORDER = ["center", "left", "right", "top", "bottom"];
+const jigongState = { pieces: { center: null, left: null, right: null, top: null, bottom: null }, selected: null };
+
+// 「當前選擇」用跟盤面棋子同樣造型的圓形圖示呈現（紅/黑框線＋棋子字），沒選擇時顯示文字「尚未選擇」
+function jigongUpdateSelectedLabel() {
+  const labelEl = document.getElementById("jigongSelectedLabel");
+  if (!jigongState.selected) {
+    labelEl.textContent = "尚未選擇";
+    return;
+  }
+  const piece = jigongFindPiece(jigongState.selected);
+  labelEl.innerHTML = '<span class="jigong-selected-icon ' + piece.color + '">' + piece.char + "</span>";
+}
+
+function jigongRenderPalette() {
+  const redPieces = JIGONG_PIECES.filter((p) => p.color === "red");
+  const blackPieces = JIGONG_PIECES.filter((p) => p.color === "black");
+  const rowHtml = (pieces) => pieces.map((p) =>
+    '<button type="button" class="jigong-piece-btn ' + p.color + (jigongState.selected === p.char ? " selected" : "") + '" data-char="' + p.char + '">' + p.char + "</button>"
+  ).join("");
+  document.getElementById("jigongPiecePalette").innerHTML =
+    '<div class="jigong-piece-row">' + rowHtml(redPieces) + "</div>" +
+    '<div class="jigong-piece-row">' + rowHtml(blackPieces) + "</div>";
+  document.querySelectorAll(".jigong-piece-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      jigongState.selected = this.dataset.char;
+      jigongRenderPalette();
+      jigongUpdateSelectedLabel();
+    });
+  });
+}
+
+function jigongRenderBoard() {
+  JIGONG_POS_ORDER.forEach((pos) => {
+    const el = document.querySelector('.jigong-pos[data-pos="' + pos + '"]');
+    const pieceSpan = el.querySelector(".jigong-pos-piece");
+    const char = jigongState.pieces[pos];
+    if (char) {
+      const piece = jigongFindPiece(char);
+      pieceSpan.textContent = char;
+      pieceSpan.className = "jigong-pos-piece filled " + piece.color;
+    } else {
+      pieceSpan.textContent = "";
+      pieceSpan.className = "jigong-pos-piece";
+    }
+  });
+}
+
+function jigongClearBoard() {
+  JIGONG_POS_ORDER.forEach((pos) => { jigongState.pieces[pos] = null; });
+  jigongState.selected = null;
+  jigongUpdateSelectedLabel();
+  jigongRenderPalette();
+  jigongRenderBoard();
+  jigongRenderResult();
+}
+
+function jigongRenderResult() {
+  const resultEl = document.getElementById("jigongResult");
+  if (!jigongState.pieces.center) {
+    resultEl.innerHTML = '<p class="jigong-placeholder">請放上 5 支棋。第一支（中宮）決定前世性別與身分。</p>';
+    return;
+  }
+  const gender = document.querySelector('input[name="jigongGender"]:checked').value;
+  const currentGenderLabel = gender === "female" ? "女" : "男";
+  const r = calculateJigongPastLife(jigongState.pieces);
+
+  let relationHtml;
+  if (r.noMatchNote) {
+    relationHtml = '<p class="jigong-relation-line">' + r.noMatchNote + "</p>";
+  } else {
+    relationHtml = r.relations.map((rel) =>
+      '<p class="jigong-relation-line">' + rel.roleLabel + " " + rel.piece + " ↔ 中央 " + r.centerChar +
+      "（同字" + (rel.sameColor ? "同色" : "異色") + "）→ " + rel.text + "</p>"
+    ).join("");
+  }
+
+  resultEl.innerHTML =
+    '<div class="jigong-result-block"><h3>前世自身（依中宮第一支棋）</h3>' +
+    '<p class="jigong-result-highlight">前世性別：' + r.pastLifeGender + "（第一支" + (r.centerColor === "red" ? "紅" : "黑") + "棋；現在性別：" + currentGenderLabel + "）</p>" +
+    '<p class="jigong-result-highlight">前世身分：' + r.identity + "</p></div>" +
+    '<div class="jigong-result-block"><h3>前世關係（中央 vs 各位置）</h3>' + relationHtml + "</div>" +
+    '<div class="jigong-result-block jigong-reminder-block"><h3>提醒</h3>' +
+    "<p>今生關係 ≠ 前世關係。今生是夫妻，前世可能是家人、合作伙伴、上司下屬，甚至是新緣分。</p></div>";
+}
+
+document.querySelectorAll('input[name="jigongGender"]').forEach((el) => el.addEventListener("change", jigongRenderResult));
+
+document.getElementById("jigongBoard").addEventListener("click", function (e) {
+  const posEl = e.target.closest(".jigong-pos");
+  if (!posEl) return;
+  const pos = posEl.dataset.pos;
+  if (jigongState.selected) {
+    jigongState.pieces[pos] = jigongState.selected;
+    jigongState.selected = null;
+    jigongUpdateSelectedLabel();
+    jigongRenderPalette();
+  } else if (jigongState.pieces[pos]) {
+    // 沒有選棋子時點擊已放置的位置＝移除該棋子，方便修改
+    jigongState.pieces[pos] = null;
+  }
+  jigongRenderBoard();
+  jigongRenderResult();
+});
+
+document.getElementById("jigongClearBtn").addEventListener("click", jigongClearBoard);
+
+document.getElementById("jigongRandom5Btn").addEventListener("click", function () {
+  JIGONG_POS_ORDER.forEach((pos) => {
+    jigongState.pieces[pos] = JIGONG_PIECES[Math.floor(Math.random() * JIGONG_PIECES.length)].char;
+  });
+  jigongState.selected = null;
+  jigongUpdateSelectedLabel();
+  jigongRenderPalette();
+  jigongRenderBoard();
+  jigongRenderResult();
+});
+
+document.getElementById("jigongRandomNextBtn").addEventListener("click", function () {
+  const nextPos = JIGONG_POS_ORDER.find((pos) => !jigongState.pieces[pos]);
+  if (!nextPos) return;
+  jigongState.pieces[nextPos] = JIGONG_PIECES[Math.floor(Math.random() * JIGONG_PIECES.length)].char;
+  jigongRenderBoard();
+  jigongRenderResult();
+});
+
+document.getElementById("exportJigongPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  if (!jigongState.pieces.center) {
+    alert("請先放上棋子（至少中宮）再匯出 PDF");
+    return;
+  }
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 濟公棋卦・前世因果報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+
+    const sections = [document.getElementById("jigongBoard"), document.getElementById("jigongResult")];
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("濟公棋卦-前世因果報告.pdf");
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+jigongRenderPalette();
+jigongRenderBoard();
 
 (function initMingpianSelects() {
   const zodiacSel = document.getElementById("mp-zodiac");
