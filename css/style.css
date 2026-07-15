@@ -1072,6 +1072,12 @@ footer {
 /* 奇門遁甲（獨立頁面）：右中置中位置的 1~9 數字（時柱干支 mod 9 起算，按洛書順序排）──
    以宮位格右半邊為準水平置中（不跟著門圓位置算），垂直對齊整格中央，獨立定位不影響門圓本身的置中 */
 .qimen-gong-number { position: absolute; top: 50%; right: 14px; transform: translateY(-50%); font-size: 20px; font-weight: 800; color: #1a1a1a; }
+/* 內盤數字：灰底圓（外盤維持白底/無裝飾的預設樣式），陽遁陰遁時哪一組宮位算內盤由 js 決定 */
+.qimen-gong-number-inner {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #ccc;
+  display: flex; align-items: center; justify-content: center;
+}
 .qimen-bottom-info { position: absolute; left: 0; right: 0; bottom: 6px; }
 .qimen-men-circle {
   width: 60px; height: 60px; border-radius: 50%;

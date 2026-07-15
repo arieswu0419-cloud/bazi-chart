@@ -1450,7 +1450,9 @@ const QIMEN_ZHI_LAYOUT = [
 // dayHourMode：只有獨立的奇門遁甲頁面傳 true——移除左側「命」圓圈標記，改在右上角天／地盤干左側用
 // 小字顯示「日」（日柱天干落宮，即 isMingGong）／「時」（時柱天干落宮，即 isZiNu），兩者都是
 // js/qimen-engine.js 既有算好的欄位，落中宮時已經照使用者要求寄到天芮星目前飛到的宮位，不用另外處理。
-// numberFn(g)：門圓右側要顯示的 1~9 數字，只有獨立的奇門遁甲頁面傳入（見 computeQimenDunjiaGongNumbers）
+// numberFn(g)：門圓右側要顯示的 1~9 數字，只有獨立的奇門遁甲頁面傳入（見 computeQimenDunjiaGongNumbers）。
+// 這個數字另外還分內盤／外盤樣式：離坤兌巽（9,2,7,4）陽遁時是內盤（灰底圓）、坎乾艮震（1,6,8,3）
+// 陽遁時是外盤（白底）；陰遁時兩組屬性整組互換（使用者提供的規則），中宮不分內外盤、樣式不變
 function buildQimenGridHtml(data, bottomLabelFn, centerLabel, cornerWordsFn, dayHourMode, numberFn) {
   let gridHtml = "";
   QIMEN_GRID_LAYOUT.forEach(({ g, row, col }) => {
@@ -1506,7 +1508,9 @@ function buildQimenGridHtml(data, bottomLabelFn, centerLabel, cornerWordsFn, day
       '<div class="qimen-circle-zone">' +
       '<div class="qimen-men-circle" style="background:' + menColor + '">' + (c.men || "") + "</div>" +
       "</div>" +
-      (numberFn ? '<div class="qimen-gong-number">' + numberFn(g) + "</div>" : "") +
+      (numberFn
+        ? '<div class="qimen-gong-number' + (qimenDunjiaIsInnerGong(g, data.juInfo.isYang) ? " qimen-gong-number-inner" : "") + '">' + numberFn(g) + "</div>"
+        : "") +
       '<div class="qimen-bottom-info">' +
       (c.jiXing ? '<div class="qimen-jixing">六儀擊刑</div>' : "") +
       '<div class="qimen-dayun">' + (bottomLabelFn(c) || "") + "</div>" +
@@ -1621,6 +1625,18 @@ function computeQimenDunjiaGongNumbers(data) {
     numbers[gong] = i + 1;
   }
   return (g) => numbers[g];
+}
+
+// 奇門遁甲獨立頁面：九宮數字的內盤／外盤樣式。使用者提供的規則——離坤兌乾（9,2,7,6）跟坎艮震巽
+// （1,8,3,4）這兩組宮位，陽遁／陰遁時的內外盤屬性剛好互換：
+//   陽遁：離坤兌乾＝內盤（灰底圓）、坎艮震巽＝外盤（白底）
+//   陰遁：離坤兌乾＝外盤（白底）、坎艮震巽＝內盤（灰底圓）
+// 陽遁／陰遁的判斷（data.juInfo.isYang）已經是用精確到分鐘的節氣時刻算出來的（lunar-javascript
+// 的 getPrevJieQi 本身就是照實際時刻找節氣，不是只看日期），不用另外處理分鐘精度。中宮不分內外盤。
+const QIMEN_DUNJIA_YANG_INNER_GONGS = [9, 2, 7, 6];
+const QIMEN_DUNJIA_YIN_INNER_GONGS = [1, 8, 3, 4];
+function qimenDunjiaIsInnerGong(g, isYang) {
+  return (isYang ? QIMEN_DUNJIA_YANG_INNER_GONGS : QIMEN_DUNJIA_YIN_INNER_GONGS).includes(g);
 }
 
 function renderQimen(data) {
