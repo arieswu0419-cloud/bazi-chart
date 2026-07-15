@@ -1554,20 +1554,23 @@ function buildQimenCompassHtml(data, gridHtml) {
   return compassHtml;
 }
 
-// 三詐：天盤干為三奇（乙／丙／丁）＋神盤為對應的神煞才成立（使用者提供的判定表）。
-// 使用者表格另外還列了「觸發條件（地盤／宮位狀態）」一欄（如「地盤落宮為吉、無沖剋」「門迫較輕或
-// 吉門」「天盤奇儀與地盤六儀符合特定排列」），但這欄描述沒有給出可以直接寫成程式判斷式的精確定義，
-// 為避免用猜的條件寫出錯誤判斷，目前只用天盤干＋神盤這兩個明確條件觸發，尚未納入第三欄
+// 三詐：使用者已更正為每個各自「天盤干＋八門＋八神配太陰」三條件同時成立才觸發
+// （取代原本只看神盤對應表的版本）
 const SAN_QI = ["乙", "丙", "丁"];
-const SAN_ZHA_BY_SHEN = { 太陰: "真詐", 六合: "休詐", 值符: "重詐" };
+const SAN_ZHA_RULES = [
+  { name: "真詐", tianGan: "乙", men: "休", shen: "太陰" },
+  { name: "休詐", tianGan: "丁", men: "開", shen: "太陰" },
+  { name: "重詐", tianGan: "丙", men: "生", shen: "太陰" }
+];
 
-// 五假：使用者提供的判定表，天盤干皆為三奇（乙／丙／丁）＋落宮條件。神假（「值符與地盤六儀特殊組合」）
-// 跟鬼假（「空亡或特定凶門狀態」）的條件描述仍然模糊，沒有明確指出是哪種組合／哪些門算凶門，
-// 為避免用猜的條件寫出錯誤判斷，這兩個先不實作，只做條件明確的天假／地假／人假
+// 五假：使用者已更正為全部五個都是「天盤干＋八門是開休生三吉門之一＋八神配特定神煞」三條件同時成立
+const WU_JIA_MEN = ["開", "休", "生"];
 const WU_JIA_RULES = [
-  { name: "天假", check: (c) => c.men === "景" },
-  { name: "地假", check: (c) => c.shen === "值符" },
-  { name: "人假", check: (c) => c.shen === "太陰" }
+  { name: "天假", tianGan: "丁", shens: ["九地"] },
+  { name: "地假", tianGan: "乙", shens: ["九地"] },
+  { name: "神假", tianGan: "丁", shens: ["九天"] },
+  { name: "鬼假", tianGan: "丁", shens: ["九地", "值符"] },
+  { name: "人假", tianGan: "丁", shens: ["六合"] }
 ];
 
 // 九遁：使用者提供的判定表（天盤干＋門＋神／星，部分另外指定固定宮位：風遁巽四宮、龍遁坎一宮、
@@ -1585,14 +1588,20 @@ const JIU_DUN_RULES = [
 ];
 
 // 奇門遁甲獨立頁面的右下角格局提示：入墓＋門迫／宮迫（跟奇門命盤報告同一套判斷，直接沿用
-// c.cornerWords 裡現成算好的結果）＋三詐＋五假（僅天假／地假／人假）＋九遁
+// c.cornerWords 裡現成算好的結果）＋三詐＋五假（天假地假神假鬼假人假）＋九遁
 function qimenDunjiaCornerWords(data) {
   return (c, g) => {
     const words = (c.cornerWords || []).filter((w) => w.type === "rumu" || w.type === "menpo" || w.type === "gongpo");
+    SAN_ZHA_RULES.forEach((rule) => {
+      if (c.tianGan === rule.tianGan && c.men === rule.men && c.shen === rule.shen) {
+        words.push({ text: rule.name, type: "sanzha" });
+      }
+    });
     if (SAN_QI.includes(c.tianGan)) {
-      if (SAN_ZHA_BY_SHEN[c.shen]) words.push({ text: SAN_ZHA_BY_SHEN[c.shen], type: "sanzha" });
       WU_JIA_RULES.forEach((rule) => {
-        if (rule.check(c)) words.push({ text: rule.name, type: "wujia" });
+        if (c.tianGan === rule.tianGan && WU_JIA_MEN.includes(c.men) && rule.shens.includes(c.shen)) {
+          words.push({ text: rule.name, type: "wujia" });
+        }
       });
     }
     JIU_DUN_RULES.forEach((rule) => {
@@ -1658,6 +1667,20 @@ function renderQimen(data) {
 // 4. 右下角格局提示字只保留「入墓」＋門迫／宮迫，其餘（門的意義／六親／星意義／神意義／兄弟／子女／
 //    遷移）都不顯示，改顯示三詐／五假（天假地假人假）／九遁（見 qimenDunjiaCornerWords）
 // 5. 門圓右側新增 1~9 數字（見 computeQimenDunjiaGongNumbers）
+// 中下格局文字：天盤干若為三奇（乙／丙／丁）且觸發入墓，在原本的81格局名稱下方換行加顯示
+// 「乙奇入墓」／「丙奇入墓」／「丁奇入墓」（兩個都要顯示，不能互相取代——使用者確認原本的81格局
+// 名稱要保留）；其餘六儀（戊己庚辛壬癸）入墓時不套用這個規則，維持只顯示81格局名稱，
+// 右下角小字繼續顯示「入墓」（見 qimenDunjiaCornerWords，未受影響）
+const SAN_QI_RUMU_TEXT = { 乙: "乙奇入墓", 丙: "丙奇入墓", 丁: "丁奇入墓" };
+function qimenDunjiaBottomLabel(c) {
+  const geju = getGeju81(c.tianGan, c.diGan);
+  const gejuName = geju ? geju.name : "";
+  if (SAN_QI_RUMU_TEXT[c.tianGan] && (RUMU_STEMS[c.gua] || []).includes(c.tianGan)) {
+    return gejuName ? gejuName + "<br>" + SAN_QI_RUMU_TEXT[c.tianGan] : SAN_QI_RUMU_TEXT[c.tianGan];
+  }
+  return gejuName;
+}
+
 function renderQimenDunjia(data) {
   document.getElementById("qimenDunjiaCard").style.display = "block";
 
@@ -1666,7 +1689,7 @@ function renderQimenDunjia(data) {
 
   const gridHtml = buildQimenGridHtml(
     data,
-    (c) => { const geju = getGeju81(c.tianGan, c.diGan); return geju ? geju.name : ""; },
+    qimenDunjiaBottomLabel,
     "時",
     qimenDunjiaCornerWords(data),
     true,

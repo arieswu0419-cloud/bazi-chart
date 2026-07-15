@@ -562,8 +562,12 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender, yi
     { label: "年柱", gan: ganPart(ec.getYearGan()), zhi: zhiPart(ec.getYearZhi()) }
   ];
 
-  // 局數（拆補法）：現實中目前所在的節氣 ＋ 日柱本身在六十甲子的元別（上／中／下）
-  const prevJieQi = lunar.getPrevJieQi(true);
+  // 局數（拆補法）：現實中目前所在的節氣 ＋ 日柱本身在六十甲子的元別（上／中／下）。
+  // getPrevJieQi 這個布林參數是「是否只比對到日期、忽略時分」，傳 true 會在節氣當天但實際交節時刻
+  // 還沒到時就提早算成那個節氣（用 2026-07-07 02:26 這筆資料核對出來：小暑實際交節時刻是當天
+  // 09:56:57，02:26 明明還沒交節，傳 true 卻直接回傳小暑，導致局數、值符、值使、八神、天地盤干、
+  // 八門全部算錯，只有九星剛好因為這筆資料是伏吟格局才沒受影響）；改傳 false 才會精確比對到分鐘。
+  const prevJieQi = lunar.getPrevJieQi(false);
   const jieQiName = prevJieQi.getName();
   const yuanIdx = getYuanIdxOfDay(ec.getDayGan(), ec.getDayZhi());
   const juInfo = determineJu(jieQiName, yuanIdx);
