@@ -5,6 +5,7 @@ let selectedMainPillar = null;
 let currentRenge = null;
 let currentLifenum = null;
 let currentQimen = null;
+let currentQimenDunjia = null;
 
 // 上方綠色導覽列的「目前所在頁面」反白狀態：離開「命理諮詢」進到名片風水/數字易經/濟公棋卦等子頁面時，
 // 該子頁面的按鍵要換成反白（跟命理諮詢原本的樣式一樣，見 .main-nav-link.active），命理諮詢本身要跟著
@@ -110,6 +111,10 @@ requireApprovedUser(function (user, data) {
         showJigongView();
         return;
       }
+      if (key === "qimenDunjia") {
+        showQimenDunjiaView();
+        return;
+      }
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
     });
   });
@@ -161,9 +166,14 @@ function fillYearMonthDaySelects(yearSel, monthSel, daySel, today) {
   fillYearMonthDaySelects(
     document.getElementById("shuzi-lunar-year"), document.getElementById("shuzi-lunar-month"), document.getElementById("shuzi-lunar-day"), today
   );
+  fillYearMonthDaySelects(
+    document.getElementById("qd-byear"), document.getElementById("qd-bmonth"), document.getElementById("qd-bday"), today
+  );
   // 時間欄位維持單一個 <input type="time">（24 小時制 HH:MM 一欄），不拆成時／分兩個下拉選單；
   // 分鐘精度還是保留在這欄裡面，24 節氣交界時刻的判斷不受影響
   document.getElementById("f-btime").value =
+    String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
+  document.getElementById("qd-btime").value =
     String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
 })();
 
@@ -242,7 +252,7 @@ document.getElementById("qimenSubmitBtn").addEventListener("click", function () 
   const [hour, minute] = timeVal.split(":").map(Number);
   const gender = document.getElementById("f-gender").value;
 
-  currentQimen = calculateQimenHeader({ year, month, day, hour, minute, name, gender });
+  currentQimen = calculateQimenHeader({ year, month, day, hour, minute, name, gender, yiMaBasis: "day" });
   renderQimen(currentQimen);
   setActiveTab("qimen");
 });
@@ -1096,7 +1106,8 @@ function buildQimenPillarsTable(siZhu) {
 }
 
 // 右上資訊表格：陽曆／符首、農曆／天乙、時間／值符、格局／值使，兩兩並排（比照參考畫面排版）
-function buildQimenInfoTable(data) {
+// showName：奇門命盤報告頁籤沿用真人姓名要顯示，獨立的奇門遁甲頁面沒有姓名欄位、不顯示這一列
+function buildQimenInfoTable(data, showName) {
   const rows = [
     ["陽曆", data.solarText, "符首", data.xunShou.xun],
     ["農曆", data.lunarText, "天乙", data.tianYi.dir],
@@ -1104,7 +1115,9 @@ function buildQimenInfoTable(data) {
     ["格局", data.patternText, "值使", GONG_INFO[data.menTargetGong].dir]
   ];
   let html = '<table class="qimen-info-table"><tbody>';
-  html += '<tr><td class="qi-label">姓名</td><td class="qi-value" colspan="3">' + (data.name || "") + "</td></tr>";
+  if (showName) {
+    html += '<tr><td class="qi-label">姓名</td><td class="qi-value" colspan="3">' + (data.name || "") + "</td></tr>";
+  }
   rows.forEach((r) => {
     html += "<tr><td class=\"qi-label\">" + r[0] + '</td><td class="qi-value">' + r[1] +
       '</td><td class="qi-label">' + r[2] + '</td><td class="qi-value">' + r[3] + "</td></tr>";
@@ -1377,19 +1390,20 @@ function qimenExplainDimRows(label, char, dict) {
   ).join("");
 }
 
-// 點選九宮格顯示的解說表格：八卦／八門／神盤／九星／天盤干／地盤干
-function buildQimenExplain(gong) {
+// 點選九宮格顯示的解說表格：八卦／八門／神盤／九星／天盤干／地盤干；data 由呼叫端傳入
+// （奇門命盤報告頁籤用 currentQimen，獨立的奇門遁甲頁面用 currentQimenDunjia，兩邊各自的盤不能混用）
+function buildQimenExplain(gong, data) {
   let gua, men, shen, xing, tianGan, diGan, title;
   if (gong === 5) {
     gua = "坤";
     xing = "天禽";
-    tianGan = currentQimen.diPan[5];
-    diGan = currentQimen.diPan[5];
+    tianGan = data.diPan[5];
+    diGan = data.diPan[5];
     men = null;
     shen = null;
     title = "中宮";
   } else {
-    const c = currentQimen.gongs[gong];
+    const c = data.gongs[gong];
     gua = c.gua; xing = c.xing; tianGan = c.tianGan; diGan = c.diGan; men = c.men; shen = c.shen;
     title = gua + "宮（" + GONG_INFO[gong].dir + "）";
   }
@@ -1428,12 +1442,16 @@ const QIMEN_ZHI_LAYOUT = [
   { zhi: "亥", row: 6, col: 5, vertical: false }   // 下方右邊（乾六宮外側）
 ];
 
-function renderQimen(data) {
-  document.getElementById("qimenCard").style.display = "block";
-
-  document.getElementById("qimenPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
-  document.getElementById("qimenInfoPanel").innerHTML = buildQimenInfoTable(data);
-
+// 九宮格＋外圍羅盤共用組字：bottomLabelFn(c) 決定每個宮位中下方要顯示的文字──
+// 原本的「奇門命盤報告」頁籤顯示十年大運（如 1-10），新增的「奇門遁甲」獨立頁面則顯示
+// 天盤干＋地盤干組合的格局名稱（如己己→地戶逢鬼），兩邊共用同一套版面只差這一行文字。
+// centerLabel：中宮圓圈文字（命盤報告用「命」，獨立的奇門遁甲頁面沒有真人命主概念，改用「時」）。
+// cornerWordsFn(c)：右下角格局提示字，兩邊算法不同，各自傳入。
+// dayHourMode：只有獨立的奇門遁甲頁面傳 true——移除左側「命」圓圈標記，改在右上角天／地盤干左側用
+// 小字顯示「日」（日柱天干落宮，即 isMingGong）／「時」（時柱天干落宮，即 isZiNu），兩者都是
+// js/qimen-engine.js 既有算好的欄位，落中宮時已經照使用者要求寄到天芮星目前飛到的宮位，不用另外處理。
+// numberFn(g)：門圓右側要顯示的 1~9 數字，只有獨立的奇門遁甲頁面傳入（見 computeQimenDunjiaGongNumbers）
+function buildQimenGridHtml(data, bottomLabelFn, centerLabel, cornerWordsFn, dayHourMode, numberFn) {
   let gridHtml = "";
   QIMEN_GRID_LAYOUT.forEach(({ g, row, col }) => {
     if (g === 5) {
@@ -1446,8 +1464,9 @@ function renderQimen(data) {
         '<div class="qimen-gan-stack">' + qimenGanOnly(centerGan) + qimenGanOnly(centerGan) + "</div>" +
         '<div class="qimen-cell-center">' +
         '<div class="qimen-circle-zone">' +
-        '<div class="qimen-men-circle qimen-center-circle">命</div>' +
+        '<div class="qimen-men-circle qimen-center-circle">' + centerLabel + "</div>" +
         "</div>" +
+        (numberFn ? '<div class="qimen-gong-number">' + numberFn(5) + "</div>" : "") +
         "</div>" +
         '<div class="qimen-cell-bottom earth">坤</div>' +
         "</div>";
@@ -1457,24 +1476,40 @@ function renderQimen(data) {
     const menColor = QIMEN_MEN_COLOR[c.men] || "#666";
     const xingWx = QIMEN_XING_WUXING_CLASS[c.xing] || "";
     const guaWx = QIMEN_GUA_WUXING_CLASS[c.gua] || "";
-    const cornerWords = c.cornerWords || [];
+    const cornerWords = cornerWordsFn(c, g) || [];
     const wordToSpan = (w) => '<span class="qw-' + w.type + '">' + w.text + "</span>";
     // 右下角最多放 3 組，第 4 組起改放左下角（八卦字右側），一樣由右往左排列，避免跟中下大運文字擠在一起重疊
     const cornerWordsHtml = cornerWords.slice(0, 3).map(wordToSpan).join("");
     const cornerWordsLeftHtml = cornerWords.slice(3).map(wordToSpan).join("");
+    // 「日」「時」同宮時黑底圓＋白字，各自一顆圓，時排在日下面（不同宮只有其中一顆）
+    const dayHourBadges = [];
+    if (dayHourMode && c.isMingGong) dayHourBadges.push("日");
+    if (dayHourMode && c.isZiNu) dayHourBadges.push("時");
+    const dayHourHtml = dayHourBadges.length
+      ? '<div class="qimen-daytime-stack">' +
+        dayHourBadges.map((t) => '<div class="qimen-daytime-label">' + t + "</div>").join("") +
+        "</div>"
+      : "";
+    const topRightHtml = dayHourMode
+      ? '<div class="qimen-topright-row">' +
+        dayHourHtml +
+        '<div class="qimen-gan-stack">' + qimenGanOnly(c.tianGan) + qimenGanOnly(c.diGan) + "</div>" +
+        "</div>"
+      : (c.isMingGong ? '<div class="qimen-ming-circle">命</div>' : "") +
+        '<div class="qimen-gan-stack">' + qimenGanOnly(c.tianGan) + qimenGanOnly(c.diGan) + "</div>";
     gridHtml +=
       '<div class="qimen-cell" data-gong="' + g + '" style="grid-row:' + row + ";grid-column:" + col + '">' +
       '<div class="qimen-xing ' + xingWx + '">' + (c.xing || "") + "</div>" +
-      (c.isMingGong ? '<div class="qimen-ming-circle">命</div>' : "") +
-      '<div class="qimen-gan-stack">' + qimenGanOnly(c.tianGan) + qimenGanOnly(c.diGan) + "</div>" +
+      topRightHtml +
       '<div class="qimen-shen">' + (c.shen || "") + "</div>" +
       '<div class="qimen-cell-center">' +
       '<div class="qimen-circle-zone">' +
       '<div class="qimen-men-circle" style="background:' + menColor + '">' + (c.men || "") + "</div>" +
       "</div>" +
+      (numberFn ? '<div class="qimen-gong-number">' + numberFn(g) + "</div>" : "") +
       '<div class="qimen-bottom-info">' +
       (c.jiXing ? '<div class="qimen-jixing">六儀擊刑</div>' : "") +
-      '<div class="qimen-dayun">' + (c.dayunLabel || "") + "</div>" +
+      '<div class="qimen-dayun">' + (bottomLabelFn(c) || "") + "</div>" +
       "</div>" +
       "</div>" +
       '<div class="qimen-cell-bottom ' + guaWx + '">' + c.gua + "</div>" +
@@ -1482,7 +1517,10 @@ function renderQimen(data) {
       (cornerWordsLeftHtml ? '<div class="qimen-corner-words-left">' + cornerWordsLeftHtml + "</div>" : "") +
       "</div>";
   });
+  return gridHtml;
+}
 
+function buildQimenCompassHtml(data, gridHtml) {
   let compassHtml = "";
   // 十二地支羅盤的連續橘色外框：先鋪一層跨滿整個地支帶（含中間九宮格區域）的金色底＋橘框，
   // 之後畫的九宮格會蓋住中間，只留下地支帶那一圈是連續的，不會在地支跟地支中間露出空隙
@@ -1509,21 +1547,135 @@ function renderQimen(data) {
       '<span class="qc-zhi-item' + (isNarrowCol ? " qc-zhi-item-stack" : "") + '"><span' + (vertical ? ' class="qc-zhi-v"' : "") + ">" + zhi + "</span>" + badges + "</span></div>";
   });
   compassHtml += '<div class="qimen-grid" id="qimenGrid">' + gridHtml + "</div>";
-  document.getElementById("qimenCompass").innerHTML = compassHtml;
+  return compassHtml;
+}
+
+// 三詐：天盤干為三奇（乙／丙／丁）＋神盤為對應的神煞才成立（使用者提供的判定表）。
+// 使用者表格另外還列了「觸發條件（地盤／宮位狀態）」一欄（如「地盤落宮為吉、無沖剋」「門迫較輕或
+// 吉門」「天盤奇儀與地盤六儀符合特定排列」），但這欄描述沒有給出可以直接寫成程式判斷式的精確定義，
+// 為避免用猜的條件寫出錯誤判斷，目前只用天盤干＋神盤這兩個明確條件觸發，尚未納入第三欄
+const SAN_QI = ["乙", "丙", "丁"];
+const SAN_ZHA_BY_SHEN = { 太陰: "真詐", 六合: "休詐", 值符: "重詐" };
+
+// 五假：使用者提供的判定表，天盤干皆為三奇（乙／丙／丁）＋落宮條件。神假（「值符與地盤六儀特殊組合」）
+// 跟鬼假（「空亡或特定凶門狀態」）的條件描述仍然模糊，沒有明確指出是哪種組合／哪些門算凶門，
+// 為避免用猜的條件寫出錯誤判斷，這兩個先不實作，只做條件明確的天假／地假／人假
+const WU_JIA_RULES = [
+  { name: "天假", check: (c) => c.men === "景" },
+  { name: "地假", check: (c) => c.shen === "值符" },
+  { name: "人假", check: (c) => c.shen === "太陰" }
+];
+
+// 九遁：使用者提供的判定表（天盤干＋門＋神／星，部分另外指定固定宮位：風遁巽四宮、龍遁坎一宮、
+// 虎遁艮八宮——這三個跟雲遁同樣是「乙＋開門」，只差神盤／宮位，所以宮位限制視為必要條件而非註解）
+const JIU_DUN_RULES = [
+  { name: "天遁", tianGan: "丙", men: "生", shen: "九天" },
+  { name: "地遁", tianGan: "乙", men: "開", diGan: "己" },
+  { name: "人遁", tianGan: "丁", men: "休", shen: "太陰" },
+  { name: "神遁", tianGan: "丙", men: "生", shen: "九地" },
+  { name: "鬼遁", tianGan: "丁", men: "開", shen: "九地" },
+  { name: "風遁", tianGan: "乙", men: "開", shen: "六合", gong: 4 },
+  { name: "雲遁", tianGan: "乙", men: "開", shen: "九地" },
+  { name: "龍遁", tianGan: "乙", men: "開", shen: "九天", gong: 1 },
+  { name: "虎遁", tianGan: "乙", men: "開", shen: "白虎", gong: 8 }
+];
+
+// 奇門遁甲獨立頁面的右下角格局提示：入墓＋門迫／宮迫（跟奇門命盤報告同一套判斷，直接沿用
+// c.cornerWords 裡現成算好的結果）＋三詐＋五假（僅天假／地假／人假）＋九遁
+function qimenDunjiaCornerWords(data) {
+  return (c, g) => {
+    const words = (c.cornerWords || []).filter((w) => w.type === "rumu" || w.type === "menpo" || w.type === "gongpo");
+    if (SAN_QI.includes(c.tianGan)) {
+      if (SAN_ZHA_BY_SHEN[c.shen]) words.push({ text: SAN_ZHA_BY_SHEN[c.shen], type: "sanzha" });
+      WU_JIA_RULES.forEach((rule) => {
+        if (rule.check(c)) words.push({ text: rule.name, type: "wujia" });
+      });
+    }
+    JIU_DUN_RULES.forEach((rule) => {
+      if (c.tianGan !== rule.tianGan) return;
+      if (rule.men && c.men !== rule.men) return;
+      if (rule.shen && c.shen !== rule.shen) return;
+      if (rule.diGan && c.diGan !== rule.diGan) return;
+      if (rule.gong && g !== rule.gong) return;
+      words.push({ text: rule.name, type: "jiudun" });
+    });
+    return words;
+  };
+}
+
+// 奇門遁甲獨立頁面：門圓右側 1~9 數字，使用者提供的公式——取時柱天干代碼（甲1...癸10）＋地支代碼
+// （子1...亥12）相加後 mod 9，餘數對照洛書宮位（1坎2坤3震4巽0中6乾7兌8艮9離，0 代表中宮），
+// 得到起算宮位；再依「坎(1)→坤(2)→震(3)→巽(4)→中(5)→乾(6)→兌(7)→艮(8)→離(9)」固定順序（即宮位
+// 編號 1~9 升冪並繞回）從 1 開始編號，直到九宮都排完。用使用者提供的辛酉時範例（8+10=18，18 mod 9=0
+// →中宮起算 1）逐宮核對，1~9 全部對上
+const GAN_CODE_QM = { 甲: 1, 乙: 2, 丙: 3, 丁: 4, 戊: 5, 己: 6, 庚: 7, 辛: 8, 壬: 9, 癸: 10 };
+const ZHI_CODE_QM = { 子: 1, 丑: 2, 寅: 3, 卯: 4, 辰: 5, 巳: 6, 午: 7, 未: 8, 申: 9, 酉: 10, 戌: 11, 亥: 12 };
+function computeQimenDunjiaGongNumbers(data) {
+  const timeGan = data.siZhu[0].gan.char;
+  const timeZhi = data.siZhu[0].zhi.char;
+  const rem = (GAN_CODE_QM[timeGan] + ZHI_CODE_QM[timeZhi]) % 9;
+  const startGong = rem === 0 ? 5 : rem;
+  const numbers = {};
+  for (let i = 0; i < 9; i++) {
+    const gong = ((startGong - 1 + i) % 9) + 1;
+    numbers[gong] = i + 1;
+  }
+  return (g) => numbers[g];
+}
+
+function renderQimen(data) {
+  document.getElementById("qimenCard").style.display = "block";
+
+  document.getElementById("qimenPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
+  document.getElementById("qimenInfoPanel").innerHTML = buildQimenInfoTable(data, true);
+
+  const gridHtml = buildQimenGridHtml(data, (c) => c.dayunLabel, "命", (c) => c.cornerWords, false, null);
+  document.getElementById("qimenCompass").innerHTML = buildQimenCompassHtml(data, gridHtml);
   document.getElementById("qimenExplain").style.display = "none";
   document.getElementById("qimenExplain").innerHTML = "";
 }
 
+// 奇門遁甲（獨立頁面）：跟奇門命盤報告完全同一套介面與功能，差異：
+// 1. 九宮格中下方文字改成天盤干＋地盤干組合的格局名稱（GEJU_81），不顯示十年大運
+// 2. 中宮圓圈文字改「時」（這裡沒有真人命主，只是選一個時刻起盤）
+// 3. 移除左側「命」圓圈標記，改在右上角天／地盤干左側顯示「日」／「時」小字（日柱／時柱天干落宮）
+// 4. 右下角格局提示字只保留「入墓」＋門迫／宮迫，其餘（門的意義／六親／星意義／神意義／兄弟／子女／
+//    遷移）都不顯示，改顯示三詐／五假（天假地假人假）／九遁（見 qimenDunjiaCornerWords）
+// 5. 門圓右側新增 1~9 數字（見 computeQimenDunjiaGongNumbers）
+function renderQimenDunjia(data) {
+  document.getElementById("qimenDunjiaCard").style.display = "block";
+
+  document.getElementById("qimenDunjiaPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
+  document.getElementById("qimenDunjiaInfoPanel").innerHTML = buildQimenInfoTable(data, false);
+
+  const gridHtml = buildQimenGridHtml(
+    data,
+    (c) => { const geju = getGeju81(c.tianGan, c.diGan); return geju ? geju.name : ""; },
+    "時",
+    qimenDunjiaCornerWords(data),
+    true,
+    computeQimenDunjiaGongNumbers(data)
+  );
+  document.getElementById("qimenDunjiaCompass").innerHTML = buildQimenCompassHtml(data, gridHtml);
+  document.getElementById("qimenDunjiaExplain").style.display = "none";
+  document.getElementById("qimenDunjiaExplain").innerHTML = "";
+}
+
 // 點選任一宮位格子，下方顯示該宮八卦／八門／神盤／九星／天盤干／地盤干解說；用 document 事件代理，
-// 因為每次 renderQimen 都會整個重畫 #qimenCompass，個別格子上的監聽器不會保留
+// 因為每次 renderQimen／renderQimenDunjia 都會整個重畫九宮格，個別格子上的監聽器不會保留。
+// 「奇門命盤報告」頁籤跟獨立的「奇門遁甲」頁面各自有一份盤（currentQimen／currentQimenDunjia）跟
+// 解說面板（qimenExplain／qimenDunjiaExplain），依格子所在的九宮格容器決定要用哪一份，不能混用
 document.addEventListener("click", function (e) {
   const cell = e.target.closest(".qimen-cell");
-  if (!cell || !currentQimen) return;
+  if (!cell) return;
+  const inDunjia = !!cell.closest("#qimenDunjiaCompass");
+  const data = inDunjia ? currentQimenDunjia : currentQimen;
+  if (!data) return;
   const gong = Number(cell.dataset.gong);
-  const panel = document.getElementById("qimenExplain");
+  const panel = document.getElementById(inDunjia ? "qimenDunjiaExplain" : "qimenExplain");
   document.querySelectorAll(".qimen-cell.qimen-cell-selected").forEach((el) => el.classList.remove("qimen-cell-selected"));
   cell.classList.add("qimen-cell-selected");
-  panel.innerHTML = buildQimenExplain(gong);
+  panel.innerHTML = buildQimenExplain(gong, data);
   panel.style.display = "block";
 });
 
@@ -1554,6 +1706,83 @@ document.getElementById("exportQimenPdfBtn").addEventListener("click", async fun
 
     const filename = (currentQimen ? currentQimen.name : "奇門遁甲") + "-奇門遁甲命盤報告.pdf";
     pdf.save(filename);
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+// ================= 奇門遁甲（獨立頁面，複製奇門命盤報告的介面與功能，僅九宮格中下方文字改顯示格局名稱）=================
+function showQimenDunjiaView() {
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("qimenDunjiaView").style.display = "";
+  setActiveNav("奇門遁甲");
+}
+function hideQimenDunjiaView() {
+  document.getElementById("qimenDunjiaView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("qimenDunjiaBackBtn").addEventListener("click", hideQimenDunjiaView);
+
+// 這個獨立頁面不收姓名／性別（只用來起盤查詢，不是命盤），gender 只是 calculateQimenHeader 內部
+// buildDayun 需要的參數，這裡不會顯示大運（九宮格中下方已改顯示格局名稱），隨便帶哪個值都不影響結果
+function runQimenDunjia(year, month, day, hour, minute) {
+  currentQimenDunjia = calculateQimenHeader({ year, month, day, hour, minute, name: "", gender: "male", yiMaBasis: "time" });
+  renderQimenDunjia(currentQimenDunjia);
+}
+
+document.getElementById("qimenDunjiaPickBtn").addEventListener("click", function () {
+  const year = Number(document.getElementById("qd-byear").value);
+  const month = Number(document.getElementById("qd-bmonth").value);
+  const day = Number(document.getElementById("qd-bday").value);
+  const timeVal = document.getElementById("qd-btime").value;
+  if (!timeVal) {
+    alert("請先選擇時間");
+    return;
+  }
+  const [hour, minute] = timeVal.split(":").map(Number);
+  runQimenDunjia(year, month, day, hour, minute);
+});
+
+document.getElementById("qimenDunjiaNowBtn").addEventListener("click", function () {
+  const now = new Date();
+  document.getElementById("qd-byear").value = String(now.getFullYear());
+  document.getElementById("qd-bmonth").value = String(now.getMonth() + 1);
+  document.getElementById("qd-bday").value = String(now.getDate());
+  document.getElementById("qd-btime").value =
+    String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  runQimenDunjia(now.getFullYear(), now.getMonth() + 1, now.getDate(), now.getHours(), now.getMinutes());
+});
+
+document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 奇門遁甲—預測卜卦", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+
+    // 點選九宮格才會出現的解說區塊沒點開時是 display:none，html2canvas 對 0 大小的元素會產生無效尺寸的
+    // canvas，匯出時要濾掉，否則 jsPDF addImage 會拿到 NaN 高度而出錯
+    const qimenSections = Array.from(document.querySelectorAll("#qimenDunjiaCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, qimenSections, margin, pageWidth, pageHeight, 26);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
+
+    pdf.save("奇門遁甲—預測卜卦.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {

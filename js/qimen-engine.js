@@ -533,11 +533,13 @@ function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, di
 }
 
 // ---- 主入口：目前只算到「局數／符首／值符（星）」，值符值使的方位與九宮飛盤還沒做 ----
-function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) {
+function calculateQimenHeader({ year, month, day, hour, minute, name, gender, yiMaBasis }) {
   const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
   const lunar = solar.getLunar();
   const ec = lunar.getEightChar();
-  ec.setSect(2);
+  // 晚子時（23:00-23:59）要算隔天的日柱：跟 js/bazi-engine.js 同一個問題，sect(2) 這個小時窗
+  // 不會進位日柱，改用 sect(1) 才對（用 2026-07-15 23:43 這筆資料核對出來，見 bazi-engine.js 同一處註解）
+  ec.setSect(1);
 
   // 符首用「時柱」的旬首（時家之學，不是日柱）
   const timeGan = ec.getTimeGan();
@@ -546,10 +548,11 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
   // 空亡／驛馬改用「日柱」（不是時柱）：用 2026-07-10 01:30 這筆官網資料核對出來，
   // 時柱丁丑落在甲戌旬（跟符首同一個旬，算出空亡申酉），但官網實際標示的空亡是午未，
   // 换成日柱乙酉（落在甲申旬）代入公式才對得上（午未正是甲申旬的空亡）。
-  // 驛馬這次改用日柱是同步的推論、還沒有能單獨區分時柱／日柱的測資（這張圖時柱丑、日柱酉剛好同屬巳酉丑局，
-  // 兩種算法答案一樣），如果之後發現驛馬應該仍用時柱，請提供一筆能區分兩者的資料再校正。
+  // 驛馬：使用者明確指出「奇門命盤報告」頁籤跟獨立的「奇門遁甲」頁面是兩套不同演算法，不能共用同一個
+  // 結果——命盤報告用「日支」查三合局對沖，奇門遁甲用「時支」查同一張對沖表（申子辰馬在寅、寅午戌馬在申、
+  // 巳酉丑馬在亥、亥卯未馬在巳）。呼叫端各自傳入 yiMaBasis: "day" 或 "time"，這裡依此決定查表用哪個地支
   const kongWang = getKongWang(ec.getDayGan(), ec.getDayZhi());
-  const yiMa = getYiMa(ec.getDayZhi());
+  const yiMa = getYiMa(yiMaBasis === "time" ? timeZhi : ec.getDayZhi());
 
   // 上方四柱表格：跟八字報告排盤方式一致，直接沿用 bazi-engine.js 的 ganPart／zhiPart（同一頁全域函式）
   const siZhu = [
@@ -638,6 +641,7 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender }) 
       jiXing: hasJiXing(g, tianGan, diGan),
       geju,
       isMingGong: g === mingGong,
+      isZiNu: g === ziNuGong,
       dayunLabel: dayun.decadeByGong[g],
       cornerWords: buildCornerWords(g, renPanMen[g], tianPanXing[g], shenPan[g], tianGan, diGan, g === xiongdiGong, g === ziNuGong, g === yiMaGong)
     };

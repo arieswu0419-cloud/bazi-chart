@@ -472,7 +472,10 @@ function calculateBazi({ year, month, day, hour, minute, gender, name }) {
   const solar = Solar.fromYmdHms(year, month, day, hour, minute, 0);
   const lunar = solar.getLunar();
   const ec = lunar.getEightChar();
-  ec.setSect(2);
+  // 晚子時（23:00-23:59）要算隔天的日柱：sect(2) 這個小時窗不會進位日柱，用使用者提供的
+  // 2026-07-15 23:43 這筆資料核對出來（正確日柱辛卯，sect(2) 只會算出庚寅），改用 sect(1) 才對。
+  // 兩種 sect 只有在這個小時窗內才有差異，其餘所有時段的四柱結果完全相同（已交叉比對過其他時段）。
+  ec.setSect(1);
   const pad = (n) => String(n).padStart(2, "0");
   const solarText = year + "-" + pad(month) + "-" + pad(day) + " " + pad(hour) + ":" + pad(minute);
 

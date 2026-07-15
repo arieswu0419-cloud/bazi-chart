@@ -1044,6 +1044,19 @@ footer {
 .qimen-gan-stack { position: absolute; top: 6px; right: 8px; display: flex; flex-direction: column; align-items: center; gap: 0; line-height: 1.15; }
 .qimen-gan-char { font-size: 16px; font-weight: 700; }
 
+/* 奇門遁甲（獨立頁面）：右上角天／地盤干左側的「日」／「時」黑底圓白字標記（日柱／時柱天干落宮），
+   取代命盤報告頁籤原本左側的「命」圓圈；跟天／地盤干放同一列，天／地盤干這裡改成跟著父層排列，
+   不再自己絕對定位。日／時同宮時兩顆圓垂直堆疊（時在日下面），不同宮只會出現其中一顆 */
+.qimen-topright-row { position: absolute; top: 6px; right: 8px; display: flex; align-items: flex-start; gap: 3px; }
+.qimen-topright-row .qimen-gan-stack { position: static; top: auto; right: auto; }
+.qimen-daytime-stack { display: flex; flex-direction: column; gap: 2px; align-items: center; margin-top: 1px; }
+.qimen-daytime-label {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #1a1a1a; color: #fff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+
 /* 八神：靠上置中，跟門圓明顯分開，黑色加粗 */
 .qimen-shen {
   position: absolute; top: 10px; left: 0; right: 0;
@@ -1055,6 +1068,10 @@ footer {
    不會因為個別宮位有沒有六儀擊刑文字而跑位；bottom-info（擊刑＋大運）固定貼在宮位底部 */
 .qimen-cell-center { position: absolute; inset: 0; }
 .qimen-circle-zone { position: absolute; top: 98px; left: 50%; transform: translate(-50%, -50%); }
+
+/* 奇門遁甲（獨立頁面）：右中置中位置的 1~9 數字（時柱干支 mod 9 起算，按洛書順序排）──
+   以宮位格右半邊為準水平置中（不跟著門圓位置算），垂直對齊整格中央，獨立定位不影響門圓本身的置中 */
+.qimen-gong-number { position: absolute; top: 50%; right: 14px; transform: translateY(-50%); font-size: 20px; font-weight: 800; color: #1a1a1a; }
 .qimen-bottom-info { position: absolute; left: 0; right: 0; bottom: 6px; }
 .qimen-men-circle {
   width: 60px; height: 60px; border-radius: 50%;
@@ -1122,6 +1139,7 @@ footer {
   .qimen-corner-words span, .qimen-corner-words-left span { font-size: 8px; }
   .qimen-cell-bottom { font-size: 17px; }
   .qimen-ming-circle { font-size: 12px; }
+  .qimen-gong-number { font-size: 17px; right: 10px; }
 }
 .admin-status-btn:disabled { opacity: 0.6; cursor: default; }
 
@@ -1248,6 +1266,13 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 @media (max-width: 560px) {
   .mingpian-form-grid { grid-template-columns: 1fr; }
 }
+
+/* 奇門遁甲（獨立頁面）*/
+.card .qimen-dunjia-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
+.qimen-dunjia-head-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.qimen-dunjia-head-row h2 { margin: 0; }
+.qimen-dunjia-head-actions { display: flex; gap: 10px; }
+.qimen-dunjia-head-actions .btn { width: auto; }
 
 /* 濟公棋卦・前世因果頁面 */
 .card .jigong-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
