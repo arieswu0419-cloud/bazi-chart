@@ -1667,7 +1667,7 @@ function renderQimen(data) {
 // 4. 右下角格局提示字只保留「入墓」＋門迫／宮迫，其餘（門的意義／六親／星意義／神意義／兄弟／子女／
 //    遷移）都不顯示，改顯示三詐／五假（天假地假人假）／九遁（見 qimenDunjiaCornerWords）
 // 5. 門圓右側新增 1~9 數字（見 computeQimenDunjiaGongNumbers）
-// 中下格局文字：天盤干若為三奇（乙／丙／丁）且觸發入墓，在原本的81格局名稱下方換行加顯示
+// 中下格局文字：天盤干若為三奇（乙／丙／丁）且觸發入墓，在原本的81格局名稱「上方」換行加顯示
 // 「乙奇入墓」／「丙奇入墓」／「丁奇入墓」（兩個都要顯示，不能互相取代——使用者確認原本的81格局
 // 名稱要保留）；其餘六儀（戊己庚辛壬癸）入墓時不套用這個規則，維持只顯示81格局名稱，
 // 右下角小字繼續顯示「入墓」（見 qimenDunjiaCornerWords，未受影響）
@@ -1676,7 +1676,7 @@ function qimenDunjiaBottomLabel(c) {
   const geju = getGeju81(c.tianGan, c.diGan);
   const gejuName = geju ? geju.name : "";
   if (SAN_QI_RUMU_TEXT[c.tianGan] && (RUMU_STEMS[c.gua] || []).includes(c.tianGan)) {
-    return gejuName ? gejuName + "<br>" + SAN_QI_RUMU_TEXT[c.tianGan] : SAN_QI_RUMU_TEXT[c.tianGan];
+    return gejuName ? SAN_QI_RUMU_TEXT[c.tianGan] + "<br>" + gejuName : SAN_QI_RUMU_TEXT[c.tianGan];
   }
   return gejuName;
 }
