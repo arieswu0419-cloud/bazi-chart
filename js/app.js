@@ -1672,13 +1672,26 @@ function renderQimen(data) {
 // 名稱要保留）；其餘六儀（戊己庚辛壬癸）入墓時不套用這個規則，維持只顯示81格局名稱，
 // 右下角小字繼續顯示「入墓」（見 qimenDunjiaCornerWords，未受影響）
 const SAN_QI_RUMU_TEXT = { 乙: "乙奇入墓", 丙: "丙奇入墓", 丁: "丁奇入墓" };
+
+// 升殿：天盤干是乙／丙／丁且落入指定宮位才觸發，跟入墓一樣加在原本81格局名稱「上方」
+// （乙落震宮／丙落離宮／丁落兌宮或離宮），入墓判斷用的 RUMU_STEMS 宮位（乾艮巽坤）跟這裡的
+// 宮位（震離兌）不重疊，兩者不會同時觸發同一格
+const SHENG_DIAN_RULES = [
+  { tianGan: "乙", guas: ["震"], text: "乙奇升殿" },
+  { tianGan: "丙", guas: ["離"], text: "丙奇升殿" },
+  { tianGan: "丁", guas: ["兌", "離"], text: "丁奇升殿" }
+];
 function qimenDunjiaBottomLabel(c) {
   const geju = getGeju81(c.tianGan, c.diGan);
   const gejuName = geju ? geju.name : "";
+  const extraLines = [];
   if (SAN_QI_RUMU_TEXT[c.tianGan] && (RUMU_STEMS[c.gua] || []).includes(c.tianGan)) {
-    return gejuName ? SAN_QI_RUMU_TEXT[c.tianGan] + "<br>" + gejuName : SAN_QI_RUMU_TEXT[c.tianGan];
+    extraLines.push(SAN_QI_RUMU_TEXT[c.tianGan]);
   }
-  return gejuName;
+  const shengDian = SHENG_DIAN_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
+  if (shengDian) extraLines.push(shengDian.text);
+  if (!extraLines.length) return gejuName;
+  return gejuName ? extraLines.join("<br>") + "<br>" + gejuName : extraLines.join("<br>");
 }
 
 function renderQimenDunjia(data) {
