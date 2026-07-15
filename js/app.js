@@ -1699,6 +1699,14 @@ const QI_YOU_LU_WEI_RULES = [
 // 任何一個既有規則的宮位清單裡，不會互相衝突
 const SHOU_XING_TEXT = { 丙: "丙奇受刑", 丁: "丁奇受刑" };
 
+// 玉女守門：天盤干／地盤干都是丁（丁＋丁），且落在巽宮或離宮（地支巳／午，跟丁同屬火）才觸發。
+// 跟奇遊祿位（丁落離宮，任何地盤干都算）條件會重疊——用使用者提供的2筆真實盤核對出來
+// （1987-10-13 06:16 離宮丁＋丁、1987-10-6 06:16 巽宮丁＋丁），使用者確認兩條規則同時成立時
+// 兩個提示都要顯示，不是互斥取代，所以這裡獨立判斷、不影響 QI_YOU_LU_WEI_RULES 的邏輯
+function isYuNuShouMenDunjia(c) {
+  return c.tianGan === "丁" && c.diGan === "丁" && (c.gua === "巽" || c.gua === "離");
+}
+
 // 乙奇入墓（日／時干版）：跟既有 RUMU_STEMS 的入墓（看宮位）是不同的觸發條件，不能刪掉舊的——
 // 這條是「天盤干是乙、且這一宮正好是日柱或時柱天干落宮的位置」就觸發，跟地盤干／格局名稱／
 // 宮位都無關。原本以為要限定格局剛好是「日奇入墓」（乙＋己）才對，但使用者接連提供的3筆新
@@ -1719,6 +1727,7 @@ function qimenDunjiaBottomLabel(c) {
   if (shengDian) extraLines.push(shengDian.text);
   const qiYouLuWei = QI_YOU_LU_WEI_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
   if (qiYouLuWei) extraLines.push("奇遊祿位");
+  if (isYuNuShouMenDunjia(c)) extraLines.push("玉女守門");
   if (SHOU_XING_TEXT[c.tianGan] && c.gua === "坎") extraLines.push(SHOU_XING_TEXT[c.tianGan]);
   if (!extraLines.length) return gejuName;
   return gejuName ? extraLines.join("<br>") + "<br>" + gejuName : extraLines.join("<br>");
