@@ -1674,12 +1674,23 @@ function renderQimen(data) {
 const SAN_QI_RUMU_TEXT = { 乙: "乙奇入墓", 丙: "丙奇入墓", 丁: "丁奇入墓" };
 
 // 升殿：天盤干是乙／丙／丁且落入指定宮位才觸發，跟入墓一樣加在原本81格局名稱「上方」
-// （乙落震宮／丙落離宮／丁落兌宮或離宮），入墓判斷用的 RUMU_STEMS 宮位（乾艮巽坤）跟這裡的
-// 宮位（震離兌）不重疊，兩者不會同時觸發同一格
+// （乙落震宮／丙落離宮／丁落兌宮），入墓判斷用的 RUMU_STEMS 宮位（乾艮巽坤）跟這裡的
+// 宮位（震離兌）不重疊，兩者不會同時觸發同一格。原本「丁落兌宮或離宮」的離宮已拿掉——
+// 用使用者提供的5筆真實盤核對出來，丁落離宮時畫面只顯示「奇遊祿位」，沒有「丁奇升殿」，
+// 兩者衝突，使用者確認離宮這條併入奇遊祿位、從升殿規則移除
 const SHENG_DIAN_RULES = [
   { tianGan: "乙", guas: ["震"], text: "乙奇升殿" },
   { tianGan: "丙", guas: ["離"], text: "丙奇升殿" },
-  { tianGan: "丁", guas: ["兌", "離"], text: "丁奇升殿" }
+  { tianGan: "丁", guas: ["兌"], text: "丁奇升殿" }
+];
+
+// 奇遊祿位：天盤干（三奇之一）落入自己的十干祿方位才觸發——丙祿在巳（巽宮）、丁祿在午（離宮）；
+// 用使用者提供的5筆真實盤核對出來（2026-09-12／2026-12-09／2020-08-15 丙落巽宮，
+// 2026-07-01／2020-11-15 丁落離宮，5筆都只出現這個宮位這個提示，沒有例外），跟升殿同樣
+// 加在81格局名稱「上方」。5筆資料都沒有乙的案例，先不套用在乙身上
+const QI_YOU_LU_WEI_RULES = [
+  { tianGan: "丙", guas: ["巽"] },
+  { tianGan: "丁", guas: ["離"] }
 ];
 function qimenDunjiaBottomLabel(c) {
   const geju = getGeju81(c.tianGan, c.diGan);
@@ -1690,6 +1701,8 @@ function qimenDunjiaBottomLabel(c) {
   }
   const shengDian = SHENG_DIAN_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
   if (shengDian) extraLines.push(shengDian.text);
+  const qiYouLuWei = QI_YOU_LU_WEI_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
+  if (qiYouLuWei) extraLines.push("奇遊祿位");
   if (!extraLines.length) return gejuName;
   return gejuName ? extraLines.join("<br>") + "<br>" + gejuName : extraLines.join("<br>");
 }
