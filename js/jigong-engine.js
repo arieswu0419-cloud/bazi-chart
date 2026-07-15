@@ -32,21 +32,69 @@ const JIGONG_IDENTITY_BY_FAMILY = {
   "卒兵": "工人、農民、士兵、小生意人"
 };
 
-// 前世關係（中宮 vs 其餘 4 個位置，只有同家族異色才判讀）：位置分成「左右」（橫向）跟「上下」（縱向）
-// 兩組。卒兵家族實測左右／上下文字相同；其餘家族左右／上下文字不同。將帥家族「考證上有太多不同可能性」，
-// 不下判斷，只給提示文字。
-const JIGONG_RELATION_BY_FAMILY = {
-  "卒兵": { lr: "六親、家人、祖孫、父母子女", ud: "六親、家人、祖孫、父母子女" },
-  "包炮": { lr: "短暫的情人（上下左右相鄰）", ud: "短暫的情人（上下左右相鄰）" },
-  "馬傌": { lr: "短暫的情人", ud: "有感情、情愫的長輩晚輩" },
-  "車俥": { lr: "合作的工作或事業夥伴", ud: "職場的上司、下屬或上下游廠商" },
-  "象相": { lr: "同學、同修", ud: "師父、徒弟" },
-  "士仕": { lr: "同僚", ud: "官場的上司、下屬" },
-  "將帥": { lr: null, ud: null }
+// 前世關係：5 個位置兩兩配對共 10 組，只有同家族異色才判讀。每組依相對位置歸到 5 種類別之一
+// （書版《改寫人生的象棋卜卦》格局說明章節原文）：
+//   adjacentLR：中與左、中與右（1與2、1與3）
+//   adjacentUD：中與上、中與下（1與4、1與5）
+//   oppositeUD：上與下（4與5，隔代／師公徒孫／祖孫）
+//   oppositeLR：左與右（2與3，非直接／非同師父／堂表兄弟姊妹）
+//   diagonal：左上、左下、右上、右下（2與4、2與5、3與4、3與5）
+// 卒兵家族的 adjacentLR 比較特別：文字依「兵」「卒」誰在中宮、誰在左／右而不同（見 jigongZubingAdjacentText），
+// 不是單純同家族就給固定文字。將帥家族「考證上有太多不同可能性」，不下判斷，只給提示文字。
+const JIGONG_RELATION_RULES = {
+  "卒兵": {
+    adjacentLR: null, // 見 jigongZubingAdjacentText
+    adjacentUD: "父母、子女",
+    oppositeUD: "祖父母與孫子",
+    oppositeLR: "堂、表兄弟姊妹",
+    diagonal: "叔叔、伯父、阿姨、嬸嬸與姪子、姪女"
+  },
+  "包炮": {
+    adjacentLR: "短暫的情人（上下左右相鄰）",
+    adjacentUD: "短暫的情人（上下左右相鄰）",
+    oppositeUD: "外遇的對象、情人或小妾（包炮隔山）",
+    oppositeLR: "外遇的對象、情人或小妾（包炮隔山）",
+    diagonal: "有情愫但沒有真正交流的對象（包炮斜對）"
+  },
+  "馬傌": {
+    adjacentLR: "短暫的情人",
+    adjacentUD: "有感情、情愫的長輩晚輩",
+    oppositeUD: "喜歡但沒有真正交流的對象（馬傌分開）",
+    oppositeLR: "喜歡但沒有真正交流的對象（馬傌分開）",
+    diagonal: "長時間的情人（馬傌斜對）"
+  },
+  "車俥": {
+    adjacentLR: "合作的工作或事業夥伴",
+    adjacentUD: "職場的上司、下屬或上下游廠商",
+    oppositeUD: "隔代職場的上司、下屬",
+    oppositeLR: "非直接合作的夥伴",
+    diagonal: "非直接合作的上司、下屬"
+  },
+  "象相": {
+    adjacentLR: "同學、同修",
+    adjacentUD: "師父、徒弟",
+    oppositeUD: "師公、徒孫",
+    oppositeLR: "非同師父之同學",
+    diagonal: "非直接之師父、徒弟（師叔、師伯）"
+  },
+  "士仕": {
+    adjacentLR: "同僚",
+    adjacentUD: "官場的上司、下屬",
+    oppositeUD: "隔代的上司、下屬",
+    oppositeLR: "非直屬之同僚",
+    diagonal: "非直屬之上司、下屬"
+  },
+  "將帥": { adjacentLR: null, adjacentUD: null, oppositeUD: null, oppositeLR: null, diagonal: null }
 };
 const JIGONG_JIANGSHUAI_NOTE = "將／帥實際案例太多不同可能性，建議另外再起一卦細看。";
 const JIGONG_SAME_COLOR_NOTE = "同字同色（偏向消耗格，不屬於典型前世關係，建議另外起卦細看）";
-const JIGONG_NO_MATCH_NOTE = "中央與其他位置沒有同字配對 → 可能是新緣分、無前世累積。";
+const JIGONG_NO_MATCH_NOTE = "5 個位置之間沒有同字配對 → 可能是新緣分、無前世累積。";
+
+// 卒兵家族「中與左」「中與右」的文字要看兵／卒誰在中宮、誰在左或右（其他家族的 adjacentLR 不用管這個）
+function jigongZubingAdjacentText(centerChar, otherPos) {
+  if (centerChar === "兵") return otherPos === "left" ? "對方是你的妻子" : "對方是你的親兄弟姊妹";
+  return otherPos === "right" ? "對方是你的老公" : "對方是你的親兄弟姊妹";
+}
 
 // 位置固定角色標籤（前世因果頁面沒有婚姻狀態欄位，左右一律顯示「老婆／老公」，跟參考網站實測一致）
 const JIGONG_POSITION_LABEL = {
@@ -56,6 +104,20 @@ const JIGONG_POSITION_LABEL = {
   top: "上（長輩／老闆）",
   bottom: "下（晚輩／子女）"
 };
+
+// 5 個位置兩兩配對，共 10 組；category 決定套用哪一種關係文字
+const JIGONG_POSITION_PAIRS = [
+  { a: "center", b: "left", category: "adjacentLR" },
+  { a: "center", b: "right", category: "adjacentLR" },
+  { a: "center", b: "top", category: "adjacentUD" },
+  { a: "center", b: "bottom", category: "adjacentUD" },
+  { a: "top", b: "bottom", category: "oppositeUD" },
+  { a: "left", b: "right", category: "oppositeLR" },
+  { a: "left", b: "top", category: "diagonal" },
+  { a: "left", b: "bottom", category: "diagonal" },
+  { a: "right", b: "top", category: "diagonal" },
+  { a: "right", b: "bottom", category: "diagonal" }
+];
 
 function jigongFindPiece(char) {
   return JIGONG_PIECES.find((p) => p.char === char) || null;
@@ -71,21 +133,34 @@ function calculateJigongPastLife(pieces) {
   const identity = JIGONG_IDENTITY_BY_FAMILY[centerPiece.family] || "";
 
   const relations = [];
-  ["left", "right", "top", "bottom"].forEach((pos) => {
-    const char = pieces[pos];
-    if (!char) return;
-    const piece = jigongFindPiece(char);
-    if (!piece || piece.family !== centerPiece.family) return;
+  JIGONG_POSITION_PAIRS.forEach(({ a, b, category }) => {
+    const charA = pieces[a];
+    const charB = pieces[b];
+    if (!charA || !charB) return;
+    const pieceA = jigongFindPiece(charA);
+    const pieceB = jigongFindPiece(charB);
+    if (!pieceA || !pieceB || pieceA.family !== pieceB.family) return;
 
-    const roleLabel = JIGONG_POSITION_LABEL[pos];
-    if (centerPiece.family === "將帥") {
-      relations.push({ position: pos, roleLabel, piece: char, text: JIGONG_JIANGSHUAI_NOTE });
+    const family = pieceA.family;
+    const labelA = JIGONG_POSITION_LABEL[a];
+    const labelB = JIGONG_POSITION_LABEL[b];
+    if (family === "將帥") {
+      relations.push({ a, b, labelA, labelB, charA, charB, text: JIGONG_JIANGSHUAI_NOTE });
       return;
     }
-    const sameColor = piece.color === centerPiece.color;
-    const isLR = pos === "left" || pos === "right";
-    const text = sameColor ? JIGONG_SAME_COLOR_NOTE : JIGONG_RELATION_BY_FAMILY[centerPiece.family][isLR ? "lr" : "ud"];
-    relations.push({ position: pos, roleLabel, piece: char, sameColor, text });
+    const sameColor = pieceA.color === pieceB.color;
+    let text;
+    if (sameColor) {
+      text = JIGONG_SAME_COLOR_NOTE;
+    } else if (family === "卒兵" && category === "adjacentLR") {
+      // adjacentLR 這個分類在 JIGONG_POSITION_PAIRS 裡固定是 a="center"、b="left"/"right"，
+      // 所以 charA 一定是中宮那支棋，b 就是左或右
+      text = jigongZubingAdjacentText(charA, b);
+    } else {
+      text = JIGONG_RELATION_RULES[family][category];
+    }
+    if (!text) return;
+    relations.push({ a, b, labelA, labelB, charA, charB, sameColor, text });
   });
 
   return {

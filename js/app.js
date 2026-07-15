@@ -1838,7 +1838,7 @@ function jigongRenderResult() {
     relationHtml = '<p class="jigong-relation-line">' + r.noMatchNote + "</p>";
   } else {
     relationHtml = r.relations.map((rel) =>
-      '<p class="jigong-relation-line">' + rel.roleLabel + " " + rel.piece + " ↔ 中央 " + r.centerChar +
+      '<p class="jigong-relation-line">' + rel.labelA + " " + rel.charA + " ↔ " + rel.labelB + " " + rel.charB +
       "（同字" + (rel.sameColor ? "同色" : "異色") + "）→ " + rel.text + "</p>"
     ).join("");
   }
@@ -1847,7 +1847,7 @@ function jigongRenderResult() {
     '<div class="jigong-result-block"><h3>前世自身（依中宮第一支棋）</h3>' +
     '<p class="jigong-result-highlight">前世性別：' + r.pastLifeGender + "（第一支" + (r.centerColor === "red" ? "紅" : "黑") + "棋；現在性別：" + currentGenderLabel + "）</p>" +
     '<p class="jigong-result-highlight">前世身分：' + r.identity + "</p></div>" +
-    '<div class="jigong-result-block"><h3>前世關係（中央 vs 各位置）</h3>' + relationHtml + "</div>" +
+    '<div class="jigong-result-block"><h3>前世關係（5 個位置兩兩配對）</h3>' + relationHtml + "</div>" +
     '<div class="jigong-result-block jigong-reminder-block"><h3>提醒</h3>' +
     "<p>今生關係 ≠ 前世關係。今生是夫妻，前世可能是家人、合作伙伴、上司下屬，甚至是新緣分。</p></div>";
 }
