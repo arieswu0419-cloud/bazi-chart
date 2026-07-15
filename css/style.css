@@ -345,14 +345,15 @@ main.app {
 }
 .pillars-table .label-cell {
   width: 52px;
-  color: var(--text-secondary);
-  background: var(--surface);
+  color: var(--text-primary);
+  background: var(--gold);
   white-space: nowrap;
 }
-.pillars-table .col-head { font-weight: 600; color: var(--text-primary); }
+.pillars-table .col-head { font-weight: 600; color: var(--text-primary); background: var(--gold); }
 .p-char { display: inline-block; font-size: 24px; font-weight: 600; line-height: 1.2; }
 .p-sign { display: block; font-size: 11px; font-weight: 400; margin-top: 2px; }
-.xunkong { display: block; font-size: 10px; color: var(--text-muted); }
+/* 空亡（年空／空）：字級加大2號、改黑色加粗，比原本淡灰色小字更醒目 */
+.xunkong { display: block; font-size: 14px; color: #000; font-weight: 700; }
 .hide-col { display: inline-flex; flex-direction: column; align-items: center; font-size: 15px; font-weight: 600; margin: 0 4px; }
 .hide-col .hg-ss { font-size: 10px; font-weight: 400; color: var(--text-secondary); margin-top: 2px; }
 .pillars-table .muted { color: var(--text-muted); }
@@ -473,6 +474,52 @@ main.app {
 .dayun-table td.col-selected { background: var(--highlight); }
 .dayun-table .p-char { font-size: 18px; }
 .dayun-table .hide-col { font-size: 12px; margin: 0 2px; }
+
+/* 四柱：欄位標題可點選查看該柱神煞解釋，選中的整欄反白（比照大運／流年） */
+.pillars-table .col-head { cursor: pointer; }
+.pillars-table .col-head:hover { background: var(--highlight); }
+.pillars-table td.col-selected { background: var(--highlight); }
+
+/* 日主定策／陰陽性格／九運行業趨勢：只顯示日主天干對應那一種五行與陰陽 */
+.dayun-strategy-head {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px;
+}
+.dayun-strategy-block { margin-bottom: 20px; }
+.dayun-strategy-block:last-child { margin-bottom: 0; }
+.dayun-strategy-block h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+  padding: 6px 12px;
+  background: var(--gold);
+  color: var(--text-primary);
+  border-radius: 6px;
+}
+.dayun-strategy-title { font-weight: 600; color: var(--text-primary); margin: 0 0 4px; }
+.dayun-strategy-position, .dayun-strategy-core { color: var(--text-secondary); margin: 0 0 8px; }
+.dayun-strategy-body { line-height: 1.7; margin: 0 0 8px; }
+.dayun-strategy-subhead { font-weight: 600; color: var(--text-primary); margin: 10px 0 4px; }
+.dayun-strategy-list { margin: 0 0 6px; padding-left: 20px; line-height: 1.7; }
+.dayun-strategy-list li { margin-bottom: 4px; }
+.dayun-industry-cat { margin-bottom: 10px; }
+
+/* 神煞解釋：點選四柱／大運／流年欄位標題動態顯示，不隨報告持久保存 */
+#shenshaExplainPanel .shensha-explain-empty { color: var(--text-muted); }
+#shenshaExplainPanel .shensha-explain-pillar { font-weight: 600; color: var(--text-primary); margin: 0 0 10px; }
+.shensha-explain-item { margin-bottom: 14px; }
+.shensha-explain-item:last-child { margin-bottom: 0; }
+.shensha-explain-item h4 {
+  font-size: 14px;
+  margin: 0 0 6px;
+  padding: 5px 12px;
+  background: var(--gold);
+  color: var(--text-primary);
+  border-radius: 6px;
+}
+.shensha-explain-item .shensha-explain-verse { color: var(--text-secondary); font-style: normal; margin: 0 0 6px; }
+.shensha-explain-item .shensha-explain-body { line-height: 1.7; margin: 0; }
 
 /* 人格解碼報告：配色比照參考網站取樣的明亮黃色系，跟八字報告的米色/金色分開 */
 .renge-card {

@@ -1,6 +1,7 @@
 let currentChart = null;
 let selectedDayun = null;
 let selectedLiunian = null;
+let selectedMainPillar = null;
 let currentRenge = null;
 let currentLifenum = null;
 let currentQimen = null;
@@ -266,6 +267,8 @@ document.getElementById("baziForm").addEventListener("submit", function (e) {
   selectedDayun = currentChart.daYunList.findIndex((d) => d.isCurrent);
   if (selectedDayun < 0) selectedDayun = 0;
   selectedLiunian = null;
+  selectedMainPillar = null;
+  document.getElementById("shenshaExplainCard").style.display = "none";
   renderChart(currentChart);
 });
 
@@ -389,7 +392,12 @@ document.getElementById("exportPdfBtn").addEventListener("click", async function
     // 大運流年另外強制換頁，不要被切一半；表格說明文字（點選欄位標題...）不匯出
     pdf.addPage();
     const dayunSections = Array.from(document.querySelectorAll("#dayunCard > *"));
-    const dayunBottom = await addSectionsToPdf(pdf, dayunSections, margin, pageWidth, pageHeight, margin);
+    await addSectionsToPdf(pdf, dayunSections, margin, pageWidth, pageHeight, margin);
+
+    // 日主定策／陰陽性格／九運行業趨勢另外強制換頁；神煞解釋是點選才動態呈現的內容，不匯出
+    pdf.addPage();
+    const strategySections = Array.from(document.querySelectorAll("#dayunStrategyCard > *"));
+    const dayunBottom = await addSectionsToPdf(pdf, strategySections, margin, pageWidth, pageHeight, margin);
 
     const closing = textToImage("-----八字報告請交由專業人士分析-----", 12, "#5F5E5A");
     let closingY = dayunBottom + 8;
@@ -428,7 +436,7 @@ function shenshaCell(p) {
 }
 
 // pillars: 陣列，每個元素需有 {headLabel, shiShenGan, gan, zhi, hideGansDisplay, diShi, shensha}
-function buildPillarsTable(pillars) {
+function buildPillarsTable(pillars, selectedIdx) {
   const rows = [
     { label: "十神", cell: (p) => p.shiShenGan },
     { label: "天干", cell: (p) => charCell(p.gan) },
@@ -439,11 +447,17 @@ function buildPillarsTable(pillars) {
   ];
 
   let html = '<table class="pillars-table"><tbody><tr><td class="label-cell"></td>';
-  pillars.forEach((p) => { html += '<td class="col-head">' + p.headLabel + "</td>"; });
+  pillars.forEach((p, i) => {
+    const sel = i === selectedIdx ? " col-selected" : "";
+    html += '<td class="col-head' + sel + '" data-idx="' + i + '">' + p.headLabel + "</td>";
+  });
   html += "</tr>";
   rows.forEach((row) => {
     html += '<tr><td class="label-cell">' + row.label + "</td>";
-    pillars.forEach((p) => { html += "<td>" + row.cell(p) + "</td>"; });
+    pillars.forEach((p, i) => {
+      const sel = i === selectedIdx ? " col-selected" : "";
+      html += '<td class="' + sel.trim() + '">' + row.cell(p) + "</td>";
+    });
     html += "</tr>";
   });
   html += "</tbody></table>";
@@ -463,8 +477,7 @@ function renderChart(data) {
     "<p>生肖：" + data.shengxiao + "</p>" +
     "<p>命格：" + data.geju + "</p>";
 
-  const mainPillars = data.pillars.map((p) => ({ ...p, headLabel: p.label }));
-  document.getElementById("pillarsGrid").innerHTML = buildPillarsTable(mainPillars);
+  renderMainPillars(data);
 
   document.getElementById("ganNote").textContent = data.ganNoteText;
   document.getElementById("zhiNote").textContent = data.zhiNoteText;
@@ -499,6 +512,47 @@ function renderChart(data) {
   }
 
   renderDayun(data);
+  renderDayunStrategy(data.dayGan);
+}
+
+// 日主定策／陰陽性格／九運行業趨勢：只顯示日主天干對應的那一種五行與陰陽，不列出全部五行
+function renderDayunStrategy(dayGan) {
+  const card = document.getElementById("dayunStrategyCard");
+  const panel = document.getElementById("dayunStrategyPanel");
+  const element = WUXING_OF_GAN[dayGan];
+  const isYang = YINYANG_OF_GAN[dayGan] === 1;
+  const strategy = DAYUN_STRATEGY_BY_ELEMENT[element];
+  const industry = INDUSTRY_TRENDS_BY_ELEMENT[element];
+  const personality = isYang ? YINYANG_PERSONALITY.yang : YINYANG_PERSONALITY.yin;
+
+  let html = '<p class="dayun-strategy-head">日主：' + dayGan + '（' + (isYang ? "陽" : "陰") + element + '）</p>';
+
+  html += '<div class="dayun-strategy-block">' +
+    "<h3>日主定策</h3>" +
+    '<p class="dayun-strategy-title">' + strategy.title + "</p>" +
+    '<p class="dayun-strategy-position">' + strategy.position + "</p>" +
+    '<p class="dayun-strategy-body">' + strategy.body.replace(/\n/g, "<br>") + "</p>" +
+    "</div>";
+
+  html += '<div class="dayun-strategy-block">' +
+    "<h3>陰陽性格｜" + personality.title + "</h3>" +
+    '<p class="dayun-strategy-core">' + personality.core + "</p>" +
+    '<ul class="dayun-strategy-list">' + personality.points.map((p) => "<li>" + p + "</li>").join("") + "</ul>" +
+    '<p class="dayun-strategy-subhead">' + personality.imbalance.title + "</p>" +
+    '<ul class="dayun-strategy-list">' + personality.imbalance.points.map((p) => "<li>" + p + "</li>").join("") + "</ul>" +
+    "</div>";
+
+  html += '<div class="dayun-strategy-block">' +
+    "<h3>九運行業趨勢｜" + element + "</h3>" +
+    '<p class="dayun-strategy-body">' + industry.intro + "</p>" +
+    industry.categories.map((cat) =>
+      '<div class="dayun-industry-cat"><p class="dayun-strategy-subhead">' + cat.name + "</p>" +
+      '<ul class="dayun-strategy-list">' + cat.items.map((it) => "<li>" + it + "</li>").join("") + "</ul></div>"
+    ).join("") +
+    "</div>";
+
+  panel.innerHTML = html;
+  card.style.display = "block";
 }
 
 // 大運／流年：跟四柱同一種寬表格樣式，欄位標題可以點選，點了哪欄哪欄就整欄反白
@@ -542,6 +596,8 @@ function renderDayun(data) {
       selectedDayun = Number(this.dataset.idx);
       selectedLiunian = null;
       renderDayun(data);
+      const dySel = data.daYunList[selectedDayun];
+      showShenshaExplain("大運 " + dySel.startYear + "（" + dySel.startAge + "歲）", dySel.shensha);
     };
   });
 
@@ -564,8 +620,48 @@ function renderDayun(data) {
     cell.onclick = function () {
       selectedLiunian = Number(this.dataset.idx);
       renderDayun(data);
+      const lnSel = dy.liunian[selectedLiunian];
+      showShenshaExplain("流年 " + lnSel.year + "（" + lnSel.age + "歲）", lnSel.shensha);
     };
   });
+}
+
+// 四柱：欄位標題可點選查看該柱神煞解釋（跟大運／流年一樣的整欄反白＋點選機制）
+function renderMainPillars(data) {
+  const pillarsGrid = document.getElementById("pillarsGrid");
+  const mainPillars = data.pillars.map((p) => ({ ...p, headLabel: p.label }));
+  pillarsGrid.innerHTML = buildPillarsTable(mainPillars, selectedMainPillar);
+  Array.from(pillarsGrid.querySelectorAll(".col-head")).forEach((cell) => {
+    cell.onclick = function () {
+      selectedMainPillar = Number(this.dataset.idx);
+      renderMainPillars(data);
+      const p = data.pillars[selectedMainPillar];
+      showShenshaExplain(p.label, p.shensha);
+    };
+  });
+}
+
+// 神煞解釋：點選四柱／大運／流年欄位標題時動態呈現，不隨報告持久保存、不列入 PDF 匯出
+function showShenshaExplain(pillarLabel, shenshaNames) {
+  const card = document.getElementById("shenshaExplainCard");
+  const panel = document.getElementById("shenshaExplainPanel");
+  card.style.display = "block";
+
+  let html = '<p class="shensha-explain-pillar">' + pillarLabel + "</p>";
+  if (!shenshaNames || !shenshaNames.length) {
+    html += '<p class="shensha-explain-empty">此柱無神煞。</p>';
+  } else {
+    html += shenshaNames.map((name) => {
+      const info = typeof SHENSHA_EXPLAIN !== "undefined" ? SHENSHA_EXPLAIN[name] : null;
+      if (!info) {
+        return '<div class="shensha-explain-item"><h4>' + name + '</h4><p class="shensha-explain-body">尚無說明資料。</p></div>';
+      }
+      const verse = info.verse ? '<p class="shensha-explain-verse">歌訣：' + info.verse.replace(/\n/g, "<br>") + "</p>" : "";
+      return '<div class="shensha-explain-item"><h4>' + name + "</h4>" + verse +
+        '<p class="shensha-explain-body">' + info.body.replace(/\n/g, "<br>") + "</p></div>";
+    }).join("");
+  }
+  panel.innerHTML = html;
 }
 
 function unconfirmedSpan() {
