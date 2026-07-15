@@ -1684,11 +1684,16 @@ const SHENG_DIAN_RULES = [
   { tianGan: "丁", guas: ["兌"], text: "丁奇升殿" }
 ];
 
-// 奇遊祿位：天盤干（三奇之一）落入自己的十干祿方位才觸發——丙祿在巳（巽宮）、丁祿在午（離宮）；
-// 用使用者提供的5筆真實盤核對出來（2026-09-12／2026-12-09／2020-08-15 丙落巽宮，
-// 2026-07-01／2020-11-15 丁落離宮，5筆都只出現這個宮位這個提示，沒有例外），跟升殿同樣
-// 加在81格局名稱「上方」。5筆資料都沒有乙的案例，先不套用在乙身上
+// 奇遊祿位：天盤干（三奇之一）落入自己的十干祿方位、且八門是開／休／生三吉門之一才觸發——
+// 乙祿在卯（震宮）、丙祿在巳（巽宮）、丁祿在午（離宮）。三吉門這個條件是用「乙落震宮」的7筆
+// 真實盤核對出來的：2022-07-13／2023-07-08（門休）、2022-04-13（門開）三筆有觸發，
+// 2022-07-08／2029-12-03（門死）、2022-07-17（門景）、2022-07-19（門傷）四筆都沒觸發，
+// 7筆全部吻合「門必須是開/休/生」；原本丙／丁那5筆確認資料（2026-09-12／2026-12-09／
+// 2020-08-15／2026-07-01／2020-11-15）剛好全部是三吉門，沒能測出這個條件，但邏輯上三奇同一
+// 套規則比較合理，使用者確認三奇都套用三吉門這個條件
+const QI_LU_MEN = ["開", "休", "生"];
 const QI_YOU_LU_WEI_RULES = [
+  { tianGan: "乙", guas: ["震"] },
   { tianGan: "丙", guas: ["巽"] },
   { tianGan: "丁", guas: ["離"] }
 ];
@@ -1696,7 +1701,11 @@ const QI_YOU_LU_WEI_RULES = [
 // 受刑：天盤干丙／丁落入坎宮（水），丙丁屬火，水火相沖，跟使用者提供的4筆真實盤核對出來
 // （2026-06-05／2009-08-08／2029-06-06 丙落坎宮、2018-06-05 丁落坎宮，4筆都只出現這個
 // 宮位這個提示，沒有例外）。坎宮不在 RUMU_STEMS／SHENG_DIAN_RULES／QI_YOU_LU_WEI_RULES
-// 任何一個既有規則的宮位清單裡，不會互相衝突
+// 任何一個既有規則的宮位清單裡，不會互相衝突。
+// 例外：地盤干跟天盤干同樣是丁（丁＋丁）落坎宮時不算受刑——原本4筆確認資料剛好都是
+// 地盤干跟天盤干不同（丙＋癸／丙＋壬／丁＋癸／丙＋壬），沒測到同干的情況；用使用者提供的
+// 2017-12-11 07:16 這筆盤核對出來，丁＋丁落坎宮畫面只顯示「奇入太陰」，沒有「丁奇受刑」，
+// 需要排除地盤干＝天盤干（同干不算相沖）的情況
 const SHOU_XING_TEXT = { 丙: "丙奇受刑", 丁: "丁奇受刑" };
 
 // 玉女守門：天盤干／地盤干都是丁（丁＋丁），且落在巽宮或離宮（地支巳／午，跟丁同屬火）才觸發。
@@ -1726,9 +1735,9 @@ function qimenDunjiaBottomLabel(c) {
   const shengDian = SHENG_DIAN_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
   if (shengDian) extraLines.push(shengDian.text);
   const qiYouLuWei = QI_YOU_LU_WEI_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
-  if (qiYouLuWei) extraLines.push("奇遊祿位");
+  if (qiYouLuWei && QI_LU_MEN.includes(c.men)) extraLines.push("奇遊祿位");
   if (isYuNuShouMenDunjia(c)) extraLines.push("玉女守門");
-  if (SHOU_XING_TEXT[c.tianGan] && c.gua === "坎") extraLines.push(SHOU_XING_TEXT[c.tianGan]);
+  if (SHOU_XING_TEXT[c.tianGan] && c.gua === "坎" && c.diGan !== c.tianGan) extraLines.push(SHOU_XING_TEXT[c.tianGan]);
   if (!extraLines.length) return gejuName;
   return gejuName ? extraLines.join("<br>") + "<br>" + gejuName : extraLines.join("<br>");
 }
