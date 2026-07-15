@@ -1699,10 +1699,12 @@ const QI_YOU_LU_WEI_RULES = [
 // 任何一個既有規則的宮位清單裡，不會互相衝突
 const SHOU_XING_TEXT = { 丙: "丙奇受刑", 丁: "丁奇受刑" };
 
-// 乙奇入墓（日干版）：跟既有 RUMU_STEMS 的入墓（看宮位）是不同的觸發條件，不能刪掉舊的——這條是
-// 「日柱天干剛好是乙、且乙落的這一宮天地盤組合正好是81格局裡的『日奇入墓』（乙＋己）」才觸發，
-// 跟宮位（坤／震／…）無關。用使用者提供的2筆真實盤核對出來（2032-05-09／2027-04-06，
-// 兩筆日柱都是乙，乙落的宮位算出來的格局都是「日奇入墓」，畫面都要求額外顯示「乙奇入墓」）
+// 乙奇入墓（日／時干版）：跟既有 RUMU_STEMS 的入墓（看宮位）是不同的觸發條件，不能刪掉舊的——
+// 這條是「天盤干是乙、且這一宮正好是日柱或時柱天干落宮的位置」就觸發，跟地盤干／格局名稱／
+// 宮位都無關。原本以為要限定格局剛好是「日奇入墓」（乙＋己）才對，但使用者接連提供的3筆新
+// 資料（1987-10-13 地盤壬→日奇入地、1987-10-6 地盤乙→日奇伏吟(時柱)、1987-10-3 地盤乙→
+// 日奇伏吟(日柱)）都一樣要求顯示「乙奇入墓」，證實限定格局名稱是想窄了，真正的條件只跟
+// 天盤干＝乙＋日／時柱天干落宮這兩件事有關，跟地盤干配對出來的格局名稱無關（用5筆真實盤核對過）
 function qimenDunjiaBottomLabel(c) {
   const geju = getGeju81(c.tianGan, c.diGan);
   const gejuName = geju ? geju.name : "";
@@ -1710,7 +1712,7 @@ function qimenDunjiaBottomLabel(c) {
   if (SAN_QI_RUMU_TEXT[c.tianGan] && (RUMU_STEMS[c.gua] || []).includes(c.tianGan)) {
     extraLines.push(SAN_QI_RUMU_TEXT[c.tianGan]);
   }
-  if (c.isMingGong && c.tianGan === "乙" && gejuName === "日奇入墓") {
+  if ((c.isMingGong || c.isZiNu) && c.tianGan === "乙") {
     extraLines.push("乙奇入墓");
   }
   const shengDian = SHENG_DIAN_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
