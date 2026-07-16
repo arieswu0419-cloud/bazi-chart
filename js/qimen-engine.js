@@ -558,11 +558,15 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender, yi
   const kongWang = getKongWang(kongWangBasis === "time" ? timeGan : ec.getDayGan(), kongWangBasis === "time" ? timeZhi : ec.getDayZhi());
   const yiMa = getYiMa(yiMaBasis === "time" ? timeZhi : ec.getDayZhi());
 
-  // 上方四柱表格：跟八字報告排盤方式一致，直接沿用 bazi-engine.js 的 ganPart／zhiPart（同一頁全域函式）
+  // 上方四柱表格：跟八字報告排盤方式一致，直接沿用 bazi-engine.js 的 ganPart／zhiPart（同一頁全域函式）。
+  // 月柱改用 getEffectiveMonthGanZhi（bazi-engine.js，節氣進位到整點），跟八字報告的月柱顯示一致；
+  // 這裡只影響「顯示的月柱」，不影響下面的局數／符首判斷（那段驗證過官網用的是精確到分鐘，不是
+  // 進位到整點，兩者是各自獨立的欄位、互不影響，見 getEffectiveMonthGanZhi 註解）
+  const effMonth = getEffectiveMonthGanZhi(solar);
   const siZhu = [
     { label: "時柱", gan: ganPart(timeGan), zhi: zhiPart(timeZhi) },
     { label: "日柱", gan: ganPart(ec.getDayGan()), zhi: zhiPart(ec.getDayZhi()) },
-    { label: "月柱", gan: ganPart(ec.getMonthGan()), zhi: zhiPart(ec.getMonthZhi()) },
+    { label: "月柱", gan: ganPart(effMonth.gan), zhi: zhiPart(effMonth.zhi) },
     { label: "年柱", gan: ganPart(ec.getYearGan()), zhi: zhiPart(ec.getYearZhi()) }
   ];
 

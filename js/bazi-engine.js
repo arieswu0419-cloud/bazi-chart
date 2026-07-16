@@ -55,6 +55,37 @@ function getShiShen(dayGan, otherGan) {
   return null;
 }
 
+// 節氣進位到整點：用官網（product.meta-academy.biz）3組節氣交叉比對出來，官網的「節」交節判斷不是
+// 精確到分鐘，而是無條件進位到下一個整點才算交節（大雪05:57→06:00、小寒17:14→18:00、驚蟄22:43→
+// 23:00，三組都精準卡在下一個整點，不是最近整點也不是捨去分鐘）。這只影響「節」（不影響「氣」，
+// 氣不會改變月柱）交界後、到下一整點之間這段「灰色地帶」的月柱判斷——lunar-javascript 本身的
+// getMonthGan／getMonthZhi 精確到分鐘，這段時間內已經算成新月柱，但官網還沒切換。做法：如果最近
+// 一個交節是「節」且還在灰色地帶內，就把查詢時間往前退到「精確節氣前一分鐘」重新算一次
+// lunar-javascript 的月柱，沿用它本身正確的月柱判斷邏輯（不用自己重刻五虎遁），只取月干／月支兩個
+// 字；十神／十二長生仍然用「真正」的日干搭配這兩個字現算（getShiShen／getDiShi 是跟日期無關的
+// 純函式，不受這裡的時間位移影響）。用9筆資料核對過（3個節氣各自的灰色地帶前／中／進位後）。
+function getEffectiveMonthGanZhi(solar) {
+  const lunar = solar.getLunar();
+  const ec = lunar.getEightChar();
+  ec.setSect(1);
+  const prevJieQi = lunar.getPrevJieQi(false);
+  if (!prevJieQi.isJie()) {
+    return { gan: ec.getMonthGan(), zhi: ec.getMonthZhi() };
+  }
+  const js = prevJieQi.getSolar();
+  const jy = js.getYear(), jmo = js.getMonth(), jd = js.getDay(), jh = js.getHour(), jmi = js.getMinute();
+  const ceiled = jmi === 0 ? new Date(jy, jmo - 1, jd, jh, 0, 0) : new Date(jy, jmo - 1, jd, jh + 1, 0, 0);
+  const queryTime = new Date(solar.getYear(), solar.getMonth() - 1, solar.getDay(), solar.getHour(), solar.getMinute(), solar.getSecond());
+  if (queryTime >= ceiled) {
+    return { gan: ec.getMonthGan(), zhi: ec.getMonthZhi() };
+  }
+  const adjDate = new Date(jy, jmo - 1, jd, jh, jmi - 1, 0);
+  const adjSolar = Solar.fromYmdHms(adjDate.getFullYear(), adjDate.getMonth() + 1, adjDate.getDate(), adjDate.getHours(), adjDate.getMinutes(), 0);
+  const adjEc = adjSolar.getLunar().getEightChar();
+  adjEc.setSect(1);
+  return { gan: adjEc.getMonthGan(), zhi: adjEc.getMonthZhi() };
+}
+
 // 三合局：申子辰 / 亥卯未 / 寅午戌 / 巳酉丑，各自對應桃花／驛馬／華蓋／將星／劫煞／亡神
 // （以下神煞表全部來自課程講義《八字解鎖篇》第十六、十七章逐頁核對抄錄，不是猜測或坊間泛用版本）
 const TRIADS = {
@@ -483,7 +514,8 @@ function calculateBazi({ year, month, day, hour, minute, gender, name }) {
   const yearGan = ec.getYearGan();
   const yearZhi = ec.getYearZhi();
   const dayZhi = ec.getDayZhi();
-  const monthZhi = ec.getMonthZhi();
+  const effMonth = getEffectiveMonthGanZhi(solar);
+  const monthZhi = effMonth.zhi;
   const timeZhi = ec.getTimeZhi();
 
   const ctx = {
@@ -493,7 +525,7 @@ function calculateBazi({ year, month, day, hour, minute, gender, name }) {
   };
 
   const yearP = buildPillar("年柱", "year", yearGan, yearZhi, ec.getYearShiShenGan(), ec.getYearShiShenZhi(), ec.getYearDiShi(), ctx);
-  const monthP = buildPillar("月柱", "month", ec.getMonthGan(), monthZhi, ec.getMonthShiShenGan(), ec.getMonthShiShenZhi(), ec.getMonthDiShi(), ctx);
+  const monthP = buildPillar("月柱", "month", effMonth.gan, monthZhi, getShiShen(dayGan, effMonth.gan), null, getDiShi(dayGan, monthZhi), ctx);
   const dayP = buildPillar("日柱", "day", dayGan, dayZhi, "日主", ec.getDayShiShenZhi(), ec.getDayDiShi(), ctx);
   const timeP = buildPillar("時柱", "time", ec.getTimeGan(), timeZhi, ec.getTimeShiShenGan(), ec.getTimeShiShenZhi(), ec.getTimeDiShi(), ctx);
 
@@ -512,10 +544,10 @@ function calculateBazi({ year, month, day, hour, minute, gender, name }) {
   const wuxingPct = calcWuxingPct(pillars);
   const shishenPct = weightedShishenTally(pillars, dayGan);
 
-  const visibleGans = [yearGan, ec.getMonthGan(), dayGan, ec.getTimeGan()];
-  const geju = determineGeju(dayGan, monthZhi, toTrad(ec.getMonthDiShi()), visibleGans);
+  const visibleGans = [yearGan, effMonth.gan, dayGan, ec.getTimeGan()];
+  const geju = determineGeju(dayGan, monthZhi, getDiShi(dayGan, monthZhi), visibleGans);
 
-  const ganNoteText = ganNotes([yearGan, ec.getMonthGan(), dayGan, ec.getTimeGan()]);
+  const ganNoteText = ganNotes([yearGan, effMonth.gan, dayGan, ec.getTimeGan()]);
   const zhiNoteText = zhiNotes([yearZhi, monthZhi, dayZhi, timeZhi]);
 
   const genderCode = gender === "male" ? 1 : 0;
