@@ -663,6 +663,7 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender, yi
 
   return {
     name,
+    gender,
     solarText: year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0") + " " + String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0"),
     lunarText: lunar.toString(),
     siZhu,

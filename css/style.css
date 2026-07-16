@@ -961,13 +961,31 @@ footer {
   .qimen-compass { zoom: 1.2; }
 }
 .qc-dir {
-  display: flex; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   color: #fff; font-size: 12px; font-weight: 600;
 }
 /* 四隅方（東南／西南／西北／東北）：直式文字，宮位數字放文字下方 */
 .qc-dir-corner { flex-direction: column; gap: 2px; }
 .qc-dir-corner .qc-dir-text { writing-mode: vertical-rl; }
 .qc-dir-corner .qc-dir-num { font-size: 11px; }
+/* 奇門遁甲外環 64 卦：卦象圖示（上下兩個卦象符號疊起來）＋卦名（白字，深藍外圈上；只有奇門遁甲頁面會有）。
+   圖示放大到約 2 倍（使用者反映太小看不見）。卦名在東南／東／東北／西南／西／西北採直排一字一行，
+   在南／北採水平呈現 */
+.qc-hexagram { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+/* 卦象圖示：上下兩個三爻卦符號疊起來。比前一版縮小 1 號，並在上下兩卦（三爻）中間留白（gap），
+   讓上卦、下卦看起來分得開、不會擠成一團 */
+.qc-hex-trigrams { display: flex; flex-direction: column; align-items: center; font-size: 18px; line-height: 0.72; letter-spacing: 0; gap: 3px; }
+/* 直排卦名（一字換行）：兩個字上下排列 */
+.qc-hex-name-v { writing-mode: vertical-rl; text-orientation: upright; font-size: 11px; font-weight: 700; line-height: 1.05; margin-top: 2px; }
+/* 水平卦名（南／北用）：兩個字並排不換行 */
+.qc-hex-name-h { font-size: 11px; font-weight: 700; white-space: nowrap; margin-left: 2px; }
+/* 南／北方位格改水平排列：方位數字 → 間隔 → 卦象圖示 → 卦名 */
+.qc-dir-horiz { flex-direction: row; flex-wrap: nowrap; }
+.qc-hex-gap { display: inline-block; width: 10px; }
+/* 四隅 64 卦：移到鄰近地支旁（辰／申／寅／戌）的最外圈欄，巽坤靠上、艮乾靠下對齊 */
+.qc-corner-hex { display: flex; justify-content: center; color: #fff; }
+.qc-corner-hex-top { align-items: flex-start; }
+.qc-corner-hex-bottom { align-items: flex-end; }
 /* 地支羅盤連續外框：鋪滿整圈地支帶（中間會被九宮格蓋住），四周橘色框線一圈到底、不斷開 */
 .qc-zhi-frame {
   background: #EAC100;

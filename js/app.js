@@ -1116,7 +1116,10 @@ function buildQimenInfoTable(data, showName) {
   ];
   let html = '<table class="qimen-info-table"><tbody>';
   if (showName) {
-    html += '<tr><td class="qi-label">姓名</td><td class="qi-value" colspan="3">' + (data.name || "") + "</td></tr>";
+    // 姓名右側再加一欄「性別」（只有奇門命盤會顯示這一列，奇門遁甲 showName=false 不受影響）
+    const genderText = data.gender === "female" ? "女" : "男";
+    html += '<tr><td class="qi-label">姓名</td><td class="qi-value">' + (data.name || "") +
+      '</td><td class="qi-label">性別</td><td class="qi-value">' + genderText + "</td></tr>";
   }
   rows.forEach((r) => {
     html += "<tr><td class=\"qi-label\">" + r[0] + '</td><td class="qi-value">' + r[1] +
@@ -1524,23 +1527,58 @@ function buildQimenGridHtml(data, bottomLabelFn, centerLabel, cornerWordsFn, day
   return gridHtml;
 }
 
-function buildQimenCompassHtml(data, gridHtml) {
+// hexByGong：只有奇門遁甲頁面會傳（命盤頁傳 undefined），傳入時在 8 個方位格加顯示該宮的 64 卦
+// （上下兩個卦象符號＋卦名，見 computeQimenDunjiaHexagrams）
+function buildQimenCompassHtml(data, gridHtml, hexByGong) {
   let compassHtml = "";
   // 十二地支羅盤的連續橘色外框：先鋪一層跨滿整個地支帶（含中間九宮格區域）的金色底＋橘框，
   // 之後畫的九宮格會蓋住中間，只留下地支帶那一圈是連續的，不會在地支跟地支中間露出空隙
   compassHtml += '<div class="qc-zhi-frame" style="grid-row:2/7;grid-column:2/7"></div>';
   const QC_CORNER_GONGS = [2, 4, 6, 8];
+  const trigramsHtml = (hex) => '<span class="qc-hex-trigrams"><span>' + GUA_TO_TRIGRAM[hex.upper] +
+    '</span><span>' + GUA_TO_TRIGRAM[hex.lower] + "</span></span>";
+  // 直式 64 卦（東南／東／東北／西南／西／西北）：卦象圖示在上、卦名在下且「一字換行」（直排）
+  const hexVertical = (g) => {
+    const hex = hexByGong && hexByGong[g];
+    return hex ? '<div class="qc-hexagram">' + trigramsHtml(hex) + '<span class="qc-hex-name-v">' + hex.name + "</span></div>" : "";
+  };
+  // 水平 64 卦（南／北）：卦象圖示＋卦名並排、不換行（呼叫端會在方位數字後留間隔再接這段）
+  const hexHorizontal = (g) => {
+    const hex = hexByGong && hexByGong[g];
+    return hex ? '<span class="qc-hex-gap"></span>' + trigramsHtml(hex) + '<span class="qc-hex-name-h">' + hex.name + "</span>" : "";
+  };
   QIMEN_DIR_LAYOUT.forEach(({ g, row, col }) => {
     const dir = GONG_INFO[g].dir;
     if (QC_CORNER_GONGS.includes(g)) {
-      // 四隅方（東南／西南／西北／東北）：直式文字，宮位數字放下方
+      // 四隅方（東南／西南／西北／東北）：方位格只放方位＋宮數（直式），64 卦另外移到旁邊地支處（見下方）
       compassHtml += '<div class="qc-dir qc-dir-corner" style="grid-row:' + row + ";grid-column:" + col + '">' +
         '<span class="qc-dir-text">' + dir + '</span><span class="qc-dir-num">' + g + "</span></div>";
+    } else if (g === 9 || g === 1) {
+      // 南（9）／北（1）：水平呈現——方位＋數字，空一段間隔，再接卦象圖示＋卦名（都不換行）
+      const shortDir = dir.replace("正", "");
+      compassHtml += '<div class="qc-dir qc-dir-horiz" style="grid-row:' + row + ";grid-column:" + col + '">' +
+        '<span class="qc-dir-label">' + shortDir + g + "</span>" + hexHorizontal(g) + "</div>";
     } else {
-      // 四正方（東／西／南／北）：拿掉「正」字
-      compassHtml += '<div class="qc-dir" style="grid-row:' + row + ";grid-column:" + col + '">' + dir.replace("正", "") + g + "</div>";
+      // 東（3）／西（7）：方位、數字、64卦（卦名直排一字一行）各自一行
+      const shortDir = dir.replace("正", "");
+      compassHtml += '<div class="qc-dir" style="grid-row:' + row + ";grid-column:" + col + '">' +
+        '<span class="qc-dir-label">' + shortDir + '</span><span class="qc-dir-num">' + g + "</span>" + hexVertical(g) + "</div>";
     }
   });
+  // 四隅 64 卦：依使用者要求移到鄰近地支旁——巽4→辰旁靠上、坤2→申旁靠上、艮8→寅旁靠下、乾6→戌旁靠下
+  // （辰在 r3c2、申在 r3c6、寅在 r5c2、戌在 r5c6，這裡放在對應的最外圈欄 c1／c7，跟地支同一列、上下對齊）
+  if (hexByGong) {
+    const QC_CORNER_HEX_POS = {
+      4: { row: 3, col: 1, valign: "top" },
+      2: { row: 3, col: 7, valign: "top" },
+      8: { row: 5, col: 1, valign: "bottom" },
+      6: { row: 5, col: 7, valign: "bottom" }
+    };
+    Object.keys(QC_CORNER_HEX_POS).forEach((g) => {
+      const p = QC_CORNER_HEX_POS[g];
+      compassHtml += '<div class="qc-corner-hex qc-corner-hex-' + p.valign + '" style="grid-row:' + p.row + ";grid-column:" + p.col + '">' + hexVertical(Number(g)) + "</div>";
+    });
+  }
   QIMEN_ZHI_LAYOUT.forEach(({ zhi, row, col, vertical }) => {
     let badges = "";
     if (data.kongWang.includes(zhi)) badges += '<span class="qc-badge qc-badge-kong">空</span>';
@@ -1616,23 +1654,34 @@ function qimenDunjiaCornerWords(data) {
   };
 }
 
-// 奇門遁甲獨立頁面：門圓右側 1~9 數字，使用者提供的公式——取時柱天干代碼（甲1...癸10）＋地支代碼
-// （子1...亥12）相加後 mod 9，餘數對照洛書宮位（1坎2坤3震4巽0中6乾7兌8艮9離，0 代表中宮），
-// 得到起算宮位；再依「坎(1)→坤(2)→震(3)→巽(4)→中(5)→乾(6)→兌(7)→艮(8)→離(9)」固定順序（即宮位
-// 編號 1~9 升冪並繞回）從 1 開始編號，直到九宮都排完。用使用者提供的辛酉時範例（8+10=18，18 mod 9=0
-// →中宮起算 1）逐宮核對，1~9 全部對上
-const GAN_CODE_QM = { 甲: 1, 乙: 2, 丙: 3, 丁: 4, 戊: 5, 己: 6, 庚: 7, 辛: 8, 壬: 9, 癸: 10 };
-const ZHI_CODE_QM = { 子: 1, 丑: 2, 寅: 3, 卯: 4, 辰: 5, 巳: 6, 午: 7, 未: 8, 申: 9, 酉: 10, 戌: 11, 亥: 12 };
+// 奇門遁甲獨立頁面：門圓右側 1~9 數字＝「時家紫白飛星」。用官網「奇門時盤」（qimenshipan）大量
+// 交叉驗證出來的完整公式（先前那版憑猜測的時干支 mod 9 已作廢）：
+// 1. 陰陽遁看節氣（冬至→夏至 陽遁順飛、夏至→冬至 陰遁逆飛）＝juInfo.isYang，跟局數同一套判斷。
+// 2. 子時起星（中宮數基準）＝看「日柱地支」的三合組：
+//      陽遁—子午卯酉組起1、寅申巳亥組起7、辰戌丑未組起4；
+//      陰遁—子午卯酉組起9、寅申巳亥組起3、辰戌丑未組起6。
+// 3. 從子時起，每過一個時辰，中宮數 陽遁+1／陰遁−1（用時柱地支序 子0…亥11 當步數），mod 9（1~9）。
+// 4. 把算好的中宮數放中宮，再沿「洛書飛泊」順序（中5→乾6→兌7→艮8→離9→坎1→坤2→震3→巽4）
+//    陽遁順飛（+1）／陰遁逆飛（−1）依序填入九宮，就得到每個宮位的 1~9 數字。
+// 驗證：官網奇門時盤 2000-06-22、2000-04-16、2013-06-22、2000-12-05 等多筆，含 6 種三合組×陰陽遁
+//   起星組合與逐時辰飛佈，九宮數字全部對上。內外盤灰底圓／白底樣式另見 qimenDunjiaIsInnerGong。
+const ZHI_INDEX_ZB = { 子: 0, 丑: 1, 寅: 2, 卯: 3, 辰: 4, 巳: 5, 午: 6, 未: 7, 申: 8, 酉: 9, 戌: 10, 亥: 11 };
+const ZIBAI_C0_YANG = { 子: 1, 午: 1, 卯: 1, 酉: 1, 寅: 7, 申: 7, 巳: 7, 亥: 7, 辰: 4, 戌: 4, 丑: 4, 未: 4 };
+const ZIBAI_C0_YIN = { 子: 9, 午: 9, 卯: 9, 酉: 9, 寅: 3, 申: 3, 巳: 3, 亥: 3, 辰: 6, 戌: 6, 丑: 6, 未: 6 };
+// 洛書飛泊順序：中→乾→兌→艮→離→坎→坤→震→巽
+const ZIBAI_FLY_ORDER = [5, 6, 7, 8, 9, 1, 2, 3, 4];
 function computeQimenDunjiaGongNumbers(data) {
-  const timeGan = data.siZhu[0].gan.char;
+  const isYang = data.juInfo.isYang;
+  const dayZhi = data.siZhu[1].zhi.char;
   const timeZhi = data.siZhu[0].zhi.char;
-  const rem = (GAN_CODE_QM[timeGan] + ZHI_CODE_QM[timeZhi]) % 9;
-  const startGong = rem === 0 ? 5 : rem;
+  const norm = (n) => (((n - 1) % 9) + 9) % 9 + 1; // 任意整數收斂到 1~9
+  const c0 = (isYang ? ZIBAI_C0_YANG : ZIBAI_C0_YIN)[dayZhi];
+  const step = ZHI_INDEX_ZB[timeZhi];
+  const center = norm(isYang ? c0 + step : c0 - step);
   const numbers = {};
-  for (let i = 0; i < 9; i++) {
-    const gong = ((startGong - 1 + i) % 9) + 1;
-    numbers[gong] = i + 1;
-  }
+  ZIBAI_FLY_ORDER.forEach((gong, i) => {
+    numbers[gong] = norm(isYang ? center + i : center - i);
+  });
   return (g) => numbers[g];
 }
 
@@ -1646,6 +1695,42 @@ const QIMEN_DUNJIA_YANG_INNER_GONGS = [9, 2, 7, 6];
 const QIMEN_DUNJIA_YIN_INNER_GONGS = [1, 8, 3, 4];
 function qimenDunjiaIsInnerGong(g, isYang) {
   return (isYang ? QIMEN_DUNJIA_YANG_INNER_GONGS : QIMEN_DUNJIA_YIN_INNER_GONGS).includes(g);
+}
+
+// 奇門遁甲外環 64 卦：橘色羅盤 8 個卦位各顯示一個易經六十四卦（比照參考站，命盤頁不顯示）。
+// 演算法（用官網 15 張盤、120 個卦交叉驗證，涵蓋陽遁／陰遁／不同局數／符首本時與非本時／1978~2030）：
+//   基準——符首本時（甲子／甲戌…時）每宮顯示自己後天八卦的「純卦」（坎宮＝坎為水、離宮＝離為火…）。
+//   隨時辰前進，上卦環跟著「天盤（值符星）飛佈量」反方向轉、下卦環跟著「人盤（值使門）飛佈量」反方向轉。
+//   具體：用九宮空間順時針環 SPATIAL_CW_ORDER（巽4→離9→坤2→兌7→乾6→坎1→艮8→震3），
+//   xingDelta＝符首宮到值符星宮在環上的順時針步數、menDelta＝符首宮到值使門宮的步數；
+//   每宮上卦＝該宮在環上往反方向退 xingDelta 步那格的後天八卦、下卦＝退 menDelta 步那格的後天八卦，
+//   上卦疊下卦查 64 卦名。時干＝甲時值符星不動（xingTargetGong===fuShouGong）、delta=0，剛好就是純卦
+//   基準盤，不用特別處理。
+const GUA_TO_TRIGRAM = { 乾: "☰", 兌: "☱", 離: "☲", 震: "☳", 巽: "☴", 坎: "☵", 艮: "☶", 坤: "☷" };
+const HEXA_64 = {
+  乾乾: "乾", 乾坤: "否", 乾坎: "訟", 乾離: "同人", 乾震: "無妄", 乾巽: "姤", 乾艮: "遯", 乾兌: "履",
+  坤乾: "泰", 坤坤: "坤", 坤坎: "師", 坤離: "明夷", 坤震: "復", 坤巽: "升", 坤艮: "謙", 坤兌: "臨",
+  坎乾: "需", 坎坤: "比", 坎坎: "坎", 坎離: "既濟", 坎震: "屯", 坎巽: "井", 坎艮: "蹇", 坎兌: "節",
+  離乾: "大有", 離坤: "晉", 離坎: "未濟", 離離: "離", 離震: "噬嗑", 離巽: "鼎", 離艮: "旅", 離兌: "睽",
+  震乾: "大壯", 震坤: "豫", 震坎: "解", 震離: "豐", 震震: "震", 震巽: "恆", 震艮: "小過", 震兌: "歸妹",
+  巽乾: "小畜", 巽坤: "觀", 巽坎: "渙", 巽離: "家人", 巽震: "益", 巽巽: "巽", 巽艮: "漸", 巽兌: "中孚",
+  艮乾: "大畜", 艮坤: "剝", 艮坎: "蒙", 艮離: "賁", 艮震: "頤", 艮巽: "蠱", 艮艮: "艮", 艮兌: "損",
+  兌乾: "夬", 兌坤: "萃", 兌坎: "困", 兌離: "革", 兌震: "隨", 兌巽: "大過", 兌艮: "咸", 兌兌: "兌"
+};
+function computeQimenDunjiaHexagrams(data) {
+  const spIdx = (g) => SPATIAL_CW_ORDER.indexOf(g);
+  const homeGua = (k) => GONG_INFO[SPATIAL_CW_ORDER[((k % 8) + 8) % 8]].gua;
+  const fs = data.fuShouGong, xt = data.xingTargetGong, mt = data.menTargetGong;
+  const xingDelta = ((spIdx(xt) - spIdx(fs)) % 8 + 8) % 8;
+  const menDelta = ((spIdx(mt) - spIdx(fs)) % 8 + 8) % 8;
+  const out = {};
+  [1, 2, 3, 4, 6, 7, 8, 9].forEach((g) => {
+    const i = spIdx(g);
+    const upper = homeGua(i - xingDelta);
+    const lower = homeGua(i - menDelta);
+    out[g] = { upper, lower, name: HEXA_64[upper + lower] || "" };
+  });
+  return out;
 }
 
 function renderQimen(data) {
@@ -1716,12 +1801,14 @@ function isYuNuShouMenDunjia(c) {
   return c.tianGan === "丁" && c.diGan === "丁" && (c.gua === "巽" || c.gua === "離");
 }
 
-// 乙奇入墓（日／時干版）：跟既有 RUMU_STEMS 的入墓（看宮位）是不同的觸發條件，不能刪掉舊的——
-// 這條是「天盤干是乙、且這一宮正好是日柱或時柱天干落宮的位置」就觸發，跟地盤干／格局名稱／
-// 宮位都無關。原本以為要限定格局剛好是「日奇入墓」（乙＋己）才對，但使用者接連提供的3筆新
-// 資料（1987-10-13 地盤壬→日奇入地、1987-10-6 地盤乙→日奇伏吟(時柱)、1987-10-3 地盤乙→
-// 日奇伏吟(日柱)）都一樣要求顯示「乙奇入墓」，證實限定格局名稱是想窄了，真正的條件只跟
-// 天盤干＝乙＋日／時柱天干落宮這兩件事有關，跟地盤干配對出來的格局名稱無關（用5筆真實盤核對過）
+// 三奇入墓（中下格局的「乙奇入墓／丙奇入墓／丁奇入墓」）：純粹看天盤干（三奇）落哪個宮位，
+// 用官網奇門時盤核對出來——乙落乾宮或坤宮、丙落乾宮、丁落艮宮就顯示。乾／艮那幾個跟 RUMU_STEMS
+// （六儀入墓對照，同時也顯示右下角小字「X入墓」）一致，直接沿用；乙另外多一個「坤宮」（乙木墓
+// 在未＝坤宮的五行墓，RUMU_STEMS 沒有這條，所以在坤宮只顯示格局行「乙奇入墓」、右下角不顯示
+// 「乙入墓」）。
+// 之前那版「天盤干乙＋日／時柱天干落宮就顯示」是錯的：當時拿來核對的 5 筆剛好都是乙落坤宮，被
+// 誤判成跟日／時柱有關；用 2024-02-01 00:30 這筆（乙落震宮、又是日柱落宮）核對出破綻——官網震宮
+// 只顯示「乙奇升殿」沒有入墓，證實跟日／時柱無關，真正就是看宮位（乙＝乾或坤）。
 function qimenDunjiaBottomLabel(c) {
   const geju = getGeju81(c.tianGan, c.diGan);
   const gejuName = geju ? geju.name : "";
@@ -1729,7 +1816,7 @@ function qimenDunjiaBottomLabel(c) {
   if (SAN_QI_RUMU_TEXT[c.tianGan] && (RUMU_STEMS[c.gua] || []).includes(c.tianGan)) {
     extraLines.push(SAN_QI_RUMU_TEXT[c.tianGan]);
   }
-  if ((c.isMingGong || c.isZiNu) && c.tianGan === "乙") {
+  if (c.tianGan === "乙" && c.gua === "坤") {
     extraLines.push("乙奇入墓");
   }
   const shengDian = SHENG_DIAN_RULES.find((r) => r.tianGan === c.tianGan && r.guas.includes(c.gua));
@@ -1756,7 +1843,7 @@ function renderQimenDunjia(data) {
     true,
     computeQimenDunjiaGongNumbers(data)
   );
-  document.getElementById("qimenDunjiaCompass").innerHTML = buildQimenCompassHtml(data, gridHtml);
+  document.getElementById("qimenDunjiaCompass").innerHTML = buildQimenCompassHtml(data, gridHtml, computeQimenDunjiaHexagrams(data));
   document.getElementById("qimenDunjiaExplain").style.display = "none";
   document.getElementById("qimenDunjiaExplain").innerHTML = "";
 }
