@@ -40,7 +40,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, guanyin: false, jigong: false, fengshui: false, mingpian: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, guanyin: false, jigong: false, fengshui: false, mingpian: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -48,6 +48,7 @@ function effectivePermissions(data) {
     lifenum: !!raw.lifenum,
     qimen: raw.qimen !== undefined ? !!raw.qimen : true,
     qimenDunjia: !!raw.qimenDunjia,
+    qimenHongpan: !!raw.qimenHongpan,
     guanyin: !!raw.guanyin,
     jigong: !!raw.jigong,
     fengshui: !!raw.fengshui,
@@ -91,7 +92,7 @@ requireApprovedUser(function (user, data) {
 
   // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
   // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
-  const navPermKeys = { qimenDunjia: "奇門遁甲", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水" };
+  const navPermKeys = { qimenDunjia: "奇門遁甲", qimenHongpan: "奇門紅盤", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
@@ -113,6 +114,10 @@ requireApprovedUser(function (user, data) {
       }
       if (key === "qimenDunjia") {
         showQimenDunjiaView();
+        return;
+      }
+      if (key === "qimenHongpan") {
+        showQimenHongpanView();
         return;
       }
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
@@ -169,11 +174,16 @@ function fillYearMonthDaySelects(yearSel, monthSel, daySel, today) {
   fillYearMonthDaySelects(
     document.getElementById("qd-byear"), document.getElementById("qd-bmonth"), document.getElementById("qd-bday"), today
   );
+  fillYearMonthDaySelects(
+    document.getElementById("hp-byear"), document.getElementById("hp-bmonth"), document.getElementById("hp-bday"), today
+  );
   // 時間欄位維持單一個 <input type="time">（24 小時制 HH:MM 一欄），不拆成時／分兩個下拉選單；
   // 分鐘精度還是保留在這欄裡面，24 節氣交界時刻的判斷不受影響
   document.getElementById("f-btime").value =
     String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
   document.getElementById("qd-btime").value =
+    String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
+  document.getElementById("hp-btime").value =
     String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
 })();
 
@@ -1129,6 +1139,27 @@ function buildQimenInfoTable(data, showName) {
   return html;
 }
 
+// 奇門紅盤專用資訊表：比照 buildQimenInfoTable，但右側「天乙」欄取消，改成 符首／值符／值使／長生，
+// 長生為十二長生下拉選單（使用者指定的手動選單，非自動計算，預設「長生」）
+const CHANG_SHENG_12 = ["長生", "沐浴", "冠帶", "臨官", "帝旺", "衰", "病", "死", "墓", "絕", "胎", "養"];
+function buildQimenHongpanInfoTable(data) {
+  const csOptions = CHANG_SHENG_12.map((s) => '<option value="' + s + '">' + s + "</option>").join("");
+  const csSelect = '<select class="hp-changsheng-select" id="hp-changsheng">' + csOptions + "</select>";
+  const rows = [
+    ["陽曆", data.solarText, "符首", data.xunShou.xun],
+    ["農曆", data.lunarText, "值符", data.fuShouXing],
+    ["時間", data.solarText.split(" ")[1], "值使", GONG_INFO[data.menTargetGong].dir],
+    ["格局", data.patternText, "長生", csSelect]
+  ];
+  let html = '<table class="qimen-info-table"><tbody>';
+  rows.forEach((r) => {
+    html += "<tr><td class=\"qi-label\">" + r[0] + '</td><td class="qi-value">' + r[1] +
+      '</td><td class="qi-label">' + r[2] + '</td><td class="qi-value">' + r[3] + "</td></tr>";
+  });
+  html += "</tbody></table>";
+  return html;
+}
+
 // 九宮格排位：跟畫面上實際的方位對應（左上巽4、上離9、右上坤2、左震3、中5、右兌7、左下艮8、下坎1、右下乾6）
 const QIMEN_GRID_LAYOUT = [
   { g: 4, row: 1, col: 1 }, { g: 9, row: 1, col: 2 }, { g: 2, row: 1, col: 3 },
@@ -1615,24 +1646,25 @@ const WU_JIA_RULES = [
 ];
 
 // 九遁：用官網奇門時盤反推。已啟用（多筆或 classic 驗證）：
-//   天遁＝丙＋生門（神不限，2筆）、神遁＝丙＋生門＋九天（1筆）、風遁＝乙＋開門＋巽宮4（2筆）、
-//   龍遁＝乙＋三吉門(開/休/生)＋坎宮1（4筆，神不限）、人遁＝丁＋休門＋太陰（1筆）、
-//   鬼遁＝乙＋杜門＋九地（5筆，不限宮）。
+//   天遁＝丙＋生門＋神(九天或六合)（官網掃10種神確認只有這2種觸發）、神遁＝丙＋生門＋九天、
+//   風遁＝乙＋三吉門＋巽宮4（3筆，地盤干不限）、
+//   雲遁＝乙＋三吉門＋地盤辛（3筆，不限宮：震3/兌7/巽4）、龍遁＝乙＋三吉門(開/休/生)＋坎宮1（5筆，神不限）、
+//   人遁＝丁＋休門＋太陰（2筆，不限宮）、鬼遁＝乙＋杜門＋九地（5筆，不限宮）。
+//   註：乙落坎宮杜門是鬼遁（非龍遁）；丁＋開門＋九地是重詐（非鬼遁）。
 // 停用中（見下方註解）：
-//   地遁／雲遁——原本用單一筆反推成「乙＋開門＋地盤己／辛」，但 2029-7-15 17:51 巽宮4（乙／己＋開＋九地）
-//     官網只有風遁沒有地遁，證明「地盤己」不是正解、真正條件跟宮位有關（坎1有、巽4沒有），單筆不足以定案，
-//     雲遁同屬單筆 dg 反推一併停用，待多筆重推。
+//   地遁——原本用單一筆反推成「乙＋開門＋地盤己」，但 2029-7-15 17:51 巽宮4（乙／己＋開＋九地）官網只有風遁
+//     沒有地遁，證明「地盤己」不是正解、真正條件跟宮位／八神有關（坎1有、巽4沒有），待多筆重推。
 //   虎遁——尚未在官網抓到實例（classic：乙＋開門＋艮宮8）。
 const JIU_DUN_RULES = [
-  { name: "天遁", tianGan: "丙", men: "生" },
-  { name: "神遁", tianGan: "丙", men: "生", shen: "九天" },
-  { name: "風遁", tianGan: "乙", men: "開", gong: 4 },
-  { name: "龍遁", tianGan: "乙", mens: ["開", "休", "生"], gong: 1 }, // 乙+三吉門(開/休/生)+坎宮1（神不限：官網見九天/白虎/九地；坎宮乙落杜門是鬼遁不是龍遁），驗證4筆
-  { name: "人遁", tianGan: "丁", men: "休", shen: "太陰" }, // 丁+休門+太陰，官網驗證1筆（2029-7-3 9:51 乾宮，與真詐同格）
+  { name: "天遁", tianGan: "丙", men: "生", shens: ["九天", "六合"] }, // 丙+生門+神(九天或六合)：官網掃10種神只有這2種觸發天遁，驗證完整
+  { name: "神遁", tianGan: "丙", men: "生", shen: "九天" }, // 丙+生門+九天（天遁的九天那支同時也是神遁）
+  { name: "風遁", tianGan: "乙", mens: ["開", "休", "生"], gong: 4 }, // 乙+三吉門+巽宮4（宮位規則，地盤干不限：官網見壬/己/辛），驗證3筆
+  { name: "雲遁", tianGan: "乙", mens: ["開", "休", "生"], diGan: "辛" }, // 乙+三吉門+地盤辛（不限宮：官網見震3/兌7/巽4），驗證3筆
+  { name: "龍遁", tianGan: "乙", mens: ["開", "休", "生"], gong: 1 }, // 乙+三吉門(開/休/生)+坎宮1（神不限：官網見九天/白虎/玄武；坎宮乙落杜門是鬼遁不是龍遁），驗證5筆
+  { name: "人遁", tianGan: "丁", men: "休", shen: "太陰" }, // 丁+休門+太陰（不限宮：官網見乾6/巽4），驗證2筆
   { name: "鬼遁", tianGan: "乙", men: "杜", shen: "九地" }, // 乙+杜門+九地（不限宮：官網見坎1/巽4/艮8，地盤干不限），驗證5筆
   // 以下尚未定案／未驗證，先停用以免誤標：
-  // { name: "地遁", tianGan: "乙", men: "開", diGan: "己" }, // 條件未定（跟宮位有關，非單純地盤己）
-  // { name: "雲遁", tianGan: "乙", men: "開", diGan: "辛" }, // 同上，單筆 dg 反推不可靠
+  // { name: "地遁", tianGan: "乙", men: "開", diGan: "己" }, // 非單純地盤己：乙+開+dg己在坎1有地遁、巽4沒有，宮/神條件未定，待多筆重推
   // { name: "虎遁", tianGan: "乙", men: "開", gong: 8 }
 ];
 
@@ -1671,6 +1703,7 @@ function qimenDunjiaCornerWords(data) {
       if (rule.men && c.men !== rule.men) return;
       if (rule.mens && !rule.mens.includes(c.men)) return;
       if (rule.shen && c.shen !== rule.shen) return;
+      if (rule.shens && !rule.shens.includes(c.shen)) return;
       if (rule.diGan && c.diGan !== rule.diGan) return;
       if (rule.gong && g !== rule.gong) return;
       words.push({ text: rule.name, type: "jiudun" });
@@ -1995,6 +2028,93 @@ document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", asy
     addPageNumbers(pdf, pageWidth, pageHeight);
 
     pdf.save("奇門遁甲—預測卜卦.pdf");
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+// ================= 奇門紅盤（獨立頁面，洋紅配色；四柱／八卦位置沿用，天地盤干/神/星/門的排盤 =================
+// Phase 1：版面＋權限＋四柱＋九宮外框全部照紅盤做好，排盤先接一版可運作的初步引擎（沿用 calculateQimenHeader）。
+// Phase 2 再反推 yidao 紅盤的定局法，換成 js/qimen-hongpan-engine.js，讓天地盤/神/星/門跟官網紅盤一致。
+let currentQimenHongpan = null;
+function showQimenHongpanView() {
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("qimenHongpanView").style.display = "";
+  setActiveNav("奇門紅盤");
+}
+function hideQimenHongpanView() {
+  document.getElementById("qimenHongpanView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("qimenHongpanBackBtn").addEventListener("click", hideQimenHongpanView);
+
+function renderQimenHongpan(data) {
+  document.getElementById("qimenHongpanCard").style.display = "block";
+  document.getElementById("qimenHongpanPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
+  document.getElementById("qimenHongpanInfoPanel").innerHTML = buildQimenHongpanInfoTable(data);
+  // Phase 1 初步排盤：沿用九宮渲染，但不畫外環 64 卦（紅盤版面沒有）、暫不標格局角字（等 Phase 2 紅盤格局規則）
+  const gridHtml = buildQimenGridHtml(data, qimenDunjiaBottomLabel, "時", () => [], true, computeQimenDunjiaGongNumbers(data));
+  document.getElementById("qimenHongpanCompass").innerHTML = buildQimenCompassHtml(data, gridHtml);
+  document.getElementById("qimenHongpanExplain").style.display = "none";
+  document.getElementById("qimenHongpanExplain").innerHTML = "";
+}
+
+function runQimenHongpan(year, month, day, hour, minute) {
+  currentQimenHongpan = calculateQimenHeader({ year, month, day, hour, minute, name: "", gender: "male", yiMaBasis: "time", kongWangBasis: "time" });
+  renderQimenHongpan(currentQimenHongpan);
+}
+
+document.getElementById("qimenHongpanPickBtn").addEventListener("click", function () {
+  const year = Number(document.getElementById("hp-byear").value);
+  const month = Number(document.getElementById("hp-bmonth").value);
+  const day = Number(document.getElementById("hp-bday").value);
+  const timeVal = document.getElementById("hp-btime").value;
+  if (!timeVal) {
+    alert("請先選擇時間");
+    return;
+  }
+  const [hour, minute] = timeVal.split(":").map(Number);
+  runQimenHongpan(year, month, day, hour, minute);
+});
+
+document.getElementById("qimenHongpanNowBtn").addEventListener("click", function () {
+  const now = new Date();
+  document.getElementById("hp-byear").value = String(now.getFullYear());
+  document.getElementById("hp-bmonth").value = String(now.getMonth() + 1);
+  document.getElementById("hp-bday").value = String(now.getDate());
+  document.getElementById("hp-btime").value =
+    String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  runQimenHongpan(now.getFullYear(), now.getMonth() + 1, now.getDate(), now.getHours(), now.getMinutes());
+});
+
+document.getElementById("exportQimenHongpanPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 奇門紅盤—時盤", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+
+    const sections = Array.from(document.querySelectorAll("#qimenHongpanCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
+
+    pdf.save("奇門紅盤—時盤.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {

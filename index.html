@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=187">
+<link rel="stylesheet" href="css/style.css?v=188">
 </head>
 <body>
 
@@ -27,6 +27,7 @@
     <nav class="main-nav" id="mainNav">
       <a href="index.html" class="main-nav-link active">命理諮詢</a>
       <button type="button" class="main-nav-link" data-feature="奇門遁甲" data-perm="qimenDunjia">奇門遁甲</button>
+      <button type="button" class="main-nav-link" data-feature="奇門紅盤" data-perm="qimenHongpan">奇門紅盤</button>
       <button type="button" class="main-nav-link" data-feature="觀音棋卦" data-perm="guanyin">觀音棋卦</button>
       <button type="button" class="main-nav-link" data-feature="濟公棋卦" data-perm="jigong">濟公棋卦</button>
       <button type="button" class="main-nav-link" data-feature="數字易經" data-perm="fengshui">數字易經</button>
@@ -549,6 +550,59 @@
     </div>
     </div>
 
+    <div id="qimenHongpanView" class="qimen-hongpan" style="display:none">
+    <div class="card" id="qimenHongpanFormCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="qimenHongpanBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="qimen-hongpan-title">奇門紅盤—時盤</h2>
+
+      <div id="qimenHongpanForm">
+        <div class="form-block">
+          <div class="qimen-dunjia-head-row">
+            <h2>請挑選日期時間</h2>
+            <div class="qimen-dunjia-head-actions" data-html2canvas-ignore="true">
+              <button type="button" class="btn" id="qimenHongpanPickBtn">選時起盤</button>
+              <button type="button" class="btn" id="qimenHongpanNowBtn">現時起盤</button>
+            </div>
+          </div>
+          <div class="form-date-row">
+            <div class="field">
+              <label for="hp-byear">西元年</label>
+              <select id="hp-byear"></select>
+            </div>
+            <div class="field">
+              <label for="hp-bmonth">月</label>
+              <select id="hp-bmonth"></select>
+            </div>
+            <div class="field">
+              <label for="hp-bday">日</label>
+              <select id="hp-bday"></select>
+            </div>
+            <div class="field">
+              <label for="hp-btime">時間</label>
+              <input type="time" id="hp-btime" required>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card qimen-card qimen-hongpan-card" id="qimenHongpanCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end">
+        <button class="btn secondary" id="exportQimenHongpanPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+
+      <div class="qimen-top">
+        <div class="qimen-pillars" id="qimenHongpanPillars"></div>
+        <div class="qimen-info" id="qimenHongpanInfoPanel"></div>
+      </div>
+
+      <div class="qimen-compass" id="qimenHongpanCompass"></div>
+      <div class="qimen-explain" id="qimenHongpanExplain" style="display:none"></div>
+    </div>
+    </div>
+
     <div id="changePasswordView" style="display:none">
     <div class="card" id="changePasswordCard">
       <div class="card-head">
@@ -583,23 +637,23 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=187"></script>
-<script src="js/auth.js?v=187"></script>
+<script src="js/firebase-config.js?v=188"></script>
+<script src="js/auth.js?v=188"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=187"></script>
-<script src="js/dayun-strategy-content.js?v=187"></script>
-<script src="js/shensha-content.js?v=187"></script>
-<script src="js/renge-content.js?v=187"></script>
-<script src="js/renge-engine.js?v=187"></script>
-<script src="js/lifenum-engine.js?v=187"></script>
-<script src="js/mingpian-engine.js?v=187"></script>
-<script src="js/name-strokes-data.js?v=187"></script>
-<script src="js/lunar-convert.js?v=187"></script>
-<script src="js/shuzi-engine.js?v=187"></script>
-<script src="js/jigong-engine.js?v=187"></script>
-<script src="js/qimen-engine.js?v=187"></script>
+<script src="js/bazi-engine.js?v=188"></script>
+<script src="js/dayun-strategy-content.js?v=188"></script>
+<script src="js/shensha-content.js?v=188"></script>
+<script src="js/renge-content.js?v=188"></script>
+<script src="js/renge-engine.js?v=188"></script>
+<script src="js/lifenum-engine.js?v=188"></script>
+<script src="js/mingpian-engine.js?v=188"></script>
+<script src="js/name-strokes-data.js?v=188"></script>
+<script src="js/lunar-convert.js?v=188"></script>
+<script src="js/shuzi-engine.js?v=188"></script>
+<script src="js/jigong-engine.js?v=188"></script>
+<script src="js/qimen-engine.js?v=188"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=187"></script>
+<script src="js/app.js?v=188"></script>
 </body>
 </html>

@@ -916,6 +916,9 @@ footer {
 /* 匯出 PDF 按鍵文字改白色，只在奇門卡片裡覆蓋（藍底卡片上金色字不明顯），
    不動全站共用的 .btn.secondary，避免八字／人格解碼／生命靈數頁面的白底卡片上白字看不到 */
 .qimen-card .btn.secondary { color: #fff; border-color: #fff; }
+/* 奇門紅盤：洋紅配色（沿用奇門遁甲版面，只把卡片主色 藍→洋紅；四柱/資訊表金黃、九宮金框沿用） */
+.qimen-hongpan-card { background: #B93974; }
+.card .qimen-hongpan-title { background: #B93974; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
 /* 四柱八字／個人資訊兩個表格：電腦／平板／匯出 PDF 都固定左右各佔 50%，手機（560px 以下）改上下排列 */
 .qimen-top { display: flex; gap: 12px; margin-bottom: 12px; align-items: stretch; }
 .qimen-pillars, .qimen-info { background: #fff; border-radius: 8px; padding: 10px; flex: 1 1 50%; min-width: 0; }
