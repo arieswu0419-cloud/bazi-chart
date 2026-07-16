@@ -1595,11 +1595,11 @@ function buildQimenCompassHtml(data, gridHtml, hexByGong) {
 // 三詐：使用者已更正為每個各自「天盤干＋八門＋八神配太陰」三條件同時成立才觸發
 // （取代原本只看神盤對應表的版本）
 const SAN_QI = ["乙", "丙", "丁"];
-const SAN_ZHA_RULES = [
-  { name: "真詐", tianGan: "乙", men: "休", shen: "太陰" },
-  { name: "休詐", tianGan: "丁", men: "開", shen: "太陰" },
-  { name: "重詐", tianGan: "丙", men: "生", shen: "太陰" }
-];
+// 三詐：天盤干是三奇（乙／丙／丁）＋八門是開／休／生三吉門之一，再看八神——太陰＝真詐、六合＝休詐、
+// 九地＝重詐。用官網奇門時盤核對出來（真詐：丙+開+太陰、乙+生+太陰；休詐：丁+休+六合；
+// 重詐：乙+開+九地、丙+生+九地），取代先前那版錯誤的固定天盤干／八門對照。
+const SAN_JI_MEN = ["開", "休", "生"];
+const SAN_ZHA_BY_SHEN = { 太陰: "真詐", 六合: "休詐", 九地: "重詐" };
 
 // 五假：使用者已更正為全部五個都是「天盤干＋八門是開休生三吉門之一＋八神配特定神煞」三條件同時成立
 const WU_JIA_MEN = ["開", "休", "生"];
@@ -1635,11 +1635,9 @@ function qimenDunjiaCornerWords(data) {
     if (c.shen === "值符" && SAN_QI.includes(c.diGan)) {
       words.push({ text: "相佐", type: "xiangzuo" });
     }
-    SAN_ZHA_RULES.forEach((rule) => {
-      if (c.tianGan === rule.tianGan && c.men === rule.men && c.shen === rule.shen) {
-        words.push({ text: rule.name, type: "sanzha" });
-      }
-    });
+    if (SAN_QI.includes(c.tianGan) && SAN_JI_MEN.includes(c.men) && SAN_ZHA_BY_SHEN[c.shen]) {
+      words.push({ text: SAN_ZHA_BY_SHEN[c.shen], type: "sanzha" });
+    }
     // 五假（天假／地假／人假／神假／鬼假）暫時停用：用官網奇門時盤驗證發現原本的 WU_JIA_RULES
     // 會誤觸發（在官網其實沒有五假的格子被標成五假），確定是錯的；五假本身又很罕見、掃了約 20 張盤
     // 都沒遇到，暫時拿不到可靠實例反推正確條件。等使用者提供每個假各一張官網有出現的盤再重做。
