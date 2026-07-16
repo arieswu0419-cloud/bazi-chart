@@ -1630,18 +1630,20 @@ const JIU_DUN_RULES = [
 function qimenDunjiaCornerWords(data) {
   return (c, g) => {
     const words = (c.cornerWords || []).filter((w) => w.type === "rumu" || w.type === "menpo" || w.type === "gongpo");
+    // 相佐（值符得奇相佐）：八神「值符」所在的那一宮，若該宮地盤干是三奇（乙／丙／丁）就顯示「相佐」。
+    // 用官網奇門時盤 7 筆核對出來（5 筆值符宮地盤三奇都出現、2 筆值符宮地盤是六儀壬/戊都沒有）。
+    if (c.shen === "值符" && SAN_QI.includes(c.diGan)) {
+      words.push({ text: "相佐", type: "xiangzuo" });
+    }
     SAN_ZHA_RULES.forEach((rule) => {
       if (c.tianGan === rule.tianGan && c.men === rule.men && c.shen === rule.shen) {
         words.push({ text: rule.name, type: "sanzha" });
       }
     });
-    if (SAN_QI.includes(c.tianGan)) {
-      WU_JIA_RULES.forEach((rule) => {
-        if (c.tianGan === rule.tianGan && WU_JIA_MEN.includes(c.men) && rule.shens.includes(c.shen)) {
-          words.push({ text: rule.name, type: "wujia" });
-        }
-      });
-    }
+    // 五假（天假／地假／人假／神假／鬼假）暫時停用：用官網奇門時盤驗證發現原本的 WU_JIA_RULES
+    // 會誤觸發（在官網其實沒有五假的格子被標成五假），確定是錯的；五假本身又很罕見、掃了約 20 張盤
+    // 都沒遇到，暫時拿不到可靠實例反推正確條件。等使用者提供每個假各一張官網有出現的盤再重做。
+    // （WU_JIA_RULES／WU_JIA_MEN 常數先保留在上方，重做時可直接改。）
     JIU_DUN_RULES.forEach((rule) => {
       if (c.tianGan !== rule.tianGan) return;
       if (rule.men && c.men !== rule.men) return;
