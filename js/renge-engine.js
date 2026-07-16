@@ -185,33 +185,44 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
     masterNumberInfo = { number: masterHit, text: subText || entry.generic };
   }
 
-  // 主命中有的數字（九宮能量圖圈數 > 0）逐一列出圈數含義：0/1/2 圈用通用說明，3-4 圈與 5 圈以上用各數字專屬說明
+  // 九宮能量圖圈數含義：1~9 全部列出（不再只列主命中有的數字）——官方教材的圈數對照表本來就涵蓋
+  // 「沒有圈（空缺數）」：沒有圈用各數字專屬的空缺說明、1/2 圈用通用說明、3-4 圈與 5 圈以上用各數字專屬說明。
+  // 空缺（0圈）的數字不寫數字「0」，顯示「沒有圈（空缺數）」，跟官方投影片的欄位名稱一致。
   const circleMeanings = typeof RENGE_CIRCLE_MEANING_BY_DIGIT !== "undefined"
     ? energyGrid
         .map((g) => ({ digit: g.digit, total: g.blue + g.pink + g.green + g.orange + g.purple }))
-        .filter((g) => g.total > 0)
         .map((g) => {
           const info = RENGE_CIRCLE_MEANING_BY_DIGIT[g.digit];
           let text;
-          if (g.total <= 2) text = RENGE_CIRCLE_MEANING_GENERAL.find((x) => x.range === String(g.total)).text;
+          if (g.total === 0) text = info.zero;
+          else if (g.total <= 2) text = RENGE_CIRCLE_MEANING_GENERAL.find((x) => x.range === String(g.total)).text;
           else if (g.total <= 4) text = info.high;
           else text = info.over;
-          return { digit: g.digit, count: g.total, text };
+          return { digit: g.digit, count: g.total, isGap: g.total === 0, text };
         })
     : [];
 
-  // 天賦數細項說明：官方教材同一個主命數底下，依「化簡前的兩位數」（10/19/28/37/46…，每次＋9）分成好幾段
-  // 更精確的描述；用 talentChain 的原始值（尚未化簡的那個兩位數，例如「37/10」的 37）反推屬於第幾段，
-  // 對不上（例如天賦數本身就是個位數、沒有兩位數可以比對）就整段都顯示，不強行猜測。
+  // 天賦數細項說明：官方教材同一個主命數底下，依「化簡前的兩位數」（每次＋9）分成好幾段更精確的描述。
+  // 用官方 pptx（深層探索篇 天賦數1~9）逐張核對出來的分段結構：
+  //   主命數1~3 沒有「純個位數」段（生日數位總和最小是4，湊不出1/2/3），段0起點是 num+9（10/1、11/2、12/3…）；
+  //   主命數4~9 的段0是「總和恰為個位數」的純能量段（4/4、5/5…），兩位數段（13/4、14/5…）從段1開始。
+  // 之前那版沒處理純能量段，導致主命數4~9 的兩位數天賦數全部錯位一段（例如 13/4 誤顯示 4/4 的內容）。
+  // 用 talentChain 的原始值（尚未化簡的那個兩位數，例如「37/10」的 37）反推屬於第幾段；
+  // 對不上就整段都顯示，不強行猜測。
   const pickTalentSegment = (num, chain) => {
     const full = typeof RENGE_TALENT !== "undefined" ? RENGE_TALENT[num] : null;
     if (!full) return null;
     const segments = full.split("／");
-    if (!chain.length) return { text: full, matched: false };
+    const hasPureSegment = num >= 4;
+    if (!chain.length) {
+      // 天賦數本身就是個位數：主命數4~9 直接對應純能量段；1~3 理論上不會發生，保底顯示全文
+      return hasPureSegment ? { text: segments[0], matched: true } : { text: full, matched: false };
+    }
     const precursor = chain[0];
     const base = num + 9;
-    const idx = Math.round((precursor - base) / 9);
-    if (idx >= 0 && idx < segments.length && base + idx * 9 === precursor) {
+    const offset = hasPureSegment ? 1 : 0;
+    const idx = Math.round((precursor - base) / 9) + offset;
+    if (idx >= offset && idx < segments.length && base + (idx - offset) * 9 === precursor) {
       return { text: segments[idx], matched: true };
     }
     return { text: full, matched: false };

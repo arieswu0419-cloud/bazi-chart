@@ -739,11 +739,17 @@ main.app {
   text-align: left;
 }
 .renge-ref-subtable th { background: var(--renge-box); }
-/* 九宮能量圖圈數含義表：數字／圈數兩欄置中，含義欄維持靠左方便閱讀長文字 */
+/* 九宮能量圖圈數含義表：數字／圈數兩欄置中，含義欄維持靠左方便閱讀長文字。
+   table-layout:fixed＋前兩欄固定寬——PDF 匯出把子表格逐列拆成獨立小表格時，各列欄寬才會一致對齊 */
+.renge-circle-table { table-layout: fixed; }
 .renge-circle-table td:nth-child(1), .renge-circle-table th:nth-child(1),
 .renge-circle-table td:nth-child(2), .renge-circle-table th:nth-child(2) {
   text-align: center;
 }
+.renge-circle-table td:nth-child(1), .renge-circle-table th:nth-child(1) { width: 46px; }
+.renge-circle-table td:nth-child(2), .renge-circle-table th:nth-child(2) { width: 96px; }
+/* 空缺數（沒有圈）的列用淡黃底標示 */
+.renge-circle-table .renge-gap-row td { background: var(--renge-box); }
 .renge-cmp-pair { display: flex; flex-wrap: wrap; gap: 16px; }
 .renge-cmp-pair > div { flex: 1 1 200px; min-width: 180px; }
 .renge-cmp-head { font-weight: 700; margin-bottom: 4px; color: var(--renge-text-gold); }

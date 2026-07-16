@@ -781,15 +781,44 @@ function buildRengeRowSections() {
   // 「tr:last-child 不畫底線」規則，導致分隔線消失、只靠 addSectionsToPdf 的區塊間距撐開視覺——
   // 改用專屬的 renge-pdf-row 樣式（見 style.css），底線一律都畫，並把區塊間距歸零（data-pdf-gap="0"），
   // 這樣列與列之間才會是「一條分隔線」而不是「一段空白」。
-  Array.from(tableEl.rows).forEach((tr) => {
+  const makeWrapper = (content) => {
     const wrapper = document.createElement("table");
     wrapper.className = "renge-pdf-row";
     wrapper.style.cssText = "position:absolute;left:-9999px;top:0;width:" + tableWidth + "px";
     wrapper.dataset.pdfGap = "0";
-    wrapper.appendChild(tr.cloneNode(true));
+    wrapper.appendChild(content);
     document.body.appendChild(wrapper);
     tempEls.push(wrapper);
     sections.push(wrapper);
+  };
+
+  Array.from(tableEl.rows).forEach((tr) => {
+    // 列裡若含較長的子表格（例如 1~9 圈數含義表），再往下拆成「子表格一列＝一個區塊」，
+    // 換頁才不會把子表格從某一列中間切斷；第一段帶原本的標籤欄＋子表格表頭，之後各段
+    // 留空白標籤欄維持欄寬對齊（子表格本身有 table-layout:fixed 固定欄寬，各段欄位會對齊）
+    const sub = tr.querySelector("table.renge-ref-subtable");
+    if (sub && sub.rows.length > 3) {
+      const labelCell = tr.cells[0];
+      const headerRow = sub.rows[0] && sub.rows[0].querySelector("th") ? sub.rows[0] : null;
+      const bodyRows = Array.from(sub.rows).filter((r) => r !== headerRow);
+      bodyRows.forEach((r, i) => {
+        const newTr = document.createElement("tr");
+        const lab = labelCell.cloneNode(true);
+        if (i > 0) lab.innerHTML = "";
+        newTr.appendChild(lab);
+        const valTd = document.createElement("td");
+        valTd.className = "renge-ref-value";
+        const miniTable = document.createElement("table");
+        miniTable.className = sub.className;
+        if (i === 0 && headerRow) miniTable.appendChild(headerRow.cloneNode(true));
+        miniTable.appendChild(r.cloneNode(true));
+        valTd.appendChild(miniTable);
+        newTr.appendChild(valTd);
+        makeWrapper(newTr);
+      });
+      return;
+    }
+    makeWrapper(tr.cloneNode(true));
   });
 
   return { panel, sections, cleanup: () => tempEls.forEach((el) => el.remove()) };
@@ -842,11 +871,15 @@ function buildRengeReferenceHtml(ref) {
   }
 
   if (ref.circleMeanings && ref.circleMeanings.length) {
+    // 1~9 全部列出（含空缺數）；空缺（0圈）不寫數字「0」，顯示官方對照表的欄位名稱「沒有圈（空缺數）」
     const cmHtml =
       "<table class=\"renge-ref-subtable renge-circle-table\"><tr><th>數字</th><th>圈數</th><th>含義</th></tr>" +
-      ref.circleMeanings.map((m) => "<tr><td>" + m.digit + "</td><td>" + m.count + "</td><td>" + m.text + "</td></tr>").join("") +
+      ref.circleMeanings.map((m) =>
+        "<tr" + (m.isGap ? ' class="renge-gap-row"' : "") + "><td>" + m.digit + "</td><td>" +
+        (m.isGap ? "沒有圈<br>（空缺數）" : m.count + "圈") + "</td><td>" + m.text + "</td></tr>"
+      ).join("") +
       "</table>";
-    rows.push(row("主命中有的數字<br>九宮能量圖圈數含義", cmHtml));
+    rows.push(row("九宮能量圖圈數含義<br>（1~9，含空缺數）", cmHtml));
   }
 
   if (ref.stageExplain && ref.stageExplain.content) {
