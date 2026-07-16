@@ -1601,28 +1601,34 @@ const SAN_QI = ["乙", "丙", "丁"];
 const SAN_JI_MEN = ["開", "休", "生"];
 const SAN_ZHA_BY_SHEN = { 太陰: "真詐", 六合: "休詐", 九地: "重詐" };
 
-// 五假：使用者已更正為全部五個都是「天盤干＋八門是開休生三吉門之一＋八神配特定神煞」三條件同時成立
-const WU_JIA_MEN = ["開", "休", "生"];
+// 五假：用官網奇門時盤大量反推（含反例驗證）出來的公式，每個各自「八門＋天盤干＋八神」三條件同時成立。
+// 反例佐證：癸／己／壬＋景＋九天→無天假（天假一定要三奇）；丁＋杜＋騰蛇→無地假（一定要陰神太陰／六合／九地）；
+// 辛／癸＋驚＋九天→無人假（一定要壬）；己＋傷＋六合→無神假（一定要九地）；
+// 癸＋死＋太陰、戊＋死＋九地(無癸)→無鬼假（一定要九地且天盤或地盤含癸）。
+const YIN_SHEN = ["太陰", "六合", "九地"];
 const WU_JIA_RULES = [
-  { name: "天假", tianGan: "丁", shens: ["九地"] },
-  { name: "地假", tianGan: "乙", shens: ["九地"] },
-  { name: "神假", tianGan: "丁", shens: ["九天"] },
-  { name: "鬼假", tianGan: "丁", shens: ["九地", "值符"] },
-  { name: "人假", tianGan: "丁", shens: ["六合"] }
+  { name: "天假", men: "景", tianGans: ["乙", "丙", "丁"], shens: ["九天"] },
+  { name: "地假", men: "杜", tianGans: ["丁", "己", "癸"], shens: YIN_SHEN },
+  { name: "人假", men: "驚", tianGans: ["壬"], shens: ["九天"] },
+  { name: "神假", men: "傷", tianGans: ["己"], shens: ["九地"] },
+  { name: "鬼假", men: "死", tianGans: "含癸", shens: ["九地"] }
 ];
 
-// 九遁：使用者提供的判定表（天盤干＋門＋神／星，部分另外指定固定宮位：風遁巽四宮、龍遁坎一宮、
-// 虎遁艮八宮——這三個跟雲遁同樣是「乙＋開門」，只差神盤／宮位，所以宮位限制視為必要條件而非註解）
+// 九遁：用官網奇門時盤反推。已驗證：天遁＝丙＋生門（神不限，2筆）、神遁＝丙＋生門＋九天（1筆）、
+// 地遁＝乙＋開門＋地盤己（1筆）、雲遁＝乙＋開門＋地盤辛（1筆）、風遁＝乙＋開門＋巽宮4（1筆）、
+// 龍遁＝乙＋開／休門＋九天＋坎宮1（2筆，含開門與休門各一）。虎遁／人遁／鬼遁尚未在官網抓到實例，
+// 先停用以免誤標，待各拿到一張官網盤再開。
 const JIU_DUN_RULES = [
-  { name: "天遁", tianGan: "丙", men: "生", shen: "九天" },
+  { name: "天遁", tianGan: "丙", men: "生" },
+  { name: "神遁", tianGan: "丙", men: "生", shen: "九天" },
   { name: "地遁", tianGan: "乙", men: "開", diGan: "己" },
-  { name: "人遁", tianGan: "丁", men: "休", shen: "太陰" },
-  { name: "神遁", tianGan: "丙", men: "生", shen: "九地" },
-  { name: "鬼遁", tianGan: "丁", men: "開", shen: "九地" },
-  { name: "風遁", tianGan: "乙", men: "開", shen: "六合", gong: 4 },
-  { name: "雲遁", tianGan: "乙", men: "開", shen: "九地" },
-  { name: "龍遁", tianGan: "乙", men: "開", shen: "九天", gong: 1 },
-  { name: "虎遁", tianGan: "乙", men: "開", shen: "白虎", gong: 8 }
+  { name: "雲遁", tianGan: "乙", men: "開", diGan: "辛" },
+  { name: "風遁", tianGan: "乙", men: "開", gong: 4 },
+  { name: "龍遁", tianGan: "乙", mens: ["開", "休"], shen: "九天", gong: 1 }
+  // 以下 classic 規則尚未用官網驗證，先停用：
+  // { name: "虎遁", tianGan: "乙", men: "開", gong: 8 },
+  // { name: "人遁", tianGan: "丁", men: "休", shen: "太陰" },
+  // { name: "鬼遁", tianGan: "丁", men: "生", shen: "九地" }
 ];
 
 // 奇門遁甲獨立頁面的右下角格局提示：入墓＋門迫／宮迫（跟奇門命盤報告同一套判斷，直接沿用
@@ -1638,13 +1644,21 @@ function qimenDunjiaCornerWords(data) {
     if (SAN_QI.includes(c.tianGan) && SAN_JI_MEN.includes(c.men) && SAN_ZHA_BY_SHEN[c.shen]) {
       words.push({ text: SAN_ZHA_BY_SHEN[c.shen], type: "sanzha" });
     }
-    // 五假（天假／地假／人假／神假／鬼假）暫時停用：用官網奇門時盤驗證發現原本的 WU_JIA_RULES
-    // 會誤觸發（在官網其實沒有五假的格子被標成五假），確定是錯的；五假本身又很罕見、掃了約 20 張盤
-    // 都沒遇到，暫時拿不到可靠實例反推正確條件。等使用者提供每個假各一張官網有出現的盤再重做。
-    // （WU_JIA_RULES／WU_JIA_MEN 常數先保留在上方，重做時可直接改。）
+    // 五假（天假／地假／人假／神假／鬼假）：門＋天盤干＋神三條件（鬼假的干條件是「天盤或地盤含癸」）
+    WU_JIA_RULES.forEach((rule) => {
+      if (c.men !== rule.men) return;
+      if (!rule.shens.includes(c.shen)) return;
+      if (rule.tianGans === "含癸") {
+        if (c.tianGan !== "癸" && c.diGan !== "癸") return;
+      } else if (!rule.tianGans.includes(c.tianGan)) {
+        return;
+      }
+      words.push({ text: rule.name, type: "wujia" });
+    });
     JIU_DUN_RULES.forEach((rule) => {
       if (c.tianGan !== rule.tianGan) return;
       if (rule.men && c.men !== rule.men) return;
+      if (rule.mens && !rule.mens.includes(c.men)) return;
       if (rule.shen && c.shen !== rule.shen) return;
       if (rule.diGan && c.diGan !== rule.diGan) return;
       if (rule.gong && g !== rule.gong) return;
