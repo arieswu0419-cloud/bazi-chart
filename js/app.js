@@ -127,8 +127,20 @@ requireApprovedUser(function (user, data) {
   document.getElementById("changePasswordNavBtn").addEventListener("click", showChangePasswordView);
 });
 
+// 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
+// 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
+// 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "jigongView", "shuziView", "mingpianView"];
+function hideAllFeatureViews() {
+  FEATURE_VIEW_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+}
+
 // ================= 修改密碼 =================
 function showChangePasswordView() {
+  hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("changePasswordView").style.display = "";
 }
@@ -2015,6 +2027,7 @@ document.getElementById("exportQimenPdfBtn").addEventListener("click", async fun
 
 // ================= 奇門遁甲（獨立頁面，複製奇門命盤報告的介面與功能，僅九宮格中下方文字改顯示格局名稱）=================
 function showQimenDunjiaView() {
+  hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("qimenDunjiaView").style.display = "";
   setActiveNav("奇門遁甲");
@@ -2096,6 +2109,7 @@ document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", asy
 // 小奇門起數法）皆以 45 張復科時盤截圖反推定案、全數驗證，任意年份適用（詳見引擎檔頭）。
 let currentQimenHongpan = null;
 function showQimenHongpanView() {
+  hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("qimenHongpanView").style.display = "";
   setActiveNav("奇門紅盤");
@@ -2227,6 +2241,7 @@ document.getElementById("exportLifenumPdfBtn").addEventListener("click", async f
 const mpState = { h: { imgW: 0, imgH: 0 }, v: { imgW: 0, imgH: 0 } };
 
 function showMingpianView() {
+  hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("mingpianView").style.display = "";
   setActiveNav("名片風水");
@@ -2242,6 +2257,7 @@ document.getElementById("mingpianBackBtn").addEventListener("click", hideMingpia
 
 // ================= 數字易經 =================
 function showShuziView() {
+  hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("shuziView").style.display = "";
   setActiveNav("數字易經");
@@ -2474,6 +2490,7 @@ document.getElementById("exportShuziPdfBtn").addEventListener("click", async fun
 
 // ================= 濟公棋卦・前世因果 =================
 function showJigongView() {
+  hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("jigongView").style.display = "";
   setActiveNav("濟公棋卦");
