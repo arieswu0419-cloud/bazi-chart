@@ -1614,6 +1614,8 @@ function buildQimenGridHtml(data, bottomLabelFn, centerLabel, cornerWordsFn, day
       (numberFn
         ? '<div class="qimen-gong-number' + (qimenDunjiaIsInnerGong(g, data.juInfo.isYang) ? " qimen-gong-number-inner" : "") + '">' + numberFn(g) + "</div>"
         : "") +
+      // 奇門紅盤限定：宮位右中的灰色天干（門的本門宮天盤干，引擎算好；可能兩字＝含中宮寄干）
+      (c.grayGans ? '<div class="qimen-gray-gan">' + c.grayGans.map((x) => "<span>" + x + "</span>").join("") + "</div>" : "") +
       '<div class="qimen-bottom-info">' +
       (c.jiXing ? '<div class="qimen-jixing">六儀擊刑</div>' : "") +
       '<div class="qimen-dayun">' + (bottomLabelFn(c) || "") + "</div>" +

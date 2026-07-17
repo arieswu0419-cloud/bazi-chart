@@ -82,7 +82,9 @@ const CASES = [
   // ---- 晚子時＋閏月 2028（23:12；2028 閏五月）：日柱進位、農曆月日不進位、閏五月＝5 ----
   [2028, 6,22,23,12,"己卯","甲子","甲子","陰9","天英","正南","八門伏吟, 九星伏吟, 天干伏吟"],
   [2028, 6,23,23,12,"庚辰","丙子","甲戌","陰7","天心","東南","五不遇時, 八門反吟"],
-  [2028, 7,17,23,12,"甲辰","甲子","甲子","陰4","天輔","東南","八門伏吟, 九星伏吟, 天干伏吟"]
+  [2028, 7,17,23,12,"甲辰","甲子","甲子","陰4","天輔","東南","八門伏吟, 九星伏吟, 天干伏吟"],
+  // ---- 灰色天干樣本盤 2026-07-17 酉時（壬辰日己酉時 陰9 反吟盤）----
+  [2026, 7,17,17,30,"壬辰","己酉","甲辰","陰9","天芮","正南","九星反吟, 天干反吟"]
 ];
 
 const tbody = document.querySelector("#result tbody");
@@ -145,11 +147,23 @@ Object.keys(CS_CASES).forEach((gan) => {
     else csFails.push(gan + ":" + zhi + map[zhi] + "(應為" + exp + ")");
   }
 });
+// ---- 宮位右中灰色天干驗證（2026-07-17 酉時復科截圖實讀 8 宮，含坎宮「丙壬」寄干雙字）----
+const GRAY_EXPECT = { 4: "乙", 9: "己", 2: "丁", 3: "辛", 7: "癸", 8: "庚", 1: "丙壬", 6: "戊" };
+let grayPass = 0, grayFails = [];
+{
+  const r = calculateQimenHongpan({ year: 2026, month: 7, day: 17, hour: 17, minute: 30 });
+  Object.keys(GRAY_EXPECT).forEach((g) => {
+    const got = (r.gongs[g].grayGans || []).join("");
+    if (got === GRAY_EXPECT[g]) grayPass++;
+    else grayFails.push(g + "宮:" + got + "(應為" + GRAY_EXPECT[g] + ")");
+  });
+}
 document.getElementById("summary").textContent =
   "結果：" + pass + " / " + CASES.length + " 全欄通過" + (fails.length ? "；失敗案例 #" + fails.join(", #") : " ✅") +
   "｜64卦：" + hexPass + " / " + hexTotal + (hexFails.length ? "；" + hexFails.join("、") : " ✅") +
-  "｜長生：" + csPass + " / " + csTotal + (csFails.length ? "；" + csFails.join("、") : " ✅");
-window.__testSummary = { pass, total: CASES.length, fails, hexPass, hexTotal, hexFails, csPass, csTotal, csFails };
+  "｜長生：" + csPass + " / " + csTotal + (csFails.length ? "；" + csFails.join("、") : " ✅") +
+  "｜灰干：" + grayPass + " / 8" + (grayFails.length ? "；" + grayFails.join("、") : " ✅");
+window.__testSummary = { pass, total: CASES.length, fails, hexPass, hexTotal, hexFails, csPass, csTotal, csFails, grayPass, grayFails };
 </script>
 </body>
 </html>

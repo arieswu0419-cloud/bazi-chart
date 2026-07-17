@@ -277,6 +277,12 @@ function calculateQimenHongpan({ year, month, day, hour, minute }) {
     if (menWx && HP_WX_KE[menWx] === gongWx) cornerWords.push({ text: "門迫", type: "menpo" });
     if (menWx && HP_WX_KE[gongWx] === menWx) cornerWords.push({ text: "宮迫", type: "gongpo" });
     if ((HP_RUMU[gua] || []).includes(tianGan)) cornerWords.push({ text: tianGan + "入墓", type: "rumu" });
+    // 宮位右中的灰色天干（從 2026-07-17 酉時復科截圖反推，8 宮全中）：
+    // ＝該宮八門「本門宮」位置上的天盤干（門景→9宮天盤、門休→1宮天盤…）；
+    // 本門宮若正是天芮落宮，中宮寄干一併帶出（實證：坎1生門→艮8天盤丙＋寄干壬＝「丙壬」）
+    const menHome = HP_MEN_HOME[men];
+    const grayGans = [pan.tianPanGan[menHome]];
+    if (pan.tianPanXing[menHome] === "天芮") grayGans.push(pan.diPan[5]);
     gongs[g] = {
       gong: g,
       gua,
@@ -289,6 +295,7 @@ function calculateQimenHongpan({ year, month, day, hour, minute }) {
       jiXing: (HP_JI_XING[g] || []).includes(tianGan),
       isMingGong: g === dayBadgeGong, // 「日」徽章（沿用渲染欄位名）
       isZiNu: g === timeBadgeGong,    // 「時」徽章
+      grayGans,
       cornerWords
     };
   });
