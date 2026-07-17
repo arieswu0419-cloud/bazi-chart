@@ -2070,8 +2070,9 @@ document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", asy
 });
 
 // ================= 奇門紅盤（獨立頁面，洋紅配色；四柱／八卦位置沿用，天地盤干/神/星/門的排盤 =================
-// Phase 1：版面＋權限＋四柱＋九宮外框全部照紅盤做好，排盤先接一版可運作的初步引擎（沿用 calculateQimenHeader）。
-// Phase 2 再反推 yidao 紅盤的定局法，換成 js/qimen-hongpan-engine.js，讓天地盤/神/星/門跟官網紅盤一致。
+// Phase 2 完成：排盤改用獨立的 js/qimen-hongpan-engine.js（calculateQimenHongpan），
+// 機制（值符／值使／星門神旋轉／格局欄）與定局公式（年支＋農曆月＋農曆日＋時支 mod 9，
+// 小奇門起數法）皆以 45 張復科時盤截圖反推定案、全數驗證，任意年份適用（詳見引擎檔頭）。
 let currentQimenHongpan = null;
 function showQimenHongpanView() {
   document.getElementById("mainView").style.display = "none";
@@ -2085,19 +2086,27 @@ function hideQimenHongpanView() {
 }
 document.getElementById("qimenHongpanBackBtn").addEventListener("click", hideQimenHongpanView);
 
+// 紅盤宮位底部文字：只放 81 格局名（跟復科紅盤一致；入墓改由引擎算好的角字顯示，
+// 不用遁甲頁的 qimenDunjiaBottomLabel——那包含九遁／玉女守門等遁甲頁專屬規則，紅盤沒有）。
+// getGeju81 是 81 格局對照「資料表」（Meta Academy PDF，兩頁同一來源），屬渲染層共用資料，非排盤邏輯。
+function qimenHongpanBottomLabel(c) {
+  const geju = getGeju81(c.tianGan, c.diGan);
+  return geju ? geju.name : "";
+}
+
 function renderQimenHongpan(data) {
   document.getElementById("qimenHongpanCard").style.display = "block";
   document.getElementById("qimenHongpanPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
   document.getElementById("qimenHongpanInfoPanel").innerHTML = buildQimenHongpanInfoTable(data);
-  // Phase 1 初步排盤：沿用九宮渲染，但不畫外環 64 卦（紅盤版面沒有）、暫不標格局角字（等 Phase 2 紅盤格局規則）
-  const gridHtml = buildQimenGridHtml(data, qimenDunjiaBottomLabel, "時", () => [], true, computeQimenDunjiaGongNumbers(data));
+  // 沿用九宮渲染但不畫外環 64 卦（紅盤版面沒有）；角字（門迫／宮迫／入墓）由紅盤引擎逐宮算好直接取用
+  const gridHtml = buildQimenGridHtml(data, qimenHongpanBottomLabel, "時", (c) => c.cornerWords || [], true, computeQimenDunjiaGongNumbers(data));
   document.getElementById("qimenHongpanCompass").innerHTML = buildQimenCompassHtml(data, gridHtml);
   document.getElementById("qimenHongpanExplain").style.display = "none";
   document.getElementById("qimenHongpanExplain").innerHTML = "";
 }
 
 function runQimenHongpan(year, month, day, hour, minute) {
-  currentQimenHongpan = calculateQimenHeader({ year, month, day, hour, minute, name: "", gender: "male", yiMaBasis: "time", kongWangBasis: "time" });
+  currentQimenHongpan = calculateQimenHongpan({ year, month, day, hour, minute });
   renderQimenHongpan(currentQimenHongpan);
 }
 
