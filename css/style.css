@@ -718,6 +718,11 @@ main.app {
    該列都是唯一一列，如果沿用 .renge-ref-table 的 tr:last-child 規則底線會被拿掉；這裡固定畫底線 */
 .renge-pdf-row { width: 100%; border-collapse: collapse; font-size: 13px; }
 .renge-pdf-row tr { border-bottom: 1px solid var(--renge-border); }
+/* 圈數含義表拆列匯出時不畫橘色分隔線（畫面上這張表已改成淡灰橫線，PDF 要一致）；
+   拆出來的每列在自己的暫存表格裡是唯一一列，會踩到 .renge-circle-table 的
+   「tr:last-child 不畫底線」規則，這裡把淡灰底線補回來 */
+.renge-pdf-row-plain tr { border-bottom: none; }
+.renge-pdf-row-plain .renge-circle-table tr:last-child td { border-bottom: 1px solid #ece7da; }
 .renge-ref-label {
   width: 130px;
   min-width: 130px;

@@ -793,9 +793,9 @@ function buildRengeRowSections() {
   // 「tr:last-child 不畫底線」規則，導致分隔線消失、只靠 addSectionsToPdf 的區塊間距撐開視覺——
   // 改用專屬的 renge-pdf-row 樣式（見 style.css），底線一律都畫，並把區塊間距歸零（data-pdf-gap="0"），
   // 這樣列與列之間才會是「一條分隔線」而不是「一段空白」。
-  const makeWrapper = (content) => {
+  const makeWrapper = (content, extraClass) => {
     const wrapper = document.createElement("table");
-    wrapper.className = "renge-pdf-row";
+    wrapper.className = "renge-pdf-row" + (extraClass ? " " + extraClass : "");
     wrapper.style.cssText = "position:absolute;left:-9999px;top:0;width:" + tableWidth + "px";
     wrapper.dataset.pdfGap = "0";
     wrapper.appendChild(content);
@@ -826,7 +826,9 @@ function buildRengeRowSections() {
         miniTable.appendChild(r.cloneNode(true));
         valTd.appendChild(miniTable);
         newTr.appendChild(valTd);
-        makeWrapper(newTr);
+        // 圈數含義表（renge-circle-table）畫面上已改成淡灰橫線，拆列匯出的暫存表格
+        // 也不能再畫 .renge-pdf-row 的橘色分隔線，改用無框變體（見 style.css）
+        makeWrapper(newTr, sub.classList.contains("renge-circle-table") ? "renge-pdf-row-plain" : "");
       });
       return;
     }
