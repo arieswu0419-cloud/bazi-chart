@@ -1331,9 +1331,10 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .sansheng-nodata { padding: 30px; text-align: center; color: #888; }
 /* 個人命盤宮位挑選＋統計 */
 .sansheng-palace-label { font-weight: 700; color: #005AB5; margin-bottom: 8px; }
-.sansheng-palace-btns { display: flex; flex-wrap: wrap; gap: 6px; }
-.sansheng-palace-btn { padding: 6px 12px; border: 1px solid #005AB5; background: #fff; color: #005AB5;
-  border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+/* 每列 4 個、等寬填滿（8 宮＝ 2 列 × 4） */
+.sansheng-palace-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sansheng-palace-btn { width: 100%; padding: 8px 4px; border: 1px solid #005AB5; background: #fff; color: #005AB5;
+  border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; text-align: center; }
 .sansheng-palace-btn.active { background: #005AB5; color: #fff; }
 .sansheng-counts { margin-top: 12px; font-size: 15px; font-weight: 700; color: #212529; }
 /* 選定宮位在四盤上的紅框（inset box-shadow 不影響版面） */
