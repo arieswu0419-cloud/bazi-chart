@@ -1325,6 +1325,11 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 
 /* 奇門遁甲（獨立頁面）*/
 .card .qimen-dunjia-title { background: #005AB5; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
+/* 奇門三勝宮：頂部標題藍底（同藍盤）；四盤各自的小標題列（藍字底線） */
+.card .qimen-sansheng-title { background: #005AB5; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
+.sansheng-plate-title { font-size: 18px; font-weight: 700; color: #005AB5; border-left: 5px solid #005AB5; padding: 4px 10px; margin: 22px 0 8px; }
+.sansheng-info-table td { font-size: 13px; }
+.sansheng-nodata { padding: 30px; text-align: center; color: #888; }
 .qimen-dunjia-head-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .qimen-dunjia-head-row h2 { margin: 0; }
 .qimen-dunjia-head-actions { display: flex; gap: 10px; }

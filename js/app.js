@@ -121,6 +121,10 @@ requireApprovedUser(function (user, data) {
         showQimenHongpanView();
         return;
       }
+      if (key === "qimenSansheng") {
+        showQimenSanshengView();
+        return;
+      }
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
     });
   });
@@ -131,7 +135,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "jigongView", "shuziView", "mingpianView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "qimenSanshengView", "jigongView", "shuziView", "mingpianView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -190,6 +194,9 @@ function fillYearMonthDaySelects(yearSel, monthSel, daySel, today) {
   fillYearMonthDaySelects(
     document.getElementById("hp-byear"), document.getElementById("hp-bmonth"), document.getElementById("hp-bday"), today
   );
+  fillYearMonthDaySelects(
+    document.getElementById("ss-byear"), document.getElementById("ss-bmonth"), document.getElementById("ss-bday"), today
+  );
   // 時間欄位維持單一個 <input type="time">（24 小時制 HH:MM 一欄），不拆成時／分兩個下拉選單；
   // 分鐘精度還是保留在這欄裡面，24 節氣交界時刻的判斷不受影響
   document.getElementById("f-btime").value =
@@ -197,6 +204,8 @@ function fillYearMonthDaySelects(yearSel, monthSel, daySel, today) {
   document.getElementById("qd-btime").value =
     String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
   document.getElementById("hp-btime").value =
+    String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
+  document.getElementById("ss-btime").value =
     String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
 })();
 
@@ -2118,6 +2127,111 @@ document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", asy
     addPageNumbers(pdf, pageWidth, pageHeight);
 
     pdf.save("奇門遁甲—藍盤.pdf");
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+// ================= 奇門三勝宮（年／月／日／時 四盤，藍色版面；排盤重用 qimen-sansheng-engine.js）=================
+// 定局法逐字對照官網 /qimenallpan（詳見引擎檔頭）；時盤＝藍盤、年/月/日各用其柱＋各自定局。
+// 四盤都用藍盤同一套九宮渲染（buildQimenGridHtml/Compass），中宮圓字分別為 年／月／日／時。
+let currentQimenSansheng = null;
+function showQimenSanshengView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("qimenSanshengView").style.display = "";
+  setActiveNav("奇門三勝宮");
+}
+function hideQimenSanshengView() {
+  document.getElementById("qimenSanshengView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("qimenSanshengBackBtn").addEventListener("click", hideQimenSanshengView);
+
+// 單盤渲染：沿用藍盤的 buildQimenGridHtml/Compass，中宮字用 centerLabel（年/月/日/時）
+function renderSanshengOnePlate(containerId, plate, centerLabel) {
+  const el = document.getElementById(containerId);
+  if (!plate) { el.innerHTML = '<div class="sansheng-nodata">此日期超出可排範圍</div>'; return; }
+  const gridHtml = buildQimenGridHtml(plate, qimenDunjiaBottomLabel, centerLabel, qimenDunjiaCornerWords(plate), true, computeQimenDunjiaGongNumbers(plate));
+  el.innerHTML = buildQimenCompassHtml(plate, gridHtml);
+}
+
+function renderQimenSansheng(data) {
+  document.getElementById("qimenSanshengCard").style.display = "block";
+  document.getElementById("qimenSanshengPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
+  // 頂部資訊面板：顯示四盤各自的局數／符首／值符／值使，方便對照
+  document.getElementById("qimenSanshengInfoPanel").innerHTML = buildSanshengInfoTable(data);
+  const label = (p, name) => document.getElementById("ss" + name + "Title").textContent =
+    "奇門" + name.replace("Nian", "年").replace("Yue", "月").replace("Ri", "日").replace("Shi", "時") + "盤" +
+    (p ? "　" + (p.juInfo.isYang ? "陽遁" : "陰遁") + p.juInfo.ju + "局" : "");
+  label(data.nian, "Nian"); label(data.yue, "Yue"); label(data.ri, "Ri"); label(data.shi, "Shi");
+  renderSanshengOnePlate("qimenSanshengNianCompass", data.nian, "年");
+  renderSanshengOnePlate("qimenSanshengYueCompass", data.yue, "月");
+  renderSanshengOnePlate("qimenSanshengRiCompass", data.ri, "日");
+  renderSanshengOnePlate("qimenSanshengShiCompass", data.shi, "時");
+}
+
+// 三勝宮頂部資訊表：四盤各一列（局數／符首／值符／值使方位）
+function buildSanshengInfoTable(data) {
+  const row = (name, p) => p
+    ? "<tr><td class=\"qi-label\">" + name + "</td><td class=\"qi-value\">" +
+      (p.juInfo.isYang ? "陽遁" : "陰遁") + p.juInfo.ju + "局</td>" +
+      "<td class=\"qi-label\">符首</td><td class=\"qi-value\">" + p.xunShou.xun + "</td>" +
+      "<td class=\"qi-label\">值符</td><td class=\"qi-value\">" + p.fuShouXing + "</td>" +
+      "<td class=\"qi-label\">值使</td><td class=\"qi-value\">" + GONG_INFO[p.menTargetGong].dir + "</td></tr>"
+    : "<tr><td class=\"qi-label\">" + name + "</td><td class=\"qi-value\" colspan=\"7\">超出可排範圍</td></tr>";
+  return '<table class="qimen-info-table sansheng-info-table"><tbody>' +
+    row("年盤", data.nian) + row("月盤", data.yue) + row("日盤", data.ri) + row("時盤", data.shi) +
+    "</tbody></table>";
+}
+
+function runQimenSansheng(year, month, day, hour, minute) {
+  currentQimenSansheng = calculateSansheng({ year, month, day, hour, minute });
+  renderQimenSansheng(currentQimenSansheng);
+}
+
+document.getElementById("qimenSanshengPickBtn").addEventListener("click", function () {
+  const year = Number(document.getElementById("ss-byear").value);
+  const month = Number(document.getElementById("ss-bmonth").value);
+  const day = Number(document.getElementById("ss-bday").value);
+  const timeVal = document.getElementById("ss-btime").value;
+  if (!timeVal) { alert("請先選擇時間"); return; }
+  const [hour, minute] = timeVal.split(":").map(Number);
+  runQimenSansheng(year, month, day, hour, minute);
+});
+
+document.getElementById("qimenSanshengNowBtn").addEventListener("click", function () {
+  const now = new Date();
+  document.getElementById("ss-byear").value = String(now.getFullYear());
+  document.getElementById("ss-bmonth").value = String(now.getMonth() + 1);
+  document.getElementById("ss-bday").value = String(now.getDate());
+  document.getElementById("ss-btime").value =
+    String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  runQimenSansheng(now.getFullYear(), now.getMonth() + 1, now.getDate(), now.getHours(), now.getMinutes());
+});
+
+document.getElementById("exportQimenSanshengPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 10;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 奇門遁甲—三勝宮", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    const sections = Array.from(document.querySelectorAll("#qimenSanshengCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("奇門遁甲—三勝宮.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {
