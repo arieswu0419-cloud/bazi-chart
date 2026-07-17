@@ -85,6 +85,22 @@ const HP_WX_KE = { 火: "金", 土: "水", 水: "火", 金: "木", 木: "土" };
 // 驛馬（時支三合長生對沖）
 const HP_YIMA = { 申: "寅", 子: "寅", 辰: "寅", 寅: "申", 午: "申", 戌: "申", 亥: "巳", 卯: "巳", 未: "巳", 巳: "亥", 酉: "亥", 丑: "亥" };
 
+// 外環 64 卦（從復科紅盤截圖反推，19 個卦位驗證全中：2026-07-16 小過益鼎蒙明夷需履萃、
+// 08-16 未濟謙隨小畜姤歸妹剝既濟、12-16 蒙小過益；09-16 星門轉量相同→八宮全純卦亦吻合）：
+// 每宮上卦＝該宮「天盤星」的本宮後天卦、下卦＝該宮「八門」的本門宮後天卦，上疊下查 64 卦名。
+const HP_XING_HOME = { 天蓬: 1, 天芮: 2, 天衝: 3, 天輔: 4, 天心: 6, 天柱: 7, 天任: 8, 天英: 9 };
+const HP_MEN_HOME = { 休: 1, 死: 2, 傷: 3, 杜: 4, 開: 6, 驚: 7, 生: 8, 景: 9 };
+const HP_HEXA_64 = {
+  乾乾: "乾", 乾坤: "否", 乾坎: "訟", 乾離: "同人", 乾震: "無妄", 乾巽: "姤", 乾艮: "遯", 乾兌: "履",
+  坤乾: "泰", 坤坤: "坤", 坤坎: "師", 坤離: "明夷", 坤震: "復", 坤巽: "升", 坤艮: "謙", 坤兌: "臨",
+  坎乾: "需", 坎坤: "比", 坎坎: "坎", 坎離: "既濟", 坎震: "屯", 坎巽: "井", 坎艮: "蹇", 坎兌: "節",
+  離乾: "大有", 離坤: "晉", 離坎: "未濟", 離離: "離", 離震: "噬嗑", 離巽: "鼎", 離艮: "旅", 離兌: "睽",
+  震乾: "大壯", 震坤: "豫", 震坎: "解", 震離: "豐", 震震: "震", 震巽: "恆", 震艮: "小過", 震兌: "歸妹",
+  巽乾: "小畜", 巽坤: "觀", 巽坎: "渙", 巽離: "家人", 巽震: "益", 巽巽: "巽", 巽艮: "漸", 巽兌: "中孚",
+  艮乾: "大畜", 艮坤: "剝", 艮坎: "蒙", 艮離: "賁", 艮震: "頤", 艮巽: "蠱", 艮艮: "艮", 艮兌: "損",
+  兌乾: "夬", 兌坤: "萃", 兌坎: "困", 兌離: "革", 兌震: "隨", 兌巽: "大過", 兌艮: "咸", 兌兌: "兌"
+};
+
 function hpGanIdx(g) { return HP_GAN.indexOf(g); }
 function hpZhiIdx(z) { return HP_ZHI.indexOf(z); }
 function hpJiaZi60(gan, zhi) {
@@ -260,6 +276,14 @@ function calculateQimenHongpan({ year, month, day, hour, minute }) {
     };
   });
 
+  // 外環 64 卦：上卦＝天盤星本宮卦、下卦＝門本宮卦（演算法出處與驗證見檔頭常數區註解）
+  const hexagrams = {};
+  [1, 2, 3, 4, 6, 7, 8, 9].forEach((g) => {
+    const upper = HP_GONG[HP_XING_HOME[pan.tianPanXing[g]]].gua;
+    const lower = HP_GONG[HP_MEN_HOME[pan.renPanMen[g]]].gua;
+    hexagrams[g] = { upper, lower, name: HP_HEXA_64[upper + lower] || "" };
+  });
+
   // 四柱表：沿用全站 ganPart／zhiPart 呈現（渲染層工具，非排盤邏輯）
   const siZhu = [
     { label: "時柱", gan: ganPart(timeGan), zhi: zhiPart(timeZhi) },
@@ -284,6 +308,7 @@ function calculateQimenHongpan({ year, month, day, hour, minute }) {
     fuShouDir: HP_GONG[pan.fuShouGong].dir,
     xingTargetGong: pan.xingTargetGong,
     menTargetGong: pan.menTargetGong,
+    hexagrams,
     gongs
   };
 }

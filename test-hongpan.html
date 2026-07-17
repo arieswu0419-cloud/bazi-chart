@@ -112,9 +112,26 @@ CASES.forEach((c, i) => {
     cell(row.day, expDay) + cell(row.time, expTime) + cell(row.xun, expXun) + cell(row.ju, expJu) +
     cell(row.fu, expFu) + cell(row.shi, expShiDir) + cell(row.pat, expPattern) + "</tr>");
 });
+// ---- 外環 64 卦驗證（截圖實讀 19 個卦位）----
+const HEX_CASES = [
+  [2026, 7,16,15,57, { 4:"小過", 9:"益", 2:"鼎", 3:"蒙", 7:"明夷", 8:"需", 1:"履", 6:"萃" }],
+  [2026, 8,16,15,57, { 4:"未濟", 9:"謙", 2:"隨", 3:"小畜", 7:"姤", 8:"歸妹", 1:"剝", 6:"既濟" }],
+  [2026,12,16,15,57, { 4:"蒙", 9:"小過", 2:"益" }]
+];
+let hexPass = 0, hexTotal = 0, hexFails = [];
+HEX_CASES.forEach(([y, m, d, hh, mm, expected]) => {
+  const r = calculateQimenHongpan({ year: y, month: m, day: d, hour: hh, minute: mm });
+  Object.keys(expected).forEach((g) => {
+    hexTotal++;
+    const got = r.hexagrams[g] ? r.hexagrams[g].name : "?";
+    if (got === expected[g]) hexPass++;
+    else hexFails.push(y + "-" + m + "-" + d + " " + g + "宮:" + got + "(應為" + expected[g] + ")");
+  });
+});
 document.getElementById("summary").textContent =
-  "結果：" + pass + " / " + CASES.length + " 全欄通過" + (fails.length ? "；失敗案例 #" + fails.join(", #") : " ✅");
-window.__testSummary = { pass, total: CASES.length, fails };
+  "結果：" + pass + " / " + CASES.length + " 全欄通過" + (fails.length ? "；失敗案例 #" + fails.join(", #") : " ✅") +
+  "｜64卦：" + hexPass + " / " + hexTotal + (hexFails.length ? "；" + hexFails.join("、") : " ✅");
+window.__testSummary = { pass, total: CASES.length, fails, hexPass, hexTotal, hexFails };
 </script>
 </body>
 </html>

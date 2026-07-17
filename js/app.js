@@ -2133,9 +2133,10 @@ function renderQimenHongpan(data) {
   document.getElementById("qimenHongpanCard").style.display = "block";
   document.getElementById("qimenHongpanPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
   document.getElementById("qimenHongpanInfoPanel").innerHTML = buildQimenHongpanInfoTable(data);
-  // 沿用九宮渲染但不畫外環 64 卦（紅盤版面沒有）；角字（門迫／宮迫／入墓）由紅盤引擎逐宮算好直接取用
+  // 角字（門迫／宮迫／入墓）與外環 64 卦都由紅盤引擎逐宮算好直接取用；
+  // 64 卦顯示位置／字級／直排橫排沿用遁甲頁同一套 buildQimenCompassHtml（傳第三參數即啟用）
   const gridHtml = buildQimenGridHtml(data, qimenHongpanBottomLabel, "時", (c) => c.cornerWords || [], true, computeQimenDunjiaGongNumbers(data));
-  document.getElementById("qimenHongpanCompass").innerHTML = buildQimenCompassHtml(data, gridHtml);
+  document.getElementById("qimenHongpanCompass").innerHTML = buildQimenCompassHtml(data, gridHtml, data.hexagrams);
   document.getElementById("qimenHongpanExplain").style.display = "none";
   document.getElementById("qimenHongpanExplain").innerHTML = "";
 }
