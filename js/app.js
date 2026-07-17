@@ -2105,7 +2105,7 @@ document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", asy
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 奇門藍盤—預測卜卦", 20, "#212529");
+    const title = textToImage("Aries 奇門遁甲—藍盤", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
     // 點選九宮格才會出現的解說區塊沒點開時是 display:none，html2canvas 對 0 大小的元素會產生無效尺寸的
@@ -2116,7 +2116,7 @@ document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", asy
 
     addPageNumbers(pdf, pageWidth, pageHeight);
 
-    pdf.save("奇門藍盤—預測卜卦.pdf");
+    pdf.save("奇門遁甲—藍盤.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {
@@ -2214,7 +2214,7 @@ document.getElementById("exportQimenHongpanPdfBtn").addEventListener("click", as
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 奇門紅盤—時盤", 20, "#212529");
+    const title = textToImage("Aries 奇門遁甲—紅盤", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
     const sections = Array.from(document.querySelectorAll("#qimenHongpanCard > *:not(.card-head)"))
@@ -2223,7 +2223,7 @@ document.getElementById("exportQimenHongpanPdfBtn").addEventListener("click", as
 
     addPageNumbers(pdf, pageWidth, pageHeight);
 
-    pdf.save("奇門紅盤—時盤.pdf");
+    pdf.save("奇門遁甲—紅盤.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {
