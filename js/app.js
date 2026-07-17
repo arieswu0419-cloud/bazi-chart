@@ -92,7 +92,7 @@ requireApprovedUser(function (user, data) {
 
   // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
   // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
-  const navPermKeys = { qimenDunjia: "奇門遁甲", qimenHongpan: "奇門紅盤", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水" };
+  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
@@ -2052,7 +2052,7 @@ function showQimenDunjiaView() {
   hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("qimenDunjiaView").style.display = "";
-  setActiveNav("奇門遁甲");
+  setActiveNav("奇門藍盤");
 }
 function hideQimenDunjiaView() {
   document.getElementById("qimenDunjiaView").style.display = "none";
@@ -2105,7 +2105,7 @@ document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", asy
 
     const logoImg = document.querySelector(".brand img");
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 奇門遁甲—預測卜卦", 20, "#212529");
+    const title = textToImage("Aries 奇門藍盤—預測卜卦", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
     // 點選九宮格才會出現的解說區塊沒點開時是 display:none，html2canvas 對 0 大小的元素會產生無效尺寸的
@@ -2116,7 +2116,7 @@ document.getElementById("exportQimenDunjiaPdfBtn").addEventListener("click", asy
 
     addPageNumbers(pdf, pageWidth, pageHeight);
 
-    pdf.save("奇門遁甲—預測卜卦.pdf");
+    pdf.save("奇門藍盤—預測卜卦.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {
