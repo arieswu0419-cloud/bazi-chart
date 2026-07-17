@@ -1324,7 +1324,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 }
 
 /* 奇門遁甲（獨立頁面）*/
-.card .qimen-dunjia-title { background: #5B5B5B; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
+.card .qimen-dunjia-title { background: #005AB5; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
 .qimen-dunjia-head-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .qimen-dunjia-head-row h2 { margin: 0; }
 .qimen-dunjia-head-actions { display: flex; gap: 10px; }
