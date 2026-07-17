@@ -355,6 +355,13 @@ async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, st
   const maxHeight = pageHeight - margin * 2;
   let y = startY;
   for (const el of sections) {
+    // 標了 data-pdf-break-before 的區塊強制另起新頁（除非已經在某頁最上方）——例如人格解碼的
+    // 「數字對照表」整塊要從新的一頁開始
+    if (el.dataset && el.dataset.pdfBreakBefore !== undefined && y > margin) {
+      pdf.addPage();
+      fillPdfPageBg(pdf, pageWidth, pageHeight, pageBg);
+      y = margin;
+    }
     // 區塊間距預設 6mm；元素標了 data-pdf-gap 就改用那個值（例如數字對照表逐列匯出時設成 0，
     // 讓列與列之間只靠各自的底線分隔，不會多出一段空白看起來像是斷開的區塊）
     const gap = el.dataset && el.dataset.pdfGap !== undefined ? Number(el.dataset.pdfGap) : 6;
@@ -771,8 +778,13 @@ function buildRengeRowSections() {
 
   const tempEls = [];
   const sections = [];
+  // 數字對照表整塊從新的一頁開始：標題區塊標上 pdfBreakBefore（匯出時 addSectionsToPdf 會強制換頁），
+  // cleanup 時再移除，不影響畫面
   const titleEl = panel.querySelector(".renge-box-title");
-  if (titleEl) sections.push(titleEl);
+  if (titleEl) {
+    titleEl.dataset.pdfBreakBefore = "1";
+    sections.push(titleEl);
+  }
 
   const tableWidth = tableEl.offsetWidth;
   // 用 .rows（HTMLTableElement 原生屬性）取全部 <tr>，不用 .children——瀏覽器解析表格時會自動幫裸 <tr> 包一層
@@ -821,7 +833,14 @@ function buildRengeRowSections() {
     makeWrapper(tr.cloneNode(true));
   });
 
-  return { panel, sections, cleanup: () => tempEls.forEach((el) => el.remove()) };
+  return {
+    panel,
+    sections,
+    cleanup: () => {
+      tempEls.forEach((el) => el.remove());
+      if (titleEl) delete titleEl.dataset.pdfBreakBefore;
+    }
+  };
 }
 
 function buildRengeReferenceHtml(ref) {

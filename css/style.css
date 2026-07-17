@@ -742,6 +742,12 @@ main.app {
 /* 九宮能量圖圈數含義表：數字／圈數兩欄置中，含義欄維持靠左方便閱讀長文字。
    table-layout:fixed＋前兩欄固定寬——PDF 匯出把子表格逐列拆成獨立小表格時，各列欄寬才會一致對齊 */
 .renge-circle-table { table-layout: fixed; }
+/* 圈數含義表不畫橘色格線，改用淡灰的橫向分隔線（無直線、無橘色），版面較乾淨 */
+.renge-circle-table td, .renge-circle-table th {
+  border: none;
+  border-bottom: 1px solid #ece7da;
+}
+.renge-circle-table tr:last-child td { border-bottom: none; }
 .renge-circle-table td:nth-child(1), .renge-circle-table th:nth-child(1),
 .renge-circle-table td:nth-child(2), .renge-circle-table th:nth-child(2) {
   text-align: center;
