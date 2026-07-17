@@ -35,9 +35,11 @@
  *   「正月初一換年」（午7→8）不合；02-04 早上（立春當天、交節時刻前）仍用午年 → 精確時刻切換。
  *   注意混合制：年支隨立春，但月、日仍用「農曆」數（02-05 用十二月29，非寅月）。
  *
- * 未有樣本驗證的邊角（採合理預設，遇不符再校）：
- *   1. 閏月：取本月月數（閏五月＝5）。
- *   2. 晚子時（23 時起）：日柱進位隔日（同復科），農曆日／時支取當下值。
+ * 邊角案例（2028-06-22／06-23／07-17 晚上 11:12 三張樣本定案，全部驗證完畢）：
+ *   1. 閏月＝取本月月數：2028 閏五月初一（06-23）實測陰7＝申9+5+1+子1，閏五月算 5 不算 6；
+ *      閏五月廿五（07-17）陰4 再次確認。
+ *   2. 晚子時（23 時起）：日柱進位隔日（06-23 23:12 顯示日庚辰）、時支取子，
+ *      但「農曆月日不進位」——06-22 23:12 實測陰9＝申9+5+30+子1，用五月三十而非閏五月初一。
  */
 
 const HP_GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
@@ -95,7 +97,7 @@ function hpJiaZi60(gan, zhi) {
 const HP_YANG_JIEQI = ["冬至", "小寒", "大寒", "立春", "雨水", "驚蟄", "春分", "清明", "穀雨", "立夏", "小滿", "芒種"];
 const HP_JIEQI_S2T = { 惊蛰: "驚蟄", 谷雨: "穀雨", 小满: "小滿", 芒种: "芒種", 处暑: "處暑" };
 
-// 定局公式（48 筆復科時盤實測全數吻合，見檔頭）：
+// 定局公式（51 筆復科時盤實測全數吻合，見檔頭）：
 // 局數 ＝（年支序 ＋ 農曆月 ＋ 農曆日 ＋ 時支序）mod 9，0 作 9；支序子1…亥12。
 // lunarMonth 傳 lunar-javascript 的 getMonth()（閏月為負值，取絕對值）；
 // yearZhi 用「八字年柱地支」（立春精確時刻換年，2027-02-05 樣本定案），月、日仍用農曆數。
@@ -171,15 +173,16 @@ function hpBuildPan({ isYang, ju, dayGan, dayZhi, timeGan, timeZhi }) {
   const startPos = order.indexOf(xingTargetGong);
   HP_SHEN.forEach((s, i) => { shenPan[order[(startPos + i) % 8]] = s; });
 
-  // 格局欄：伏吟反吟＋五不遇時（時干＝日干＋6）
+  // 格局欄：五不遇時（時干＝日干＋6）＋伏吟反吟
+  // 順序照復科：五不遇時在前（2028-06-23 表頭「五不遇時, 八門反吟」實證），吟類依門→星→干
   const labels = [];
+  if ((hpGanIdx(dayGan) + 6) % 10 === hpGanIdx(timeGan)) labels.push("五不遇時");
   if (menRot.delta === 0) labels.push("八門伏吟");
   if (xingRot.delta === 0) labels.push("九星伏吟");
   if (xingRot.delta === 0) labels.push("天干伏吟");
   if (menRot.delta === 4) labels.push("八門反吟");
   if (xingRot.delta === 4) labels.push("九星反吟");
   if (xingRot.delta === 4) labels.push("天干反吟");
-  if ((hpGanIdx(dayGan) + 6) % 10 === hpGanIdx(timeGan)) labels.push("五不遇時");
 
   return {
     diPan, xunShou, hourIndexInXun, rawFuGong, fuShouGong, fuShouXing,
