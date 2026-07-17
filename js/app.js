@@ -2144,6 +2144,14 @@ function showQimenSanshengView() {
   document.getElementById("mainView").style.display = "none";
   document.getElementById("qimenSanshengView").style.display = "";
   setActiveNav("奇門三勝宮");
+  // 預設以「現時起盤」計算（開頁即以當下時刻排四盤、統計選定宮位；已選宮位維持）
+  const now = new Date();
+  document.getElementById("ss-byear").value = String(now.getFullYear());
+  document.getElementById("ss-bmonth").value = String(now.getMonth() + 1);
+  document.getElementById("ss-bday").value = String(now.getDate());
+  document.getElementById("ss-btime").value =
+    String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  runQimenSansheng(now.getFullYear(), now.getMonth() + 1, now.getDate(), now.getHours(), now.getMinutes());
 }
 function hideQimenSanshengView() {
   document.getElementById("qimenSanshengView").style.display = "none";
@@ -2160,11 +2168,45 @@ function renderSanshengOnePlate(containerId, plate, centerLabel) {
   el.innerHTML = buildQimenCompassHtml(plate, gridHtml);
 }
 
+// 個人命盤宮位（八宮，中宮除外）；顯示名稱 → 宮位數字。預設乾宮(6)。
+const SANSHENG_GONGS = [
+  { gong: 6, name: "乾宮" }, { gong: 1, name: "坎宮" }, { gong: 8, name: "艮宮" }, { gong: 3, name: "震宮" },
+  { gong: 4, name: "巽宮" }, { gong: 9, name: "離宮" }, { gong: 2, name: "坤宮" }, { gong: 7, name: "兌宮" }
+];
+let sanshengSelectedGong = 6; // 已選命盤宮位（模組狀態，重新起盤不重置）
+
+function buildSanshengPalacePicker() {
+  const btns = SANSHENG_GONGS.map((o) =>
+    '<button type="button" class="sansheng-palace-btn' + (o.gong === sanshengSelectedGong ? " active" : "") +
+    '" data-gong="' + o.gong + '">' + o.name + "</button>").join("");
+  return '<div class="sansheng-palace-picker">' +
+    '<div class="sansheng-palace-label">請點選個人命盤宮位</div>' +
+    '<div class="sansheng-palace-btns">' + btns + "</div>" +
+    '<div class="sansheng-counts" id="qimenSanshengCounts"></div></div>';
+}
+
+// 依已選宮位：四盤該宮加紅框，並統計四盤該宮的 值符／九天（神）與 生門（門）數量
+function updateSanshengSelection() {
+  document.querySelectorAll("#qimenSanshengCard .qimen-cell.sansheng-selected").forEach((el) => el.classList.remove("sansheng-selected"));
+  ["Nian", "Yue", "Ri", "Shi"].forEach((n) => {
+    const cell = document.querySelector("#qimenSansheng" + n + "Compass .qimen-cell[data-gong='" + sanshengSelectedGong + "']");
+    if (cell) cell.classList.add("sansheng-selected");
+  });
+  document.querySelectorAll(".sansheng-palace-btn").forEach((b) => b.classList.toggle("active", Number(b.dataset.gong) === sanshengSelectedGong));
+  const d = currentQimenSansheng;
+  const plates = d ? [d.nian, d.yue, d.ri, d.shi].filter(Boolean) : [];
+  const cnt = (pred) => plates.filter((p) => p.gongs[sanshengSelectedGong] && pred(p.gongs[sanshengSelectedGong])).length;
+  const gongName = (SANSHENG_GONGS.find((o) => o.gong === sanshengSelectedGong) || {}).name || "";
+  const box = document.getElementById("qimenSanshengCounts");
+  if (box) box.innerHTML = "<b>" + gongName + "</b>（年月日時四盤合計）　值符 × " + cnt((c) => c.shen === "值符") +
+    "　九天 × " + cnt((c) => c.shen === "九天") + "　生門 × " + cnt((c) => c.men === "生");
+}
+
 function renderQimenSansheng(data) {
   document.getElementById("qimenSanshengCard").style.display = "block";
   document.getElementById("qimenSanshengPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
-  // 頂部資訊面板：顯示四盤各自的局數／符首／值符／值使，方便對照
-  document.getElementById("qimenSanshengInfoPanel").innerHTML = buildSanshengInfoTable(data);
+  // 上方區域改為命盤宮位按鈕列＋統計（取代原本的四盤資訊表）
+  document.getElementById("qimenSanshengInfoPanel").innerHTML = buildSanshengPalacePicker();
   const label = (p, name) => document.getElementById("ss" + name + "Title").textContent =
     "奇門" + name.replace("Nian", "年").replace("Yue", "月").replace("Ri", "日").replace("Shi", "時") + "盤" +
     (p ? "　" + (p.juInfo.isYang ? "陽遁" : "陰遁") + p.juInfo.ju + "局" : "");
@@ -2173,21 +2215,16 @@ function renderQimenSansheng(data) {
   renderSanshengOnePlate("qimenSanshengYueCompass", data.yue, "月");
   renderSanshengOnePlate("qimenSanshengRiCompass", data.ri, "日");
   renderSanshengOnePlate("qimenSanshengShiCompass", data.shi, "時");
+  updateSanshengSelection(); // 套用紅框＋統計（沿用已選宮位）
 }
 
-// 三勝宮頂部資訊表：四盤各一列（局數／符首／值符／值使方位）
-function buildSanshengInfoTable(data) {
-  const row = (name, p) => p
-    ? "<tr><td class=\"qi-label\">" + name + "</td><td class=\"qi-value\">" +
-      (p.juInfo.isYang ? "陽遁" : "陰遁") + p.juInfo.ju + "局</td>" +
-      "<td class=\"qi-label\">符首</td><td class=\"qi-value\">" + p.xunShou.xun + "</td>" +
-      "<td class=\"qi-label\">值符</td><td class=\"qi-value\">" + p.fuShouXing + "</td>" +
-      "<td class=\"qi-label\">值使</td><td class=\"qi-value\">" + GONG_INFO[p.menTargetGong].dir + "</td></tr>"
-    : "<tr><td class=\"qi-label\">" + name + "</td><td class=\"qi-value\" colspan=\"7\">超出可排範圍</td></tr>";
-  return '<table class="qimen-info-table sansheng-info-table"><tbody>' +
-    row("年盤", data.nian) + row("月盤", data.yue) + row("日盤", data.ri) + row("時盤", data.shi) +
-    "</tbody></table>";
-}
+// 命盤宮位按鈕：點擊只換紅框與統計，不重新起盤（委派監聽，容器持久存在）
+document.getElementById("qimenSanshengInfoPanel").addEventListener("click", function (e) {
+  const btn = e.target.closest(".sansheng-palace-btn");
+  if (!btn) return;
+  sanshengSelectedGong = Number(btn.dataset.gong);
+  updateSanshengSelection();
+});
 
 function runQimenSansheng(year, month, day, hour, minute) {
   currentQimenSansheng = calculateSansheng({ year, month, day, hour, minute });

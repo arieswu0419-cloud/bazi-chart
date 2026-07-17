@@ -1328,8 +1328,16 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 /* 奇門三勝宮：頂部標題藍底（同藍盤）；四盤各自的小標題列（藍字底線） */
 .card .qimen-sansheng-title { background: #005AB5; color: #fff; padding: 10px 14px; border-radius: var(--radius); margin: 16px 0; }
 .sansheng-plate-title { font-size: 18px; font-weight: 700; color: #005AB5; border-left: 5px solid #005AB5; padding: 4px 10px; margin: 22px 0 8px; }
-.sansheng-info-table td { font-size: 13px; }
 .sansheng-nodata { padding: 30px; text-align: center; color: #888; }
+/* 個人命盤宮位挑選＋統計 */
+.sansheng-palace-label { font-weight: 700; color: #005AB5; margin-bottom: 8px; }
+.sansheng-palace-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.sansheng-palace-btn { padding: 6px 12px; border: 1px solid #005AB5; background: #fff; color: #005AB5;
+  border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.sansheng-palace-btn.active { background: #005AB5; color: #fff; }
+.sansheng-counts { margin-top: 12px; font-size: 15px; font-weight: 700; color: #212529; }
+/* 選定宮位在四盤上的紅框（inset box-shadow 不影響版面） */
+.qimen-cell.sansheng-selected { box-shadow: inset 0 0 0 3px #E60012; position: relative; z-index: 2; }
 .qimen-dunjia-head-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .qimen-dunjia-head-row h2 { margin: 0; }
 .qimen-dunjia-head-actions { display: flex; gap: 10px; }
