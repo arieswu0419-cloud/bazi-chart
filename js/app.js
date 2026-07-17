@@ -2212,7 +2212,7 @@ function updateSanshengSelection() {
   const jiutian = (sanshengPersonal.jiutian || 0) + cnt((c) => c.shen === "九天");
   const shengmen = (sanshengPersonal.shengmen || 0) + cnt((c) => c.men === "生");
   const box = document.getElementById("qimenSanshengCounts");
-  if (box) box.innerHTML = "<b>" + gongName + "</b>（個人命盤＋年月日時四盤合計）　值符 × " + zhifu +
+  if (box) box.innerHTML = gongName + "（個人命盤＋年月日時四盤合計）　值符 × " + zhifu +
     "　九天 × " + jiutian + "　生門 × " + shengmen;
 }
 
