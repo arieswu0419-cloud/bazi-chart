@@ -22,11 +22,11 @@ function formatCreatedAt(ts) {
 // 實際看到的權限一樣，管理者才不會誤判目前狀態。舊帳號（完全沒有 permissions 欄位）：八字／人格解碼／
 // 生命靈數／奇門命盤沿用舊行為視為開放，五個新導覽功能一律未開放；有 permissions 欄位但缺新欄位的帳號：
 // 奇門命盤沿用開放（避免現有使用者權限系統上線後突然被鎖），其餘新欄位視為未開放。
-const PERM_KEYS = ["bazi", "renge", "lifenum", "qimen", "qimenDunjia", "qimenHongpan", "guanyin", "jigong", "fengshui", "mingpian"];
+const PERM_KEYS = ["bazi", "renge", "lifenum", "qimen", "qimenDunjia", "qimenHongpan", "qimenSansheng", "guanyin", "jigong", "fengshui", "mingpian"];
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, guanyin: false, jigong: false, fengshui: false, mingpian: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -35,6 +35,7 @@ function effectivePermissions(data) {
     qimen: raw.qimen !== undefined ? !!raw.qimen : true,
     qimenDunjia: !!raw.qimenDunjia,
     qimenHongpan: !!raw.qimenHongpan,
+    qimenSansheng: !!raw.qimenSansheng,
     guanyin: !!raw.guanyin,
     jigong: !!raw.jigong,
     fengshui: !!raw.fengshui,
@@ -61,19 +62,19 @@ function renderUserRow(uid, data) {
 
 async function loadUsers() {
   const tbody = document.getElementById("adminTableBody");
-  tbody.innerHTML = '<tr><td colspan="13">載入中...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="15">載入中...</td></tr>';
   try {
     const snap = await db.collection("users").orderBy("createdAt", "desc").get();
     tbody.innerHTML = "";
     if (snap.empty) {
-      tbody.innerHTML = '<tr><td colspan="13">目前沒有任何帳號</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="15">目前沒有任何帳號</td></tr>';
       return;
     }
     snap.forEach((doc) => {
       tbody.appendChild(renderUserRow(doc.id, doc.data()));
     });
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="13">載入失敗：' + err.message + "</td></tr>";
+    tbody.innerHTML = '<tr><td colspan="15">載入失敗：' + err.message + "</td></tr>";
   }
 }
 
