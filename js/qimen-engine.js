@@ -510,14 +510,16 @@ function isYuNuShouMen(diPan, menTargetGong) {
   return menTargetGong === dingGong;
 }
 
-// 「時干入墓」（上方格局欄）：改為「陽干入四庫」後重新啟用——時干為甲／丙／戊／庚／壬，
-// 且時干「天盤落宮」（ziNuGong，跟時徽章同一個宮）等於對應墓庫宮才顯示：
-// 甲墓未＝坤2、丙戊墓戌＝乾6、庚墓丑＝艮8、壬墓辰＝巽4。陰干（乙丁己辛癸）不論——
-// 先前那版把陰干也算進去（用右下角 RUMU_STEMS 對照表），導致時干乙誤標、官網不顯示，
-// 所以整個拿掉；陰干墓庫只保留宮位右下角逐宮的入墓小字，表頭格局限陽干四墓。
-const SHIGAN_RUMU_GONG = { 甲: 2, 丙: 6, 戊: 6, 庚: 8, 壬: 4 };
+// 「時干入墓」（上方格局欄）＝「時柱天干自坐墓庫」：時支正好是時干的墓庫地支才顯示，
+// 跟盤面落宮無關，純看時柱本身。墓庫（陰陽別墓，跟 RUMU_STEMS 同系統）：
+// 甲墓未、乙墓戌、丙墓戌、丁墓丑、戊墓戌、己墓丑、庚墓丑、辛墓辰、壬墓辰、癸墓未。
+// 用官網 /qimen 時盤 3 筆截圖定案（2026-07-01 時柱戊戌→顯示、07-17 庚戌／07-04 甲戌→不顯示）：
+// 07-01 時干戊的天盤落離9 不在乾6，證明先前「陽干落墓宮」版是錯的；自坐墓版同時解釋
+// 最早「時干乙誤標」懸案——乙墓戌，但六十甲子沒有乙戌這一柱，所以時干乙永遠不會觸發。
+// 實際可能觸發的時柱只有六柱：丙戌、丁丑、戊戌、己丑、壬辰、癸未。
+const SHIGAN_MU_ZHI = { 甲: "未", 乙: "戌", 丙: "戌", 丁: "丑", 戊: "戌", 己: "丑", 庚: "丑", 辛: "辰", 壬: "辰", 癸: "未" };
 
-function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, diPan, xingTargetGong, menTargetGong, ziNuGong }) {
+function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, diPan, xingTargetGong, menTargetGong }) {
   const labels = [];
   if (xingDelta === 0) labels.push("九星伏吟");
   if (menDelta === 0) labels.push("八門伏吟");
@@ -526,8 +528,8 @@ function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, di
   if (xingDelta === 0) labels.push("天干伏吟");
   if (xingDelta === 4) labels.push("天干反吟");
 
-  // 時干入墓：限陽干四墓（見上方 SHIGAN_RUMU_GONG 註解），比對時干天盤落宮
-  if (SHIGAN_RUMU_GONG[timeGan] === ziNuGong) labels.push("時干入墓");
+  // 時干入墓：時柱自坐墓庫（見上方 SHIGAN_MU_ZHI 註解），純看時柱干支
+  if (SHIGAN_MU_ZHI[timeGan] === timeZhi) labels.push("時干入墓");
 
   const timeGanZhi = timeGan + timeZhi;
   if (TIANFU_SHI_MAP[dayGan] === timeGanZhi) labels.push("天輔時");
@@ -666,7 +668,7 @@ function calculateQimenHeader({ year, month, day, hour, minute, name, gender, yi
     };
   });
 
-  const patternText = detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan: ec.getDayGan(), timeGan, timeZhi, diPan, xingTargetGong, menTargetGong, ziNuGong });
+  const patternText = detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan: ec.getDayGan(), timeGan, timeZhi, diPan, xingTargetGong, menTargetGong });
 
   return {
     name,
