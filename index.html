@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=198">
+<link rel="stylesheet" href="css/style.css?v=199">
 </head>
 <body>
 
@@ -33,6 +33,7 @@
       <button type="button" class="main-nav-link" data-feature="濟公棋卦" data-perm="jigong">濟公棋卦</button>
       <button type="button" class="main-nav-link" data-feature="數字易經" data-perm="fengshui">數字易經</button>
       <button type="button" class="main-nav-link" data-feature="名片風水" data-perm="mingpian">名片風水</button>
+      <button type="button" class="main-nav-link" data-feature="紫白風水" data-perm="zibai">紫白風水</button>
     </nav>
   </div>
 </header>
@@ -610,6 +611,61 @@
     </div>
     </div>
 
+    <div id="zibaiView" style="display:none">
+    <div class="card" id="zibaiFormCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="zibaiBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="zibai-title">紫白飛星風水盤</h2>
+
+      <div id="zibaiForm">
+        <div class="form-block">
+          <h2>陽宅落成（西元國曆）</h2>
+          <div class="form-date-row">
+            <div class="field">
+              <label for="zb-byear">西元年</label>
+              <select id="zb-byear"></select>
+            </div>
+            <div class="field">
+              <label for="zb-bmonth">月</label>
+              <select id="zb-bmonth"></select>
+            </div>
+            <div class="field">
+              <label for="zb-bday">日</label>
+              <select id="zb-bday"></select>
+            </div>
+          </div>
+          <div class="zibai-hint" id="zibaiPeriodHint"></div>
+        </div>
+
+        <div class="form-block">
+          <h2>陽宅面向</h2>
+          <div class="form-date-row">
+            <div class="field zibai-angle-field">
+              <label for="zb-angle">面向角度（0~360°）</label>
+              <input type="number" id="zb-angle" min="0" max="360" step="1" value="0">
+            </div>
+            <div class="field zibai-mountain-field">
+              <label>座向</label>
+              <div class="zibai-mountain-out" id="zibaiMountainOut">—</div>
+            </div>
+            <div class="field zibai-run-field" data-html2canvas-ignore="true">
+              <label>&nbsp;</label>
+              <button type="button" class="btn" id="zibaiRunBtn">排盤</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="zibaiCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end">
+        <button class="btn secondary" id="exportZibaiPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+      <div class="zibai-plate-wrap" id="zibaiResult"></div>
+    </div>
+    </div>
+
     <div id="qimenHongpanView" class="qimen-hongpan" style="display:none">
     <div class="card" id="qimenHongpanFormCard">
       <div class="card-head">
@@ -697,25 +753,26 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=198"></script>
-<script src="js/auth.js?v=198"></script>
+<script src="js/firebase-config.js?v=199"></script>
+<script src="js/auth.js?v=199"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=198"></script>
-<script src="js/dayun-strategy-content.js?v=198"></script>
-<script src="js/shensha-content.js?v=198"></script>
-<script src="js/renge-content.js?v=198"></script>
-<script src="js/renge-engine.js?v=198"></script>
-<script src="js/lifenum-engine.js?v=198"></script>
-<script src="js/mingpian-engine.js?v=198"></script>
-<script src="js/name-strokes-data.js?v=198"></script>
-<script src="js/lunar-convert.js?v=198"></script>
-<script src="js/shuzi-engine.js?v=198"></script>
-<script src="js/jigong-engine.js?v=198"></script>
-<script src="js/qimen-engine.js?v=198"></script>
-<script src="js/qimen-hongpan-engine.js?v=198"></script>
-<script src="js/qimen-sansheng-engine.js?v=198"></script>
+<script src="js/bazi-engine.js?v=199"></script>
+<script src="js/dayun-strategy-content.js?v=199"></script>
+<script src="js/shensha-content.js?v=199"></script>
+<script src="js/renge-content.js?v=199"></script>
+<script src="js/renge-engine.js?v=199"></script>
+<script src="js/lifenum-engine.js?v=199"></script>
+<script src="js/mingpian-engine.js?v=199"></script>
+<script src="js/name-strokes-data.js?v=199"></script>
+<script src="js/lunar-convert.js?v=199"></script>
+<script src="js/shuzi-engine.js?v=199"></script>
+<script src="js/jigong-engine.js?v=199"></script>
+<script src="js/qimen-engine.js?v=199"></script>
+<script src="js/qimen-hongpan-engine.js?v=199"></script>
+<script src="js/qimen-sansheng-engine.js?v=199"></script>
+<script src="js/fengshui-zibai-engine.js?v=199"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=198"></script>
+<script src="js/app.js?v=199"></script>
 </body>
 </html>

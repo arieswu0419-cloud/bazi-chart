@@ -1458,3 +1458,55 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 @media (max-width: 560px) {
   .jigong-board-panel { flex: 1 1 100%; width: 100%; }
 }
+
+/* ================= 紫白風水（玄空飛星金框九宮盤） ================= */
+.zibai-title { color: var(--gold-darker); }
+.zibai-hint {
+  margin-top: 10px; padding: 8px 14px; border-radius: var(--radius);
+  background: #F3EFDF; border: 1px solid var(--gold); color: var(--gold-darker);
+  font-size: 15px; font-weight: 700;
+}
+.zibai-angle-field input { width: 100%; }
+.zibai-mountain-out {
+  padding: 9px 12px; border-radius: var(--radius); border: 1px solid var(--gold);
+  background: #fff; font-size: 15px; font-weight: 700; color: var(--gold-darker); min-height: 20px;
+}
+.zibai-run-field .btn { width: 100%; }
+
+.zibai-plate-wrap { display: flex; justify-content: center; }
+.zibai-plate { display: inline-block; text-align: center; }
+.zibai-info {
+  font-size: 15px; font-weight: 700; color: var(--gold-darker); margin-bottom: 14px;
+}
+.zibai-facing-top { line-height: 1.15; margin-bottom: 4px; }
+.zibai-facing-name { display: block; font-size: 22px; font-weight: 800; color: #333; }
+.zibai-facing-deg { display: block; font-size: 13px; color: var(--text-secondary); }
+.zibai-arrow { display: block; font-size: 22px; color: #c19a2e; line-height: 1; }
+
+.zibai-grid {
+  position: relative; display: grid;
+  grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  gap: 2px; padding: 26px; background: #c19a2e; border-radius: 4px;
+  width: min(90vw, 384px); aspect-ratio: 1; margin: 0 auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+.zibai-cell { position: relative; background: #fff; overflow: hidden; }
+.zibai-cell-center { background: #FEFDF7; }
+.zibai-shan  { position: absolute; top: 6px; left: 8px;  font-size: clamp(12px, 3.4vw, 16px); font-weight: 700; color: #b8860b; }
+.zibai-xiang { position: absolute; top: 6px; right: 8px; font-size: clamp(12px, 3.4vw, 16px); font-weight: 700; color: #1a1a1a; }
+.zibai-yun   { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%);
+  font-size: clamp(20px, 6vw, 30px); font-weight: 800; color: #111; }
+
+/* 八方位標籤：貼在金框上（向首朝上旋轉後的實際方位） */
+.zibai-dir { position: absolute; font-size: 12px; font-weight: 700; color: #6b571c; white-space: nowrap; }
+.zibai-dir.zb-tc { top: 6px;    left: 50%; transform: translateX(-50%); }
+.zibai-dir.zb-tl { top: 6px;    left: 12px; }
+.zibai-dir.zb-tr { top: 6px;    right: 12px; }
+.zibai-dir.zb-ml { top: 50%;    left: 5px;  transform: translateY(-50%); }
+.zibai-dir.zb-mr { top: 50%;    right: 5px; transform: translateY(-50%); }
+.zibai-dir.zb-bl { bottom: 6px; left: 12px; }
+.zibai-dir.zb-bc { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.zibai-dir.zb-br { bottom: 6px; right: 12px; }
+
+.zibai-sitting { margin-top: 8px; font-size: 16px; font-weight: 700; color: #333; }
+.zibai-sit-mark { color: #c19a2e; margin-right: 4px; }

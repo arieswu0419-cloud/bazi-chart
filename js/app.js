@@ -40,7 +40,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -53,7 +53,8 @@ function effectivePermissions(data) {
     guanyin: !!raw.guanyin,
     jigong: !!raw.jigong,
     fengshui: !!raw.fengshui,
-    mingpian: !!raw.mingpian
+    mingpian: !!raw.mingpian,
+    zibai: !!raw.zibai
   };
 }
 
@@ -93,7 +94,7 @@ requireApprovedUser(function (user, data) {
 
   // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
   // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
-  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水" };
+  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
@@ -125,6 +126,10 @@ requireApprovedUser(function (user, data) {
         showQimenSanshengView();
         return;
       }
+      if (key === "zibai") {
+        showZibaiView();
+        return;
+      }
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
     });
   });
@@ -135,7 +140,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "qimenSanshengView", "jigongView", "shuziView", "mingpianView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "qimenSanshengView", "jigongView", "shuziView", "mingpianView", "zibaiView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -2291,6 +2296,150 @@ document.getElementById("exportQimenSanshengPdfBtn").addEventListener("click", a
     await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
     addPageNumbers(pdf, pageWidth, pageHeight);
     pdf.save("奇門遁甲—三勝宮.pdf");
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+// ================= 紫白風水（玄空飛星，金框九宮盤；排盤重用 js/fengshui-zibai-engine.js）=================
+// 依「陽宅落成年（立春換運）」定元運、依「陽宅面向角度」定 24 山向，排運盤／山星／向星三盤，
+// 九宮依「向首朝上」旋轉呈現（版面／方位對照 九運宅/八運宅/七運宅.pdf，全 24 山向逐格驗證）。
+let currentZibai = null;
+
+function fillZibaiYearSelect() {
+  const sel = document.getElementById("zb-byear");
+  if (sel.options.length) return; // 只填一次
+  let html = "";
+  for (let y = 1960; y <= 2045; y++) html += '<option value="' + y + '">' + y + "</option>";
+  sel.innerHTML = html;
+  let mHtml = "";
+  for (let m = 1; m <= 12; m++) mHtml += '<option value="' + m + '">' + m + "</option>";
+  document.getElementById("zb-bmonth").innerHTML = mHtml;
+  let dHtml = "";
+  for (let d = 1; d <= 31; d++) dHtml += '<option value="' + d + '">' + d + "</option>";
+  document.getElementById("zb-bday").innerHTML = dHtml;
+}
+
+function showZibaiView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("zibaiView").style.display = "";
+  setActiveNav("紫白風水");
+  fillZibaiYearSelect();
+  const now = new Date();
+  document.getElementById("zb-byear").value = String(now.getFullYear());
+  document.getElementById("zb-bmonth").value = String(now.getMonth() + 1);
+  document.getElementById("zb-bday").value = String(now.getDate());
+  document.getElementById("zb-angle").value = "0";
+  updateZibaiHints();
+  runZibai();
+}
+function hideZibaiView() {
+  document.getElementById("zibaiView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("zibaiBackBtn").addEventListener("click", hideZibaiView);
+
+// 讀表單 → { year, month, day, angle }
+function readZibaiForm() {
+  return {
+    year: Number(document.getElementById("zb-byear").value),
+    month: Number(document.getElementById("zb-bmonth").value),
+    day: Number(document.getElementById("zb-bday").value),
+    angle: Math.round(Number(document.getElementById("zb-angle").value) || 0)
+  };
+}
+
+// 即時提示：落成年→X 運宅；面向角度→座向（不排盤）
+const ZB_PERIOD_LABEL = { 1: "一運宅", 2: "二運宅", 3: "三運宅", 4: "四運宅", 5: "五運宅", 6: "六運宅", 7: "七運宅", 8: "八運宅", 9: "九運宅" };
+function updateZibaiHints() {
+  const f = readZibaiForm();
+  const pi = zbPeriodFromDate(f.year, f.month, f.day);
+  document.getElementById("zibaiPeriodHint").textContent =
+    "本宅為 " + ZB_PERIOD_LABEL[pi.period] + "（" + pi.range + "，立春換運）";
+  let a = ((f.angle % 360) + 360) % 360;
+  const idx = zbMountainIndex(a);
+  const facing = ZB_MOUNTAINS[idx];
+  const sitting = ZB_MOUNTAINS[(idx + 12) % 24];
+  document.getElementById("zibaiMountainOut").textContent =
+    sitting.name + "山" + facing.name + "向（向" + facing.name + " " + a + "°）";
+}
+
+// 九宮版面：3×3 螢幕格對應位置代碼（給方位標籤貼齊金框）
+function zbPosClass(r, c) {
+  const map = { "1,1": "tl", "1,2": "tc", "1,3": "tr", "2,1": "ml", "2,2": "c", "2,3": "mr", "3,1": "bl", "3,2": "bc", "3,3": "br" };
+  return "zb-" + map[r + "," + c];
+}
+
+function buildZibaiPlateHtml(res) {
+  const pi = res.periodInfo;
+  const info = (pi ? ZB_PERIOD_LABEL[res.period] + "（" + pi.range + "）　" : ZB_PERIOD_LABEL[res.period] + "　") +
+    res.zuoXiang + "　面向 " + res.angle + "°";
+
+  const cells = res.cells.map((cell) => {
+    return '<div class="zibai-cell' + (cell.center ? " zibai-cell-center" : "") +
+      '" style="grid-row:' + cell.r + ";grid-column:" + cell.c + '">' +
+      '<span class="zibai-shan">' + cell.shan + "</span>" +
+      '<span class="zibai-xiang">' + cell.xiang + "</span>" +
+      '<span class="zibai-yun">' + cell.yun + "</span>" +
+      "</div>";
+  }).join("");
+
+  // 八方位標籤：貼在金框上（依向首朝上旋轉後的實際方位）
+  const labels = res.cells.filter((c) => !c.center).map((c) =>
+    '<span class="zibai-dir ' + zbPosClass(c.r, c.c) + '">' + c.dirName + "</span>").join("");
+
+  return '<div class="zibai-plate">' +
+    '<div class="zibai-info">' + info + "</div>" +
+    '<div class="zibai-facing-top">' +
+      '<span class="zibai-facing-name">' + res.facing.name + "</span>" +
+      '<span class="zibai-facing-deg">' + res.facingDegText + "</span>" +
+      '<span class="zibai-arrow">↑</span>' +
+    "</div>" +
+    '<div class="zibai-grid">' + cells + labels + "</div>" +
+    '<div class="zibai-sitting"><span class="zibai-sit-mark">⊥</span>' + res.zuoXiang + "</div>" +
+    "</div>";
+}
+
+function renderZibai(res) {
+  currentZibai = res;
+  document.getElementById("zibaiResult").innerHTML = buildZibaiPlateHtml(res);
+  document.getElementById("zibaiCard").style.display = "block";
+}
+
+function runZibai() {
+  const f = readZibaiForm();
+  const res = calculateZibai({ year: f.year, month: f.month, day: f.day, angle: f.angle });
+  renderZibai(res);
+}
+
+document.getElementById("zibaiRunBtn").addEventListener("click", runZibai);
+["zb-byear", "zb-bmonth", "zb-bday"].forEach((id) =>
+  document.getElementById(id).addEventListener("change", updateZibaiHints));
+document.getElementById("zb-angle").addEventListener("input", updateZibaiHints);
+
+document.getElementById("exportZibaiPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 10;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 紫白飛星風水盤", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    const sections = Array.from(document.querySelectorAll("#zibaiCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("紫白飛星風水盤.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {
