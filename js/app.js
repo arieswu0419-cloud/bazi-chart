@@ -2174,12 +2174,22 @@ const SANSHENG_GONGS = [
   { gong: 4, name: "巽宮" }, { gong: 9, name: "離宮" }, { gong: 2, name: "坤宮" }, { gong: 7, name: "兌宮" }
 ];
 let sanshengSelectedGong = 6; // 已選命盤宮位（模組狀態，重新起盤不重置）
+// 個人命宮手動輸入的 值符／九天（神）與 生門（門）個數（預設 0，模組狀態，重新起盤不重置）
+let sanshengPersonal = { zhifu: 0, jiutian: 0, shengmen: 0 };
 
 function buildSanshengPalacePicker() {
   const btns = SANSHENG_GONGS.map((o) =>
     '<button type="button" class="sansheng-palace-btn' + (o.gong === sanshengSelectedGong ? " active" : "") +
     '" data-gong="' + o.gong + '">' + o.name + "</button>").join("");
-  return '<div class="sansheng-palace-picker">' +
+  const numIn = (key) => '<input type="number" min="0" class="sansheng-personal-input" data-key="' + key +
+    '" value="' + (sanshengPersonal[key] || 0) + '">';
+  return '<div class="sansheng-personal">' +
+    '<span class="sansheng-personal-label">個人命宮</span>' +
+    '<span class="sansheng-personal-item">值符 ' + numIn("zhifu") + " 個</span>" +
+    '<span class="sansheng-personal-item">九天 ' + numIn("jiutian") + " 個</span>" +
+    '<span class="sansheng-personal-item">生門 ' + numIn("shengmen") + " 個</span>" +
+    "</div>" +
+    '<div class="sansheng-palace-picker">' +
     '<div class="sansheng-palace-label">請點選個人命盤宮位</div>' +
     '<div class="sansheng-palace-btns">' + btns + "</div>" +
     '<div class="sansheng-counts" id="qimenSanshengCounts"></div></div>';
@@ -2197,9 +2207,13 @@ function updateSanshengSelection() {
   const plates = d ? [d.nian, d.yue, d.ri, d.shi].filter(Boolean) : [];
   const cnt = (pred) => plates.filter((p) => p.gongs[sanshengSelectedGong] && pred(p.gongs[sanshengSelectedGong])).length;
   const gongName = (SANSHENG_GONGS.find((o) => o.gong === sanshengSelectedGong) || {}).name || "";
+  // 合計 ＝ 個人命宮輸入 ＋ 年月日時四盤
+  const zhifu = (sanshengPersonal.zhifu || 0) + cnt((c) => c.shen === "值符");
+  const jiutian = (sanshengPersonal.jiutian || 0) + cnt((c) => c.shen === "九天");
+  const shengmen = (sanshengPersonal.shengmen || 0) + cnt((c) => c.men === "生");
   const box = document.getElementById("qimenSanshengCounts");
-  if (box) box.innerHTML = "<b>" + gongName + "</b>（年月日時四盤合計）　值符 × " + cnt((c) => c.shen === "值符") +
-    "　九天 × " + cnt((c) => c.shen === "九天") + "　生門 × " + cnt((c) => c.men === "生");
+  if (box) box.innerHTML = "<b>" + gongName + "</b>（個人命盤＋年月日時四盤合計）　值符 × " + zhifu +
+    "　九天 × " + jiutian + "　生門 × " + shengmen;
 }
 
 function renderQimenSansheng(data) {
@@ -2223,6 +2237,14 @@ document.getElementById("qimenSanshengInfoPanel").addEventListener("click", func
   const btn = e.target.closest(".sansheng-palace-btn");
   if (!btn) return;
   sanshengSelectedGong = Number(btn.dataset.gong);
+  updateSanshengSelection();
+});
+// 個人命宮輸入：改值即更新合計（不重建整塊，才不會讓輸入框失焦）
+document.getElementById("qimenSanshengInfoPanel").addEventListener("input", function (e) {
+  const inp = e.target.closest(".sansheng-personal-input");
+  if (!inp) return;
+  const v = parseInt(inp.value, 10);
+  sanshengPersonal[inp.dataset.key] = (isNaN(v) || v < 0) ? 0 : v;
   updateSanshengSelection();
 });
 
