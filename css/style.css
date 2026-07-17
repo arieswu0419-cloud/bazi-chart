@@ -1116,6 +1116,10 @@ footer {
   background: #ccc;
   display: flex; align-items: center; justify-content: center;
 }
+/* 奇門紅盤：宮位數字（含灰/白底圓）改放「左中」置中（比照復科紅盤），遁甲頁維持右中不動 */
+.qimen-hongpan .qimen-gong-number { right: auto; left: 14px; }
+/* 奇門紅盤：外環地支旁的十二長生字——比地支縮小一號、不加粗（地支是 13px/700） */
+.qimen-hongpan .qc-changsheng { font-size: 11px; font-weight: 400; }
 .qimen-bottom-info { position: absolute; left: 0; right: 0; bottom: 6px; }
 .qimen-men-circle {
   width: 60px; height: 60px; border-radius: 50%;
@@ -1184,6 +1188,7 @@ footer {
   .qimen-cell-bottom { font-size: 17px; }
   .qimen-ming-circle { font-size: 12px; }
   .qimen-gong-number { font-size: 17px; right: 10px; }
+  .qimen-hongpan .qimen-gong-number { left: 10px; }
 }
 .admin-status-btn:disabled { opacity: 0.6; cursor: default; }
 
