@@ -483,7 +483,11 @@ function buildDayun(yearGan, yearZhi, gender) {
 //    2026-11-10 04:30（xingDelta=0，全盤伏吟）不該有反吟，2026-02-11 18:31（xingDelta=4，
 //    確認九星反吟成立）反吟裡也要有天干反吟──兩筆資料都指向「天干反吟＝xingDelta===4」這個更簡單、
 //    更一致的判斷方式，逐宮掃描的舊寫法反而漏判了第二筆資料，所以拿掉了。
-const TIANFU_SHI_MAP = { 甲: "甲戌", 己: "甲戌", 乙: "甲申", 庚: "甲申", 丙: "甲午", 辛: "甲午", 丁: "甲辰", 壬: "甲辰", 戊: "甲寅", 癸: "甲寅" };
+// 「天輔時」＝天輔星（天盤）落在「時支對應宮」（地支固定宮位表 ZHI_TO_GONG_QM）。
+// 舊版「日干→特定甲時」對照表（甲己→甲戌、乙庚→甲申、丙辛→甲午、丁壬→甲辰、戊癸→甲寅）
+// 被官網 /qimen 時盤三筆樣本推翻改寫：07-04 己卯日甲戌時、07-19 甲午日甲戌時完全符合舊表
+// 卻不顯示；08-11 丁巳日甲辰時顯示。改用「星落宮」定義後三筆全中——
+// 08-11 伏吟盤天輔在巽4＝辰宮4 ✓；07-04／07-19 天輔在巽4≠戌宮6 ✓✓。
 // 玉女守門時：原本用「日干對應固定時柱」查表判斷，已依使用者提供的完整演算法改寫（見下方
 // isYuNuShouMen），這張查表已不再使用，刪除。
 const WUBUYU_SHI_MAP = { 甲: ["庚午"], 乙: ["辛巳"], 丙: ["壬辰"], 丁: ["癸卯"], 戊: ["甲寅"], 己: ["乙丑"], 庚: ["丙子", "丙戌"], 辛: ["丁酉"], 壬: ["戊申"], 癸: ["己未"] };
@@ -519,7 +523,7 @@ function isYuNuShouMen(diPan, menTargetGong) {
 // 實際可能觸發的時柱只有六柱：丙戌、丁丑、戊戌、己丑、壬辰、癸未。
 const SHIGAN_MU_ZHI = { 甲: "未", 乙: "戌", 丙: "戌", 丁: "丑", 戊: "戌", 己: "丑", 庚: "丑", 辛: "辰", 壬: "辰", 癸: "未" };
 
-function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, diPan, xingTargetGong, menTargetGong }) {
+function detectQimenPatterns({ gongs, xingDelta, menDelta, dayGan, timeGan, timeZhi, diPan, xingTargetGong, menTargetGong }) {
   const labels = [];
   if (xingDelta === 0) labels.push("九星伏吟");
   if (menDelta === 0) labels.push("八門伏吟");
@@ -531,8 +535,12 @@ function detectQimenPatterns({ xingDelta, menDelta, dayGan, timeGan, timeZhi, di
   // 時干入墓：時柱自坐墓庫（見上方 SHIGAN_MU_ZHI 註解），純看時柱干支
   if (SHIGAN_MU_ZHI[timeGan] === timeZhi) labels.push("時干入墓");
 
+  // 天輔時：天輔星落時支宮（規則出處見上方 ZHI_TO_GONG_QM 註解區）
+  let tianFuGong = null;
+  Object.keys(gongs || {}).forEach((g) => { if (gongs[g] && gongs[g].xing === "天輔") tianFuGong = Number(g); });
+  if (tianFuGong && ZHI_TO_GONG_QM[timeZhi] === tianFuGong) labels.push("天輔時");
+
   const timeGanZhi = timeGan + timeZhi;
-  if (TIANFU_SHI_MAP[dayGan] === timeGanZhi) labels.push("天輔時");
   if (isYuNuShouMen(diPan, menTargetGong)) labels.push("玉女時");
   if ((WUBUYU_SHI_MAP[dayGan] || []).includes(timeGanZhi)) labels.push("五不遇時");
   if (TIANWANG_SHI_MAP[dayGan] === timeGanZhi) labels.push("天網四張");
