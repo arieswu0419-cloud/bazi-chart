@@ -30,11 +30,14 @@
  * 朔日的「大月−1／小月+0」跳動其實是公式跨月界的自然結果。45 筆樣本（2026-07~2027-09，
  * 含跨大雪、跨冬至、跨農曆年）全部代入無一例外。
  *
+ * 年支換年點＝立春（精確到交節時刻，同八字年柱）——用 2027-02-04/05/06 三張連續盤定案：
+ *   02-05 早上（立春已過、正月初一未到）實測陽9，只有「立春換年」（未8+12+29+5=54≡9）吻合，
+ *   「正月初一換年」（午7→8）不合；02-04 早上（立春當天、交節時刻前）仍用午年 → 精確時刻切換。
+ *   注意混合制：年支隨立春，但月、日仍用「農曆」數（02-05 用十二月29，非寅月）。
+ *
  * 未有樣本驗證的邊角（採合理預設，遇不符再校）：
  *   1. 閏月：取本月月數（閏五月＝5）。
- *   2. 年支換年點：採正月初一（01-16 前＝午年、02-16 起＝未年皆吻合；立春 02-04 與
- *      正月初一 02-06 之間無樣本，無法分辨「立春換年」說，先採農曆年）。
- *   3. 晚子時（23 時起）：日柱進位隔日（同復科），農曆日／時支取當下值。
+ *   2. 晚子時（23 時起）：日柱進位隔日（同復科），農曆日／時支取當下值。
  */
 
 const HP_GAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
@@ -92,9 +95,10 @@ function hpJiaZi60(gan, zhi) {
 const HP_YANG_JIEQI = ["冬至", "小寒", "大寒", "立春", "雨水", "驚蟄", "春分", "清明", "穀雨", "立夏", "小滿", "芒種"];
 const HP_JIEQI_S2T = { 惊蛰: "驚蟄", 谷雨: "穀雨", 小满: "小滿", 芒种: "芒種", 处暑: "處暑" };
 
-// 定局公式（45 筆復科時盤實測全數吻合，見檔頭）：
+// 定局公式（48 筆復科時盤實測全數吻合，見檔頭）：
 // 局數 ＝（年支序 ＋ 農曆月 ＋ 農曆日 ＋ 時支序）mod 9，0 作 9；支序子1…亥12。
-// lunarMonth 傳 lunar-javascript 的 getMonth()（閏月為負值，取絕對值）；yearZhi 用農曆年支。
+// lunarMonth 傳 lunar-javascript 的 getMonth()（閏月為負值，取絕對值）；
+// yearZhi 用「八字年柱地支」（立春精確時刻換年，2027-02-05 樣本定案），月、日仍用農曆數。
 function hpDetermineJu(lunarMonth, lunarDay, yearZhi, timeZhi) {
   const n = (hpZhiIdx(yearZhi) + 1) + Math.abs(lunarMonth) + lunarDay + (hpZhiIdx(timeZhi) + 1);
   return ((n - 1) % 9 + 9) % 9 + 1;
@@ -215,8 +219,8 @@ function calculateQimenHongpan({ year, month, day, hour, minute }) {
   const jieQiName = HP_JIEQI_S2T[lunar.getPrevJieQi(false).getName()] || lunar.getPrevJieQi(false).getName();
   const isYang = HP_YANG_JIEQI.includes(jieQiName);
 
-  // 定局：小奇門公式（年支＋農曆月＋農曆日＋時支）；年支用農曆年（正月初一換年）
-  const ju = hpDetermineJu(lunar.getMonth(), lunar.getDay(), lunar.getYearZhi(), timeZhi);
+  // 定局：小奇門公式（年支＋農曆月＋農曆日＋時支）；年支用八字年柱（立春精確換年），月日用農曆
+  const ju = hpDetermineJu(lunar.getMonth(), lunar.getDay(), ec.getYearZhi(), timeZhi);
   const pan = hpBuildPan({ isYang, ju, dayGan, dayZhi, timeGan, timeZhi });
 
   const kongWang = hpKongWang(timeGan, timeZhi);
