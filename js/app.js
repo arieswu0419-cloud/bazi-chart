@@ -1740,9 +1740,14 @@ const JIU_DUN_RULES = [
   { name: "龍遁", tianGan: "乙", mens: ["開", "休", "生"], gong: 1 }, // 乙+三吉門(開/休/生)+坎宮1（神不限：官網見九天/白虎/玄武；坎宮乙落杜門是鬼遁不是龍遁），驗證5筆
   { name: "人遁", tianGan: "丁", men: "休", shen: "太陰" }, // 丁+休門+太陰（不限宮：官網見乾6/巽4），驗證2筆
   { name: "鬼遁", tianGan: "乙", men: "杜", shen: "九地" }, // 乙+杜門+九地（不限宮：官網見坎1/巽4/艮8，地盤干不限），驗證5筆
-  // 以下尚未定案／未驗證，先停用以免誤標：
-  // { name: "地遁", tianGan: "乙", men: "開", diGan: "己" }, // 非單純地盤己：乙+開+dg己在坎1有地遁、巽4沒有，宮/神條件未定，待多筆重推
-  // { name: "虎遁", tianGan: "乙", men: "開", gong: 8 }
+  // 地遁＝乙＋開門＋地盤己（古法「開門六乙合六己」），但排除巽4宮——官網唯二樣本：
+  // 坎1（乙/己+開）有地遁 ✓、巽4（乙/己+開+九地）只有風遁沒地遁 ✗，先用「排除巽4」涵蓋
+  // 兩筆已知事實重新啟用；真正的細條件（宮位或八神）等再抓到樣本後校正
+  { name: "地遁", tianGan: "乙", men: "開", diGan: "己", notGong: 4 },
+  // 虎遁＝乙＋三吉門＋艮宮8：官網尚無實例，依站內已驗證的宮位遁家族對稱性補上——
+  // 龍遁＝乙＋三吉門＋坎1（5筆驗證）、風遁＝乙＋三吉門＋巽4（3筆驗證），古法龍坎／風巽／虎艮
+  // 同一組，門的條件比照家族用三吉門（非舊註解猜的只限開門）
+  { name: "虎遁", tianGan: "乙", mens: ["開", "休", "生"], gong: 8 }
 ];
 
 // 奇門遁甲獨立頁面的右下角格局提示：入墓＋門迫／宮迫（跟奇門命盤報告同一套判斷，直接沿用
@@ -1783,6 +1788,7 @@ function qimenDunjiaCornerWords(data) {
       if (rule.shens && !rule.shens.includes(c.shen)) return;
       if (rule.diGan && c.diGan !== rule.diGan) return;
       if (rule.gong && g !== rule.gong) return;
+      if (rule.notGong && g === rule.notGong) return; // 地遁排除巽4（見規則表註解）
       words.push({ text: rule.name, type: "jiudun" });
     });
     return words;
