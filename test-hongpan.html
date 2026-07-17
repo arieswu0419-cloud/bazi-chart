@@ -128,10 +128,28 @@ HEX_CASES.forEach(([y, m, d, hh, mm, expected]) => {
     else hexFails.push(y + "-" + m + "-" + d + " " + g + "宮:" + got + "(應為" + expected[g] + ")");
   });
 });
+// ---- 十二長生驗證（復科截圖實讀：丙/壬 陽干順行、乙/癸 陰干逆行 各 12 支全序列）----
+const CS_CASES = {
+  丙: "寅長卯沐辰冠巳臨午帝未衰申病酉死戌墓亥絕子胎丑養",
+  壬: "申長酉沐戌冠亥臨子帝丑衰寅病卯死辰墓巳絕午胎未養",
+  乙: "午長巳沐辰冠卯臨寅帝丑衰子病亥死戌墓酉絕申胎未養",
+  癸: "卯長寅沐丑冠子臨亥帝戌衰酉病申死未墓午絕巳胎辰養"
+};
+let csPass = 0, csTotal = 0, csFails = [];
+Object.keys(CS_CASES).forEach((gan) => {
+  const map = hpChangShengMap(gan);
+  for (let i = 0; i < 24; i += 2) {
+    csTotal++;
+    const zhi = CS_CASES[gan][i], exp = CS_CASES[gan][i + 1];
+    if (map[zhi] === exp) csPass++;
+    else csFails.push(gan + ":" + zhi + map[zhi] + "(應為" + exp + ")");
+  }
+});
 document.getElementById("summary").textContent =
   "結果：" + pass + " / " + CASES.length + " 全欄通過" + (fails.length ? "；失敗案例 #" + fails.join(", #") : " ✅") +
-  "｜64卦：" + hexPass + " / " + hexTotal + (hexFails.length ? "；" + hexFails.join("、") : " ✅");
-window.__testSummary = { pass, total: CASES.length, fails, hexPass, hexTotal, hexFails };
+  "｜64卦：" + hexPass + " / " + hexTotal + (hexFails.length ? "；" + hexFails.join("、") : " ✅") +
+  "｜長生：" + csPass + " / " + csTotal + (csFails.length ? "；" + csFails.join("、") : " ✅");
+window.__testSummary = { pass, total: CASES.length, fails, hexPass, hexTotal, hexFails, csPass, csTotal, csFails };
 </script>
 </body>
 </html>

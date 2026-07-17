@@ -1205,11 +1205,14 @@ function buildQimenInfoTable(data, showName) {
   return html;
 }
 
-// 奇門紅盤專用資訊表：比照 buildQimenInfoTable，但右側「天乙」欄取消，改成 符首／值符／值使／長生，
-// 長生為十二長生下拉選單（使用者指定的手動選單，非自動計算，預設「長生」）
-const CHANG_SHENG_12 = ["長生", "沐浴", "冠帶", "臨官", "帝旺", "衰", "病", "死", "墓", "絕", "胎", "養"];
+// 奇門紅盤專用資訊表：比照 buildQimenInfoTable，但右側「天乙」欄取消，改成 符首／值符／值使／長生。
+// 長生下拉＝十天干（比照復科，預設「日干」），選擇後外環 12 地支旁的十二長生字連動更新
+// （見 renderQimenHongpan 的 change 監聽；演算法 hpChangShengMap 在紅盤引擎）
+const HP_CS_GAN_OPTIONS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
 function buildQimenHongpanInfoTable(data) {
-  const csOptions = CHANG_SHENG_12.map((s) => '<option value="' + s + '">' + s + "</option>").join("");
+  const dayGan = data.siZhu[1].gan.char;
+  const csOptions = HP_CS_GAN_OPTIONS.map((g) =>
+    '<option value="' + g + '"' + (g === dayGan ? " selected" : "") + ">" + g + "</option>").join("");
   const csSelect = '<select class="hp-changsheng-select" id="hp-changsheng">' + csOptions + "</select>";
   const rows = [
     ["陽曆", data.solarText, "符首", data.xunShou.xun],
@@ -1626,7 +1629,9 @@ function buildQimenGridHtml(data, bottomLabelFn, centerLabel, cornerWordsFn, day
 
 // hexByGong：只有奇門遁甲頁面會傳（命盤頁傳 undefined），傳入時在 8 個方位格加顯示該宮的 64 卦
 // （上下兩個卦象符號＋卦名，見 computeQimenDunjiaHexagrams）
-function buildQimenCompassHtml(data, gridHtml, hexByGong) {
+// changShengByZhi：只有奇門紅盤會傳（地支→十二長生單字對照，如 寅→長），傳入時在每個地支旁
+// 顯示該字（同一個 qc-zhi-item 容器內，字級跟地支一致），並帶 data-zhi 供右上「長生」下拉連動改字
+function buildQimenCompassHtml(data, gridHtml, hexByGong, changShengByZhi) {
   let compassHtml = "";
   // 十二地支羅盤的連續橘色外框：先鋪一層跨滿整個地支帶（含中間九宮格區域）的金色底＋橘框，
   // 之後畫的九宮格會蓋住中間，只留下地支帶那一圈是連續的，不會在地支跟地支中間露出空隙
@@ -1680,10 +1685,14 @@ function buildQimenCompassHtml(data, gridHtml, hexByGong) {
     let badges = "";
     if (data.kongWang.includes(zhi)) badges += '<span class="qc-badge qc-badge-kong">空</span>';
     if (data.yiMa === zhi) badges += '<span class="qc-badge qc-badge-yima">馬</span>';
+    // 十二長生：跟在地支正後方（地支→長生→空/馬圓圈的順序，比照復科「巳臨空」排法）
+    const csHtml = changShengByZhi
+      ? '<span class="qc-changsheng" data-zhi="' + zhi + '">' + (changShengByZhi[zhi] || "") + "</span>"
+      : "";
     // 左右兩側（col 2／6）欄位很窄，空亡／驛馬圓圈要換行放在地支下方，不能像上下兩側那樣放在右邊（會被擠出格子）
     const isNarrowCol = col === 2 || col === 6;
     compassHtml += '<div class="qc-zhi-ring" style="grid-row:' + row + ";grid-column:" + col + '">' +
-      '<span class="qc-zhi-item' + (isNarrowCol ? " qc-zhi-item-stack" : "") + '"><span' + (vertical ? ' class="qc-zhi-v"' : "") + ">" + zhi + "</span>" + badges + "</span></div>";
+      '<span class="qc-zhi-item' + (isNarrowCol ? " qc-zhi-item-stack" : "") + '"><span' + (vertical ? ' class="qc-zhi-v"' : "") + ">" + zhi + "</span>" + csHtml + badges + "</span></div>";
   });
   compassHtml += '<div class="qimen-grid" id="qimenGrid">' + gridHtml + "</div>";
   return compassHtml;
@@ -2134,9 +2143,18 @@ function renderQimenHongpan(data) {
   document.getElementById("qimenHongpanPillars").innerHTML = buildQimenPillarsTable(data.siZhu);
   document.getElementById("qimenHongpanInfoPanel").innerHTML = buildQimenHongpanInfoTable(data);
   // 角字（門迫／宮迫／入墓）與外環 64 卦都由紅盤引擎逐宮算好直接取用；
-  // 64 卦顯示位置／字級／直排橫排沿用遁甲頁同一套 buildQimenCompassHtml（傳第三參數即啟用）
+  // 64 卦顯示位置／字級／直排橫排沿用遁甲頁同一套 buildQimenCompassHtml（傳第三參數即啟用）；
+  // 第四參數＝十二長生對照（預設用日干起），外環地支旁顯示長生字
   const gridHtml = buildQimenGridHtml(data, qimenHongpanBottomLabel, "時", (c) => c.cornerWords || [], true, computeQimenDunjiaGongNumbers(data));
-  document.getElementById("qimenHongpanCompass").innerHTML = buildQimenCompassHtml(data, gridHtml, data.hexagrams);
+  document.getElementById("qimenHongpanCompass").innerHTML =
+    buildQimenCompassHtml(data, gridHtml, data.hexagrams, hpChangShengMap(data.siZhu[1].gan.char));
+  // 右上「長生」下拉連動：改選天干時，外環 12 個長生字就地改字（select 每次 render 重建，監聽跟著掛回）
+  document.getElementById("hp-changsheng").addEventListener("change", function () {
+    const map = hpChangShengMap(this.value);
+    document.querySelectorAll("#qimenHongpanCompass .qc-changsheng").forEach((el) => {
+      el.textContent = map[el.dataset.zhi] || "";
+    });
+  });
   document.getElementById("qimenHongpanExplain").style.display = "none";
   document.getElementById("qimenHongpanExplain").innerHTML = "";
 }
