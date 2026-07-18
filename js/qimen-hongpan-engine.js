@@ -266,6 +266,28 @@ function calculateQimenHongpan({ year, month, day, hour, minute }) {
   const dayBadgeGong = hpTianPanGongOf(dayGan, dayZhi, pan.tianPanGan, pan.tianPanXing);
   const timeBadgeGong = hpTianPanGongOf(timeGan, timeZhi, pan.tianPanGan, pan.tianPanXing);
 
+  // 宮位右中的灰色天干＝「隱干」（官網 product.meta-academy.biz/yidao 原始碼演算法，
+  // 經 2026-07-19 01:37 官網截圖 9 宮全數驗證吻合、含坤位經過時的雙隱干；取代舊版
+  // 「本門宮天盤干」反推規則——該舊規則在此截圖 8 宮全錯）：
+  //   環序＝轉盤順時針 [1,8,3,4,9,2,7,6]（坎艮震巽離坤兌乾）；
+  //   起點A＝值使門所在宮；起點B＝「地盤干＝時干」之宮（時干為甲→用旬首儀；落中宮視為坤2）；
+  //   沿環同步走 8 步：A位宮的隱干＝B位宮的地盤干；B位為坤2時（中宮寄坤），
+  //   該A位宮額外帶第二隱干＝中宮地盤干。
+  const YG_RING = [1, 8, 3, 4, 9, 2, 7, 6];
+  const effTimeGan = timeGan === "甲" ? pan.xunShou.yi : timeGan;
+  let ygB = null;
+  for (let g = 1; g <= 9; g++) { if (pan.diPan[g] === effTimeGan) { ygB = g; break; } }
+  if (ygB === 5) ygB = 2;
+  const yinGans = {};
+  if (ygB !== null) {
+    const ai = YG_RING.indexOf(pan.menTargetGong), bi = YG_RING.indexOf(ygB);
+    for (let s = 0; s < 8; s++) {
+      const tg = YG_RING[(ai + s) % 8], sg = YG_RING[(bi + s) % 8];
+      yinGans[tg] = [pan.diPan[sg]];
+      if (sg === 2) yinGans[tg].push(pan.diPan[5]);
+    }
+  }
+
   const gongs = {};
   [1, 2, 3, 4, 6, 7, 8, 9].forEach((g) => {
     const men = pan.renPanMen[g];
@@ -277,12 +299,7 @@ function calculateQimenHongpan({ year, month, day, hour, minute }) {
     if (menWx && HP_WX_KE[menWx] === gongWx) cornerWords.push({ text: "門迫", type: "menpo" });
     if (menWx && HP_WX_KE[gongWx] === menWx) cornerWords.push({ text: "宮迫", type: "gongpo" });
     if ((HP_RUMU[gua] || []).includes(tianGan)) cornerWords.push({ text: tianGan + "入墓", type: "rumu" });
-    // 宮位右中的灰色天干（從 2026-07-17 酉時復科截圖反推，8 宮全中）：
-    // ＝該宮八門「本門宮」位置上的天盤干（門景→9宮天盤、門休→1宮天盤…）；
-    // 本門宮若正是天芮落宮，中宮寄干一併帶出（實證：坎1生門→艮8天盤丙＋寄干壬＝「丙壬」）
-    const menHome = HP_MEN_HOME[men];
-    const grayGans = [pan.tianPanGan[menHome]];
-    if (pan.tianPanXing[menHome] === "天芮") grayGans.push(pan.diPan[5]);
+    const grayGans = yinGans[g] || [];
     gongs[g] = {
       gong: g,
       gua,
