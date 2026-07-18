@@ -492,6 +492,59 @@ document.getElementById("exportPdfBtn").addEventListener("click", async function
   }
 });
 
+// 建立命書專用列印版面（固定 642px＝A4 內容寬 170mm@96dpi，內文 14pt 細明體；
+// 四柱／表格填滿頁寬，大運表字級縮小以容納）。回傳 {host, sections}，用畢移除 host。
+function buildMingshuPrint() {
+  const old = document.getElementById("mingshu-print");
+  if (old) old.remove();
+  const host = document.createElement("div");
+  host.id = "mingshu-print";
+  host.style.cssText = "position:fixed;left:-99999px;top:0;width:642px;background:#fff;";
+  const st = document.createElement("style");
+  st.textContent =
+    '#mingshu-print,#mingshu-print *{font-family:"PMingLiU","MingLiU","新細明體","細明體",serif !important;box-sizing:border-box;}' +
+    '#mingshu-print .ms-body,#mingshu-print .ms-body *{font-size:14pt !important;line-height:1.75;color:#222;}' +
+    '#mingshu-print .ms-body h3,#mingshu-print .ms-body h4,#mingshu-print .ms-body b,#mingshu-print .ms-body strong{font-weight:700;}' +
+    '#mingshu-print .ms-pillars{width:642px;padding:4px 0;}' +
+    '#mingshu-print .ms-pillars *{font-size:14pt !important;}' +
+    '#mingshu-print .ms-pillars .pillars,#mingshu-print .ms-pillars table{width:642px !important;}' +
+    '#mingshu-print .ms-tbl{width:642px;}' +
+    '#mingshu-print .ms-tbl .strip-label{font-size:12pt !important;font-weight:700;margin:2px 0 4px;}' +
+    '#mingshu-print .ms-tbl table{width:642px !important;border-collapse:collapse;table-layout:fixed;}' +
+    '#mingshu-print .ms-tbl td,#mingshu-print .ms-tbl th{font-size:9pt !important;padding:2px 2px;line-height:1.35;word-break:break-word;border:1px solid #ddd;}';
+  host.appendChild(st);
+  const block = (cls, srcEl) => {
+    if (!srcEl) return null;
+    const d = document.createElement("div");
+    d.className = "ms-block " + cls;
+    d.appendChild(srcEl.cloneNode(true));
+    host.appendChild(d);
+    return d;
+  };
+  const sections = [];
+  // 八字命卷
+  const s1 = [];
+  [["ms-body", document.getElementById("infoPanel")],
+   ["ms-pillars", document.querySelector("#resultCard .pillars-wrap")],
+   ["ms-body", document.getElementById("noteTable")],
+   ["ms-body", document.querySelector("#resultCard .summary-grid")]].forEach((p) => { const b = block(p[0], p[1]); if (b) s1.push(b); });
+  sections.push({ title: "八字命卷", blocks: s1 });
+  // 大運與流年（整個 .dayun-block，含標籤與表格）
+  const s2 = [];
+  document.querySelectorAll("#dayunCard .dayun-block").forEach((el) => { const b = block("ms-tbl", el); if (b) s2.push(b); });
+  sections.push({ title: "大運與流年", blocks: s2 });
+  // 日主定策・陰陽性格・九運行業趨勢
+  const s3 = [];
+  document.querySelectorAll("#dayunStrategyPanel > *").forEach((el) => { const b = block("ms-body", el); if (b) s3.push(b); });
+  if (s3.length) sections.push({ title: "日主定策・陰陽性格・九運行業趨勢", blocks: s3 });
+  // 神煞（若已產生）
+  const s4 = [];
+  document.querySelectorAll("#shenshaExplainPanel > *").forEach((el) => { const b = block("ms-body", el); if (b) s4.push(b); });
+  if (s4.length) sections.push({ title: "神煞解釋", blocks: s4 });
+  document.body.appendChild(host);
+  return { host, sections };
+}
+
 // ===== 製作個人命書（PDF）=====
 // 參考教材《個人命書》格式：封面（命書／以你為名的人生／姓名）＋八字命卷＋大運流年＋
 // 日主定策等敘述＋神煞。上下左右留邊 20mm（2cm），逐區塊分頁不切到文字。
@@ -499,6 +552,7 @@ document.getElementById("makeMingshuBtn").addEventListener("click", async functi
   if (!currentChart) { alert("請先產生八字命卷報告。"); return; }
   const btn = this, orig = btn.textContent;
   btn.disabled = true; btn.textContent = "製作中...";
+  let printBuilt = null;
   try {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "mm", "a4", true);
@@ -548,31 +602,23 @@ document.getElementById("makeMingshuBtn").addEventListener("click", async functi
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", (ctx.pageWidth - w2) / 2, ctx.y, w2, h2);
       ctx.y += h2 + 5;
     }
-    const startSection = async (titleText, sections) => {
+    // 以固定寬列印版面（14pt 細明體）逐章節分頁
+    printBuilt = buildMingshuPrint();
+    for (const sec of printBuilt.sections) {
       pdf.addPage();
       ctx.y = ctx.margin;
-      const th = textToImage(titleText, 20, "#b8860b");
+      const th = textToImage(sec.title, 20, "#b8860b");
       centerImg(th, ctx.margin);
       ctx.y = ctx.margin + th.heightMM + 6;
-      for (const el of (sections || [])) await addSmart(el);
-    };
-
-    // ---- 八字命卷 ----
-    await startSection("八字命卷", Array.from(document.querySelectorAll("#resultCard > *:not(.card-head)")));
-    // ---- 大運與流年 ----
-    await startSection("大運與流年", Array.from(document.querySelectorAll("#dayunCard .dayun-block")));
-    // ---- 日主定策・陰陽性格・九運行業趨勢 ----
-    const strat = Array.from(document.querySelectorAll("#dayunStrategyPanel > *"));
-    if (strat.length) await startSection("日主定策・陰陽性格・九運行業趨勢", strat);
-    // ---- 神煞解釋（若已點選產生）----
-    const shensha = Array.from(document.querySelectorAll("#shenshaExplainPanel > *"));
-    if (shensha.length) await startSection("神煞解釋", shensha);
+      for (const el of sec.blocks) await addSmart(el);
+    }
 
     addPageNumbers(pdf, pageWidth, pageHeight);
     pdf.save(currentChart.name + "-個人命書.pdf");
   } catch (err) {
     alert("製作失敗：" + err.message);
   } finally {
+    if (printBuilt && printBuilt.host) printBuilt.host.remove();
     btn.disabled = false; btn.textContent = orig;
   }
 });
