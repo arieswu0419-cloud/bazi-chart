@@ -3632,10 +3632,35 @@ function fillCuiwangSelects() {
   ["cw-fy", "cw-ty"].forEach((id) => document.getElementById(id).innerHTML = yH);
   ["cw-fm", "cw-tm"].forEach((id) => document.getElementById(id).innerHTML = mH);
   ["cw-fd", "cw-td"].forEach((id) => document.getElementById(id).innerHTML = dH);
-  // 預設：今天 ~ 七天後
-  const to = new Date(now.getTime() + 7 * 86400000);
+  // 預設：今天起算 62 天（今天 ~ 61 天後）
+  const to = new Date(now.getTime() + 61 * 86400000);
   document.getElementById("cw-fy").value = thisY; document.getElementById("cw-fm").value = now.getMonth() + 1; document.getElementById("cw-fd").value = now.getDate();
   document.getElementById("cw-ty").value = to.getFullYear(); document.getElementById("cw-tm").value = to.getMonth() + 1; document.getElementById("cw-td").value = to.getDate();
+  // 動態檢查：任何下拉變動即驗證區間是否 ≤ 62 天
+  ["cw-fy", "cw-fm", "cw-fd", "cw-ty", "cw-tm", "cw-td"].forEach((id) =>
+    document.getElementById(id).addEventListener("change", cwValidateRange));
+  cwValidateRange();
+}
+
+// 區間天數（含首尾）；回傳 null 表示起始晚於結束
+function cwRangeDays() {
+  const fy = +document.getElementById("cw-fy").value, fm = +document.getElementById("cw-fm").value, fd = +document.getElementById("cw-fd").value;
+  const ty = +document.getElementById("cw-ty").value, tm = +document.getElementById("cw-tm").value, td = +document.getElementById("cw-td").value;
+  const from = new Date(fy, fm - 1, fd), to = new Date(ty, tm - 1, td);
+  if (from > to) return null;
+  return Math.round((to - from) / 86400000) + 1;
+}
+
+function cwValidateRange() {
+  const hint = document.getElementById("cuiwangHint");
+  const days = cwRangeDays();
+  if (days === null) {
+    hint.textContent = "起始日期不可晚於結束日期"; hint.style.color = "#c00";
+  } else if (days > 62) {
+    hint.textContent = "區間 " + days + " 天，超過上限 62 天，請縮短"; hint.style.color = "#c00";
+  } else {
+    hint.textContent = "最多 62 天"; hint.style.color = "";
+  }
 }
 
 function cwScoreClass(sc) {
@@ -3645,45 +3670,38 @@ function cwScoreClass(sc) {
   return "cw-s7";
 }
 
+// 單一總表：只列有催旺格（分數≥7，且宮位無四凶——引擎已剔除）的時辰，
+// 欄位＝年月日時辰／沖生肖／催旺方位／三奇／分數／佈局物品
 function renderCuiwang(res) {
   const box = document.getElementById("cuiwangResult");
-  const html = res.days.map((day) => {
-    const rows = day.hours.map((h) => {
-      const ju = h.juInfo ? (h.juInfo.isYang ? "陽" : "陰") + h.juInfo.ju + "局" : "";
-      if (!h.best) {
-        return '<tr class="cw-none"><td>' + h.shi + '<span class="cw-range">' + h.range + "</span></td>" +
-          '<td class="cw-ju">' + ju + "</td><td>—</td><td>—</td><td>—</td><td class=\"cw-score-cell\">—</td><td>—</td></tr>";
-      }
+  const rows = [];
+  res.days.forEach((day) => {
+    day.hours.forEach((h) => {
+      if (!h.best || h.best.score < 7) return;
       const b = h.best;
-      return '<tr><td>' + h.shi + '<span class="cw-range">' + h.range + "</span></td>" +
-        '<td class="cw-ju">' + ju + "</td>" +
+      rows.push('<tr><td>' + day.date + "　" + h.shi + '<span class="cw-range">' + h.range + "</span></td>" +
+        '<td class="cw-chong">' + day.chongZodiac + "</td>" +
         '<td class="cw-dir">' + b.dir + "</td>" +
         '<td>' + b.ganName + "</td>" +
-        '<td class="cw-geju"><b>' + b.geju + "</b><span class=\"cw-detail\">" + b.xing + "・" + b.men + "門・" + b.shen + "</span></td>" +
         '<td class="cw-score-cell"><span class="cw-score ' + cwScoreClass(b.score) + '">' + b.score + "</span></td>" +
-        '<td class="cw-wupin">' + b.wupin + "</td></tr>";
-    }).join("");
-    // 當日最佳
-    const scored = day.hours.filter((h) => h.best);
-    const top = scored.length ? Math.max.apply(null, scored.map((h) => h.best.score)) : 0;
-    const topShis = scored.filter((h) => h.best.score === top).map((h) => h.shi).join("、");
-    return '<div class="cw-day">' +
-      '<div class="cw-day-head"><b>' + day.date + "</b>　日柱 " + day.dayGZ +
-      "　<span class=\"cw-chong\">沖" + day.chongZodiac + "（屬" + day.chongZodiac + "者不宜佈局）</span>" +
-      (top ? '<span class="cw-day-top">當日最佳 ' + top + " 分：" + topShis + "</span>" : '<span class="cw-day-top cw-none-top">當日無催旺格</span>') +
-      "</div>" +
-      '<div class="cw-table-wrap"><table class="cw-table"><thead><tr>' +
-      "<th>時辰</th><th>局</th><th>催旺方位</th><th>三奇</th><th>格局（星・門・神）</th><th>分數</th><th>佈局物品</th>" +
-      "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
-  }).join("");
-  box.innerHTML = (res.truncated ? '<div class="cw-warn">※ 區間超過 62 天，僅顯示前 62 天。</div>' : "") + html;
+        '<td class="cw-wupin">' + b.wupin + "</td></tr>");
+    });
+  });
+  const table = rows.length
+    ? '<div class="cw-table-wrap"><table class="cw-table"><thead><tr>' +
+      "<th>年月日時辰</th><th>沖生肖</th><th>催旺方位</th><th>三奇</th><th>分數</th><th>佈局物品</th>" +
+      "</tr></thead><tbody>" + rows.join("") + "</tbody></table></div>"
+    : '<div class="cw-warn">此區間內無可催旺的日期時辰。</div>';
+  box.innerHTML = (res.truncated ? '<div class="cw-warn">※ 區間超過 62 天，僅顯示前 62 天。</div>' : "") + table;
   document.getElementById("cuiwangCard").style.display = "block";
 }
 
 function runCuiwang() {
   const fy = +document.getElementById("cw-fy").value, fm = +document.getElementById("cw-fm").value, fd = +document.getElementById("cw-fd").value;
   const ty = +document.getElementById("cw-ty").value, tm = +document.getElementById("cw-tm").value, td = +document.getElementById("cw-td").value;
-  if (new Date(fy, fm - 1, fd) > new Date(ty, tm - 1, td)) { alert("起始日期不可晚於結束日期"); return; }
+  const days = cwRangeDays();
+  if (days === null) { alert("起始日期不可晚於結束日期"); return; }
+  if (days > 62) { alert("日期區間 " + days + " 天，超過上限 62 天，請縮短區間。"); return; }
   const btn = document.getElementById("cuiwangRunBtn");
   btn.disabled = true; btn.textContent = "排盤中…";
   setTimeout(function () {
@@ -3691,7 +3709,7 @@ function runCuiwang() {
       const res = analyzeCuiwangRange(fy, fm, fd, ty, tm, td, 62);
       renderCuiwang(res);
     } catch (e) { alert("排盤失敗：" + e.message); }
-    finally { btn.disabled = false; btn.textContent = "列出格局"; }
+    finally { btn.disabled = false; btn.textContent = "列出催旺日期與時辰"; }
   }, 20);
 }
 document.getElementById("cuiwangRunBtn").addEventListener("click", runCuiwang);

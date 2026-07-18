@@ -1660,6 +1660,8 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .cuiwang-range-group { display: flex; align-items: center; gap: 4px; }
 .cuiwang-range-label { font-weight: 700; color: var(--gold-darker); }
 .cuiwang-range-group select { padding: 6px 4px; }
+/* 年度下拉寬度加大 1.5 倍（月/日下拉維持自動寬度） */
+#cw-fy, #cw-ty { min-width: 105px; }
 .cuiwang-range-sep { font-weight: 700; color: var(--gold-darker); }
 .cuiwang-legend { font-size: 13px; line-height: 1.7; color: var(--text-secondary);
   background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; }

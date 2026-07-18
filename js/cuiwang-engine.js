@@ -46,15 +46,23 @@ function cwScore(gan, men, shen) {
   return Math.max(7, Math.min(10, s));
 }
 
-// 評一個時辰：掃八宮（排除中5），取分數最高之催旺宮
+// 評一個時辰：掃八宮（排除中5），取分數最高之催旺宮。
+// 四凶剔除：宮位若有「入墓／地支空亡／六儀擊刑／門迫」任一者不宜佈局，直接跳過不列入候選
+// （入墓與門迫讀藍盤 cornerWords 的 rumu/menpo 註記；擊刑讀 jiXing；空亡以該時辰旬空
+//  兩地支經 ZHI_TO_GONG_QM 換算成宮位比對）。
 function cwEvalHour(year, month, day, hour) {
   const data = calculateQimenHeader({ year, month, day, hour, minute: 0, name: "", gender: "male", yiMaBasis: "time", kongWangBasis: "time" });
+  const kongGongs = (data.kongWang || []).map((z) => ZHI_TO_GONG_QM[z]);
   let best = null;
   [1, 2, 3, 4, 6, 7, 8, 9].forEach((g) => {
     const c = data.gongs[g];
     if (!c) return;
     const sc = cwScore(c.tianGan, c.men, c.shen);
     if (sc === null) return;
+    const words = c.cornerWords || [];
+    const siXiong = c.jiXing || kongGongs.indexOf(g) >= 0 ||
+      words.some((w) => w.type === "rumu" || w.type === "menpo");
+    if (siXiong) return;
     if (!best || sc > best.score) {
       best = {
         gong: g, dir: c.dir, gan: c.tianGan, ganName: CW_SANQI_NAME[c.tianGan],
