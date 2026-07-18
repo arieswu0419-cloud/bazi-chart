@@ -2498,6 +2498,20 @@ function buildZibaiPlateHtml(res) {
 function zbExplainHint() {
   return '<span class="zibai-explain-hint">點擊任一宮格，顯示該宮 運星／向星／山星 的五行與吉凶說明。</span>';
 }
+
+// 九星 1~9 數字意義一覽（陽宅紫白風水盤／陽宅流年流月盤共用）
+function buildZibaiStarLegendHtml() {
+  let lines = "";
+  for (let n = 1; n <= 9; n++) {
+    const s = ZB_STAR_INFO[n];
+    lines += '<div class="zibai-explain-line">' +
+      '<span class="zibai-explain-star ' + zbWxClass(n) + '">' + n + "</span>" +
+      '<span class="zibai-explain-name">' + s.name + "（" + s.wx + "）</span>" +
+      '<span class="zibai-explain-desc">' + s.desc + "</span></div>";
+  }
+  return '<div class="zibai-section"><div class="zibai-section-title">九星數字意義（1～9）</div>' +
+    '<div class="zibai-block"><div class="zibai-block-b">' + lines + "</div></div></div>";
+}
 function zbStarLine(role, n) {
   const s = ZB_STAR_INFO[n] || { name: "—", wx: "—", desc: "—" };
   return '<div class="zibai-explain-line">' +
@@ -2604,7 +2618,7 @@ function renderZibai(res) {
   currentZibai = res;
   const guaHtml = currentZibaiGua ? buildZibaiMingGuaHtml(res, currentZibaiGua) : "";
   document.getElementById("zibaiResult").innerHTML =
-    buildZibaiPlateHtml(res) + buildZibaiSummaryHtml(res) + guaHtml;
+    buildZibaiPlateHtml(res) + buildZibaiStarLegendHtml() + buildZibaiSummaryHtml(res) + guaHtml;
   document.getElementById("zibaiCard").style.display = "block";
 }
 
@@ -2764,7 +2778,8 @@ function buildZibaiFeixingHtml(fx) {
     '<div class="zibai-sitting">' + tSvg + '<span class="zibai-sit-text">' + sitting.name + "山" + facing.name + "向</span></div>" +
     '<div class="zibai-note" style="text-align:center">每格 左＝流年飛星｜中＝流月飛星｜右＝宅主命卦飛星（數字著五行色；月份以節氣月對應，1 月屬前一年丑月）</div>' +
     "</div>" +
-    buildZibaiFeixingShengKeHtml(fx, guaPan, fi);
+    buildZibaiFeixingShengKeHtml(fx, guaPan, fi) +
+    buildZibaiStarLegendHtml();
 }
 
 function runZibaiFeixing() {
