@@ -2638,14 +2638,7 @@ document.getElementById("zibaiTabHouse").addEventListener("click", function () {
 document.getElementById("zibaiTabFeixing").addEventListener("click", function () { setZibaiTab("feixing"); });
 
 // ---- 陽宅飛星（流年|流月紫白；演算法對照使用者 2026 年 5/6/7 月飛星圖逐格驗證）----
-// 版面固定「東南朝上中」斜排（同參考圖）：東左上、南右上、北左下、西右下，紅框淺藍底。
-const ZBFX_CELLS = [
-  { r: 1, c: 1, pal: 3 }, { r: 1, c: 2, pal: 4 }, { r: 1, c: 3, pal: 9 },
-  { r: 2, c: 1, pal: 8 }, { r: 2, c: 2, pal: 5 }, { r: 2, c: 3, pal: 2 },
-  { r: 3, c: 1, pal: 1 }, { r: 3, c: 2, pal: 6 }, { r: 3, c: 3, pal: 7 }
-];
-const ZBFX_LABELS = [["東", "tl"], ["東南", "tc"], ["南", "tr"], ["東北", "ml"], ["西南", "mr"], ["北", "bl"], ["西北", "bc"], ["西", "br"]];
-
+// 版面與「陽宅紫白風水盤」同一套：金框、方位白字貼框、依陽宅面向旋轉（向首朝上中）。
 function readZibaiFeixingForm() {
   return {
     year: Number(document.getElementById("zbfx-year").value),
@@ -2660,19 +2653,47 @@ function updateZibaiFeixingHint(fx) {
 }
 
 function buildZibaiFeixingHtml(fx) {
-  const cells = ZBFX_CELLS.map((o) => {
-    const y = fx.yearPan[o.pal], m = fx.monthPan[o.pal];
-    return '<div class="zbfx-cell" style="grid-row:' + o.r + ";grid-column:" + o.c + '">' +
-      '<span class="zbfx-num ' + zbWxClass(y) + '">' + y + "</span>" +
+  // 方位與陽宅紫白風水盤一致：取「陽宅面向」選定的向首，向首朝上中，其餘依羅盤順時針對位
+  const angle = Math.round(Number(document.getElementById("zb-angle").value) || 0);
+  const fIdx = zbMountainIndex(angle);
+  const facing = ZB_MOUNTAINS[fIdx];
+  const sitting = ZB_MOUNTAINS[(fIdx + 12) % 24];
+  const fi = ZB_COMPASS_CW.indexOf(facing.dir);
+
+  const pair = (pal) => {
+    const y = fx.yearPan[pal], m = fx.monthPan[pal];
+    return '<span class="zbfx-num ' + zbWxClass(y) + '">' + y + "</span>" +
       '<span class="zbfx-sep">|</span>' +
-      '<span class="zbfx-num ' + zbWxClass(m) + '">' + m + "</span></div>";
-  }).join("");
-  const labels = ZBFX_LABELS.map((l) => '<span class="zbfx-label zbfx-' + l[1] + '">' + l[0] + "</span>").join("");
+      '<span class="zbfx-num ' + zbWxClass(m) + '">' + m + "</span>";
+  };
+
+  // 中宮 ＋ 外八宮（同 zbLayout 的螢幕/羅盤順時針對位）
+  let cellsHtml = '<div class="zibai-cell zibai-cell-center zbfx-plate-cell" style="grid-row:2;grid-column:2">' + pair(5) + "</div>";
+  const labels = [];
+  for (let k = 0; k < 8; k++) {
+    const dir = ZB_COMPASS_CW[(fi + k) % 8];
+    const pos = ZB_SCREEN_CW[k];
+    cellsHtml += '<div class="zibai-cell zbfx-plate-cell" style="grid-row:' + pos.r + ";grid-column:" + pos.c + '">' +
+      pair(ZB_DIR_TO_PALACE[dir]) + "</div>";
+    labels.push('<span class="zibai-dir ' + zbPosClass(pos.r, pos.c) + '">' + ZB_DIR_NAME[dir] + "</span>");
+  }
+
+  const arrowSvg = '<svg class="zibai-arrow-svg" viewBox="0 0 24 44" width="24" height="44" aria-hidden="true">' +
+    '<line x1="12" y1="43" x2="12" y2="9"/><polyline points="4,20 12,5 20,20" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  const tSvg = '<svg class="zibai-t-svg" viewBox="0 0 44 22" width="44" height="22" aria-hidden="true">' +
+    '<line x1="22" y1="1" x2="22" y2="15"/><line x1="6" y1="16" x2="38" y2="16" stroke-linecap="round"/></svg>';
+
   const info = fx.year + " 年 " + fx.month + " 月份飛星圖　（" + fx.yearBranch + "年 年飛星 " + fx.yearStar +
     " 入中・" + fx.monthBranch + "月 月飛星 " + fx.monthStar + " 入中）";
   return '<div class="zibai-plate">' +
     '<div class="zibai-info">' + info + "</div>" +
-    '<div class="zbfx-wrap">' + labels + '<div class="zbfx-grid">' + cells + "</div></div>" +
+    '<div class="zibai-facing-top">' +
+      '<span class="zibai-facing-name">' + facing.name + "</span>" +
+      '<span class="zibai-facing-deg">' + zbDegText(fIdx) + "</span>" +
+      arrowSvg +
+    "</div>" +
+    '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
+    '<div class="zibai-sitting">' + tSvg + '<span class="zibai-sit-text">' + sitting.name + "山" + facing.name + "向</span></div>" +
     '<div class="zibai-note" style="text-align:center">每格 左＝流年飛星｜右＝流月飛星（數字著五行色；月份以節氣月對應，1 月屬前一年丑月）</div>' +
     "</div>";
 }
@@ -2688,6 +2709,8 @@ function runZibaiFeixing() {
 document.getElementById("zibaiFeixingRunBtn").addEventListener("click", runZibaiFeixing);
 ["zbfx-year", "zbfx-month"].forEach((id) =>
   document.getElementById(id).addEventListener("change", runZibaiFeixing));
+// 陽宅面向變更 → 流年流月盤方位同步重排（兩盤方位一致）
+document.getElementById("zb-angle").addEventListener("change", runZibaiFeixing);
 
 document.getElementById("exportZibaiFeixingPdfBtn").addEventListener("click", async function () {
   const btn = this;

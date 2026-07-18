@@ -1576,20 +1576,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   border: 1px solid var(--gold); border-radius: var(--radius); background: #fff; color: var(--gold-darker); }
 .zibai-tab-btn.active { background: var(--gold-darker); color: #fff; border-color: var(--gold-darker); }
 
-/* ===== 陽宅飛星（流年|流月，紅框淺藍底，東南朝上中） ===== */
-.zbfx-wrap { position: relative; display: block; width: min(92vw, 520px); margin: 0 auto; padding: 30px 48px; }
-.zbfx-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
-  width: 100%; aspect-ratio: 3 / 2; border: 3px solid #C00000; background: #E8F3FA; }
-.zbfx-cell { border: 2px solid #C00000; background: #E8F3FA;
-  display: flex; align-items: flex-start; padding: 12px 0 0 16px; }
+/* ===== 陽宅飛星（流年|流月）：沿用陽宅紫白風水盤金框樣式，僅格內容不同 ===== */
+.zbfx-plate-cell { display: flex; align-items: center; justify-content: center; cursor: default; }
 .zbfx-num { font-size: clamp(20px, 5.6vw, 30px); font-weight: 800; line-height: 1; }
 .zbfx-sep { font-size: clamp(20px, 5.6vw, 30px); font-weight: 800; color: #111; margin: 0 2px; line-height: 1; }
-.zbfx-label { position: absolute; font-size: 14px; font-weight: 700; color: #333; white-space: nowrap; }
-.zbfx-tl { top: 6px; left: 10px; }
-.zbfx-tc { top: 6px; left: 50%; transform: translateX(-50%); }
-.zbfx-tr { top: 6px; right: 10px; }
-.zbfx-ml { left: 0; top: 50%; transform: translateY(-50%); }
-.zbfx-mr { right: 0; top: 50%; transform: translateY(-50%); }
-.zbfx-bl { bottom: 6px; left: 10px; }
-.zbfx-bc { bottom: 6px; left: 50%; transform: translateX(-50%); }
-.zbfx-br { bottom: 6px; right: 10px; }
