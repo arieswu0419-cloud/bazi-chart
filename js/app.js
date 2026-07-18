@@ -492,8 +492,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async function
   }
 });
 
-// 建立命書專用列印版面（固定 642px＝A4 內容寬 170mm@96dpi，內文 14pt 細明體；
-// 四柱／表格填滿頁寬，大運表字級縮小以容納）。回傳 {host, sections}，用畢移除 host。
+// 建立命書專用列印版面（固定 642px＝A4 內容寬 170mm@96dpi，內文 12pt 中黑體；
+// 四柱／表格填滿頁寬）。回傳 {host, sections}，用畢移除 host。
 function buildMingshuPrint() {
   const old = document.getElementById("mingshu-print");
   if (old) old.remove();
@@ -502,16 +502,19 @@ function buildMingshuPrint() {
   host.style.cssText = "position:fixed;left:-99999px;top:0;width:642px;background:#fff;";
   const st = document.createElement("style");
   st.textContent =
-    '#mingshu-print,#mingshu-print *{font-family:"PMingLiU","MingLiU","新細明體","細明體",serif !important;box-sizing:border-box;}' +
-    '#mingshu-print .ms-body,#mingshu-print .ms-body *{font-size:14pt !important;line-height:1.75;color:#222;}' +
+    '#mingshu-print,#mingshu-print *{font-family:"中黑體","微軟正黑體","Microsoft JhengHei","Noto Sans TC",sans-serif !important;box-sizing:border-box;}' +
+    '#mingshu-print .ms-body,#mingshu-print .ms-body *{font-size:12pt !important;line-height:1.7;color:#222;}' +
     '#mingshu-print .ms-body h3,#mingshu-print .ms-body h4,#mingshu-print .ms-body b,#mingshu-print .ms-body strong{font-weight:700;}' +
+    // 五行強弱表的 金木水火土 標籤：白字加粗（否則會被 .ms-body 的 #222 蓋掉）
+    '#mingshu-print .ms-body .bar-row .name{color:#fff !important;font-weight:700 !important;}' +
     '#mingshu-print .ms-pillars{width:642px;padding:4px 0;}' +
-    '#mingshu-print .ms-pillars *{font-size:14pt !important;}' +
+    '#mingshu-print .ms-pillars *{font-size:12pt !important;}' +
     '#mingshu-print .ms-pillars .pillars,#mingshu-print .ms-pillars table{width:642px !important;}' +
     '#mingshu-print .ms-tbl{width:642px;}' +
     '#mingshu-print .ms-tbl .strip-label{font-size:12pt !important;font-weight:700;margin:2px 0 4px;}' +
-    '#mingshu-print .ms-tbl table{width:642px !important;border-collapse:collapse;table-layout:fixed;}' +
-    '#mingshu-print .ms-tbl td,#mingshu-print .ms-tbl th{font-size:9pt !important;padding:2px 2px;line-height:1.35;word-break:break-word;border:1px solid #ddd;}';
+    // 大運與流年表格：黑色線框、table-layout:fixed；table 自身加外框確保最右側也有垂直線
+    '#mingshu-print .ms-tbl table{width:642px !important;border-collapse:collapse;table-layout:fixed;border:1px solid #000 !important;}' +
+    '#mingshu-print .ms-tbl td,#mingshu-print .ms-tbl th{font-size:12pt !important;padding:2px 2px;line-height:1.35;word-break:break-word;border:1px solid #000 !important;}';
   host.appendChild(st);
   const block = (cls, srcEl) => {
     if (!srcEl) return null;
@@ -602,7 +605,7 @@ document.getElementById("makeMingshuBtn").addEventListener("click", async functi
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", (ctx.pageWidth - w2) / 2, ctx.y, w2, h2);
       ctx.y += h2 + 5;
     }
-    // 以固定寬列印版面（14pt 細明體）逐章節分頁
+    // 以固定寬列印版面（12pt 中黑體）逐章節分頁
     printBuilt = buildMingshuPrint();
     for (const sec of printBuilt.sections) {
       pdf.addPage();
