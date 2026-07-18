@@ -1542,3 +1542,30 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .zibai-explain-star { flex: 0 0 auto; font-size: 18px; font-weight: 800; min-width: 16px; text-align: center; }
 .zibai-explain-name { flex: 0 0 auto; font-weight: 700; color: #333; }
 .zibai-explain-desc { flex: 1 1 auto; color: var(--text-secondary); }
+
+/* ===== 紫白風水：格局總論 / 命卦分析 ===== */
+.zibai-section { max-width: 640px; margin: 18px auto 0; text-align: left; }
+.zibai-section-title { font-size: 16px; font-weight: 800; color: var(--gold-darker);
+  border-left: 4px solid var(--gold); padding-left: 10px; margin-bottom: 12px; }
+.zibai-block { background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 10px; }
+.zibai-block-h { font-size: 14px; font-weight: 700; color: var(--gold-darker); margin-bottom: 6px; }
+.zibai-block-b { font-size: 13px; line-height: 1.7; color: #444; }
+.zibai-hr { border-top: 1px dashed #e0d9c0; margin: 7px 0; }
+.zibai-note { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+.zibai-ws { padding: 4px 0; }
+.zibai-ws + .zibai-ws { border-top: 1px dashed #e0d9c0; }
+.zibai-ws-dir { display: inline-block; min-width: 42px; font-weight: 700; color: #333; }
+.zibai-disclaimer { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.6; }
+
+.zibai-tag { display: inline-block; font-size: 11px; font-weight: 700; color: #fff;
+  border-radius: 4px; padding: 1px 6px; margin-right: 6px; }
+.zb-tone-good { background: #2e9e4b; }
+.zb-tone-bad  { background: #d13b3b; }
+.zb-tone-neu  { background: #9a8a55; }
+.zb-tone-warn { background: #d08a00; }
+
+.zibai-mg-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 4px 0 8px; }
+.zibai-mg-table th, .zibai-mg-table td { border: 1px solid #e0d9c0; padding: 6px 8px; text-align: left; vertical-align: top; }
+.zibai-mg-table th { background: #EFE7CE; color: var(--gold-darker); font-weight: 700; white-space: nowrap; }
+.zibai-mg-table td:nth-child(4) { white-space: nowrap; font-weight: 700; }

@@ -2327,6 +2327,13 @@ function fillZibaiYearSelect() {
     aHtml += '<option value="' + (i * 15) + '">' + m.name + "（" + zbDegText(i) + "）</option>";
   });
   document.getElementById("zb-angle").innerHTML = aHtml;
+  // 宅主命卦：出生年（1920~今）/月/日
+  const nowY = new Date().getFullYear();
+  let oyHtml = "";
+  for (let y = 1920; y <= nowY; y++) oyHtml += '<option value="' + y + '">' + y + "</option>";
+  document.getElementById("zb-oyear").innerHTML = oyHtml;
+  document.getElementById("zb-omonth").innerHTML = mHtml;
+  document.getElementById("zb-oday").innerHTML = dHtml;
 }
 
 function showZibaiView() {
@@ -2340,7 +2347,12 @@ function showZibaiView() {
   document.getElementById("zb-bmonth").value = String(now.getMonth() + 1);
   document.getElementById("zb-bday").value = String(now.getDate());
   document.getElementById("zb-angle").value = "0";
+  document.getElementById("zb-oyear").value = "1980";
+  document.getElementById("zb-omonth").value = "1";
+  document.getElementById("zb-oday").value = "1";
+  document.getElementById("zb-ogender").value = "male";
   updateZibaiHints();
+  updateZibaiGuaHint();
   runZibai();
 }
 function hideZibaiView() {
@@ -2373,6 +2385,24 @@ function updateZibaiHints() {
   const sitting = ZB_MOUNTAINS[(idx + 12) % 24];
   document.getElementById("zibaiMountainOut").textContent =
     sitting.name + "山" + facing.name + "向　向" + facing.name + "（" + zbDegText(idx) + "）";
+}
+
+// 讀宅主出生資料
+function readZibaiOwner() {
+  return {
+    year: Number(document.getElementById("zb-oyear").value),
+    month: Number(document.getElementById("zb-omonth").value),
+    day: Number(document.getElementById("zb-oday").value),
+    isMale: document.getElementById("zb-ogender").value === "male"
+  };
+}
+let currentZibaiGua = null;
+function updateZibaiGuaHint() {
+  const o = readZibaiOwner();
+  const g = zbLifeGua(o.year, o.month, o.day, o.isMale);
+  currentZibaiGua = g;
+  document.getElementById("zibaiGuaHint").textContent =
+    "宅主命卦：" + g.num + " " + g.gua + "卦（" + g.group + "命人・" + g.groupName + "・五行屬" + g.wx + "）";
 }
 
 // 九宮版面：3×3 螢幕格對應位置代碼（給方位標籤貼齊金框）
@@ -2464,14 +2494,94 @@ document.getElementById("zibaiResult").addEventListener("click", function (e) {
   showZibaiCellExplain(cell);
 });
 
+// ---- 本盤格局總論 ----
+const ZB_TONE_CLASS = { good: "zb-tone-good", bad: "zb-tone-bad", neutral: "zb-tone-neu", warn: "zb-tone-warn" };
+function zbToneTag(tone) {
+  const label = { good: "吉", bad: "凶", neutral: "平", warn: "留意" }[tone] || "";
+  return '<span class="zibai-tag ' + (ZB_TONE_CLASS[tone] || "") + '">' + label + "</span>";
+}
+function buildZibaiSummaryHtml(res) {
+  const a = analyzeZibai(res);
+  let h = '<div class="zibai-section"><div class="zibai-section-title">本盤格局總論</div>';
+
+  // 主格局
+  h += '<div class="zibai-block"><div class="zibai-block-h">立向格局　' + zbToneTag(a.geju.tone) +
+    '</div><div class="zibai-block-b"><b>' + a.geju.name + "</b>——" + a.geju.desc + "</div></div>";
+
+  // 特殊卦象
+  if (a.formations.length) {
+    h += '<div class="zibai-block"><div class="zibai-block-h">特殊卦象</div><div class="zibai-block-b">' +
+      a.formations.map((f) => zbToneTag(f.tone) + "<b>" + f.name + "</b>：" + f.desc).join('<div class="zibai-hr"></div>') +
+      "</div></div>";
+  }
+
+  // 正零神
+  h += '<div class="zibai-block"><div class="zibai-block-h">正神／零神／照神（收山出煞）</div><div class="zibai-block-b">' +
+    a.zhengling.desc + "</div></div>";
+
+  // 城門訣
+  h += '<div class="zibai-block"><div class="zibai-block-h">城門訣（向旁輔助收水方）</div><div class="zibai-block-b">' +
+    a.chengmen.map((c) => c.name + "方（天元龍" + c.yinyang + "、地盤" + c.diPan + "）：" +
+      (c.valid ? "<b>合城門</b>，該方若見水口可收逆水催財。" : "不合城門訣。")).join('<div class="zibai-hr"></div>') +
+    '<div class="zibai-note">城門訣以向旁能引當運令星者為用，須配合該方見水（水口）。</div></div></div>';
+
+  // 煞氣旺氣
+  if (a.wangsha.length) {
+    h += '<div class="zibai-block"><div class="zibai-block-h">旺氣催吉 · 煞氣化解（逐宮）</div><div class="zibai-block-b">' +
+      a.wangsha.map((w) => '<div class="zibai-ws"><span class="zibai-ws-dir">' + w.dir + "方</span>" +
+        w.notes.map((n) => zbToneTag(n.tone) + n.txt).join("<br>") + "</div>").join("") +
+      "</div></div>";
+  }
+
+  h += '<div class="zibai-disclaimer">※ 以上格局／訣法依標準玄空理氣推演，須配合實際巒頭（山水形勢）綜合斷驗，僅供參考。</div>';
+  return h + "</div>";
+}
+
+// ---- 宅主命卦・飛星配命卦 ----
+function buildZibaiMingGuaHtml(res, gua) {
+  const games = zbGameStars(gua.num);
+  const P = res.palaces;
+  let h = '<div class="zibai-section"><div class="zibai-section-title">宅主命卦・飛星配命卦</div>';
+  h += '<div class="zibai-block"><div class="zibai-block-b"><b>命卦：' + gua.num + " " + gua.gua + "卦（" +
+    gua.group + "命人・" + gua.groupName + "）</b>，五行屬" + gua.wx + "，本命吉方在" +
+    (gua.group === "東" ? "北、南、東、東南（東四方）" : "西北、西南、東北、西（西四方）") +
+    "。以下列出宅主八方游年吉凶，並對照該方本盤山向飛星：</div></div>";
+
+  h += '<table class="zibai-mg-table"><thead><tr><th>方位</th><th>游年</th><th>吉凶</th><th>本盤山/向星</th><th>配論</th></tr></thead><tbody>';
+  games.forEach((s) => {
+    const pal = ZB_DIR_TO_PALACE[s.dir];
+    const shan = P[pal].shan, xiang = P[pal].xiang;
+    const wangShan = shan === res.period, wangXiang = xiang === res.period;
+    const bad57 = [2, 5].includes(shan) || [2, 5].includes(xiang);
+    let comment;
+    if (s.tone === "good") {
+      comment = wangXiang || wangShan ? "命吉方逢當運旺星，吉上加吉，宜作大門／主臥／書房。" :
+        bad57 ? "命吉方逢五黃/二黑，吉方受制，宜化煞（金洩）後再用。" : "命之吉方，宜安置臥床、書桌、大門以納吉。";
+    } else {
+      comment = wangXiang || wangShan ? "命凶方卻逢當運旺星，以宅為體、命為用，可作動線但忌久居。" :
+        bad57 ? "命凶方又逢五黃/二黑，凶上加凶，宜安神位／儲藏、少用並化煞。" : "命之凶方，宜作廁所、儲藏、樓梯等閒方壓制。";
+    }
+    h += "<tr><td>" + s.dirName + "</td><td>" + s.star + "（" + s.guaChar + "）</td>" +
+      "<td>" + zbToneTag(s.tone) + s.lv + "</td>" +
+      '<td><span class="' + zbWxClass(shan) + '">山' + shan + "</span>／<span class=\"" + zbWxClass(xiang) + '">向' + xiang + "</span></td>" +
+      "<td>" + comment + "</td></tr>";
+  });
+  h += "</tbody></table>";
+  h += '<div class="zibai-disclaimer">※ 八宅命卦以「宅」與「命」相配，宜以宅之旺衰為主、命之吉凶為輔，並合巒頭綜斷。</div>';
+  return h + "</div>";
+}
+
 function renderZibai(res) {
   currentZibai = res;
-  document.getElementById("zibaiResult").innerHTML = buildZibaiPlateHtml(res);
+  const guaHtml = currentZibaiGua ? buildZibaiMingGuaHtml(res, currentZibaiGua) : "";
+  document.getElementById("zibaiResult").innerHTML =
+    buildZibaiPlateHtml(res) + buildZibaiSummaryHtml(res) + guaHtml;
   document.getElementById("zibaiCard").style.display = "block";
 }
 
 function runZibai() {
   const f = readZibaiForm();
+  updateZibaiGuaHint();
   const res = calculateZibai({ year: f.year, month: f.month, day: f.day, angle: f.angle });
   renderZibai(res);
 }
@@ -2480,6 +2590,8 @@ document.getElementById("zibaiRunBtn").addEventListener("click", runZibai);
 ["zb-byear", "zb-bmonth", "zb-bday"].forEach((id) =>
   document.getElementById(id).addEventListener("change", updateZibaiHints));
 document.getElementById("zb-angle").addEventListener("change", updateZibaiHints);
+["zb-oyear", "zb-omonth", "zb-oday", "zb-ogender"].forEach((id) =>
+  document.getElementById(id).addEventListener("change", updateZibaiGuaHint));
 
 document.getElementById("exportZibaiPdfBtn").addEventListener("click", async function () {
   const btn = this;

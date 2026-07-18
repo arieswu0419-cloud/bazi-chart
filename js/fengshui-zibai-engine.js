@@ -195,6 +195,155 @@ function zbLayout(palaces, facingDir) {
   return cells;
 }
 
+// ============================================================
+//  盤面格局分析（玄空飛星）——標準理氣訣法，無 PDF 可對照，供參
+// ============================================================
+
+function zbFacingSitPalace(res) {
+  return { fp: ZB_DIR_TO_PALACE[res.facing.dir], sp: ZB_DIR_TO_PALACE[res.sitting.dir] };
+}
+
+// 四大格局：到山到向／上山下水／雙星到向／雙星到坐
+function zbGeju(res) {
+  const yun = res.period, P = res.palaces;
+  const { fp, sp } = zbFacingSitPalace(res);
+  const xToX = P[fp].xiang === yun, sToS = P[sp].shan === yun, sToX = P[fp].shan === yun, xToS = P[sp].xiang === yun;
+  if (xToX && sToS) return { name: "旺山旺向（到山到向）", tone: "good", desc: "當運向星到向、山星到坐山，主丁財兩旺之上格。向方宜見水（低、動、水），坐方宜見山（高、實、靜）。" };
+  if (sToX && xToS) return { name: "上山下水", tone: "bad", desc: "當運山星到向、向星到坐，主損丁破財之下格。惟向方有山、坐方有水（巒頭顛倒相就）可反凶為吉，否則宜化解。" };
+  if (xToX && sToX) return { name: "雙星到向", tone: "neutral", desc: "山星、向星令星俱到向首，旺財不旺丁。向方宜見水並聚人氣（客廳／開門），另於旺山星方補丁。" };
+  if (xToS && sToS) return { name: "雙星到坐（雙星到山）", tone: "neutral", desc: "山星、向星令星俱到坐山，旺丁不旺財。坐方宜見水或開後門納氣以助財。" };
+  return { name: "令星到偏宮", tone: "neutral", desc: "當運令星未落正向或正坐，須合巒頭與各宮飛星細論。" };
+}
+
+// 合十／三般卦／連珠／入囚／伏反吟／七星打劫
+function zbFormations(res) {
+  const yun = res.period, P = res.palaces, all = [1, 2, 3, 4, 5, 6, 7, 8, 9], out = [];
+  const { fp, sp } = zbFacingSitPalace(res);
+  if (all.every((p) => P[p].yun + P[p].xiang === 10)) out.push({ name: "向盤合十", tone: "good", desc: "向盤與運盤（地盤）全局合十，主催財、旺人緣、逢凶化吉。" });
+  if (all.every((p) => P[p].yun + P[p].shan === 10)) out.push({ name: "山盤合十", tone: "good", desc: "山盤與運盤（地盤）全局合十，主旺丁添貴、逢凶化吉。" });
+  const triads = [[1, 4, 7], [2, 5, 8], [3, 6, 9]];
+  const sameTriad = (a, b, c) => triads.some((t) => [a, b, c].every((n) => t.includes(n)));
+  if (all.every((p) => sameTriad(P[p].yun, P[p].shan, P[p].xiang)))
+    out.push({ name: "父母三般卦", tone: "good", desc: "九宮每宮運/山/向皆成一四七、二五八、三六九之三般，通貫三元三才，主大貴、諸事化解（三般卦不忌上山下水）。" });
+  const consec = (a, b, c) => {
+    const s = new Set([a, b, c]); if (s.size !== 3) return false;
+    for (let n = 1; n <= 9; n++) { if ([n, n % 9 + 1, (n + 1) % 9 + 1].every((x) => s.has(x))) return true; } return false;
+  };
+  if (all.every((p) => consec(P[p].yun, P[p].shan, P[p].xiang)))
+    out.push({ name: "連珠三般卦", tone: "good", desc: "九宮每宮三星相連（連珠三般），一氣貫通、生生不息，主富貴綿延。" });
+  if (P[5].xiang === yun) out.push({ name: "向星入囚", tone: "bad", desc: "當運向星（令星）飛入中宮受制，主退財、宅運不展，宜俟交運或以巒頭化解。" });
+  if (P[5].shan === yun) out.push({ name: "山星入囚", tone: "bad", desc: "當運山星（令星）入中宮受制，主損丁、人口不旺。" });
+  const outer = [1, 2, 3, 4, 6, 7, 8, 9];
+  const fufan = (key) => { if (P[5][key] !== 5) return null; if (outer.every((p) => P[p][key] === p)) return "fu"; if (outer.every((p) => P[p][key] === 10 - p)) return "fan"; return null; };
+  const fs = fufan("shan"), fx = fufan("xiang");
+  if (fs === "fu") out.push({ name: "山盤伏吟", tone: "bad", desc: "山盤與地盤（元旦盤）相同（五黃入中順飛），伏吟，主哭泣、疾病、人口不安。" });
+  if (fs === "fan") out.push({ name: "山盤反吟", tone: "bad", desc: "山盤與地盤全局合十顛倒（五黃入中逆飛），反吟，主動盪、傷病、破敗。" });
+  if (fx === "fu") out.push({ name: "向盤伏吟", tone: "bad", desc: "向盤與地盤相同，伏吟，主氣滯、事重複、破財。" });
+  if (fx === "fan") out.push({ name: "向盤反吟", tone: "bad", desc: "向盤反吟，主反覆、官非、破財。" });
+  if (fp === 9 || fp === 1) {
+    if (sameTriad(P[fp].xiang, P[5].xiang, P[sp].xiang) && P[fp].xiang === yun)
+      out.push({ name: "七星打劫", tone: "good", desc: "向首（" + (fp === 9 ? "離" : "坎") + "宮）、中宮、坐宮向星成三般且旺向，得七星打劫之格，能借未來之氣、提前發福（須向方有水配合）。" });
+  }
+  return out;
+}
+
+// 正神／零神／照神（依元運）
+function zbZhengLing(res) {
+  const yun = res.period;
+  const zdir = ZB_PALACE_TO_DIR[yun], ldir = ZB_PALACE_TO_DIR[10 - yun];
+  const adj = (d) => { const i = ZB_COMPASS_CW.indexOf(d); return [ZB_COMPASS_CW[(i + 7) % 8], ZB_COMPASS_CW[(i + 1) % 8]].map((x) => ZB_DIR_NAME[x]); };
+  return {
+    zheng: ZB_DIR_NAME[zdir], ling: ZB_DIR_NAME[ldir],
+    zhengZhao: adj(zdir), lingZhao: adj(ldir),
+    desc: "正神方（" + ZB_DIR_NAME[zdir] + "，當運星本方）宜高、實、靜，見水主破財；零神方（" + ZB_DIR_NAME[ldir] +
+      "，對宮）宜低、動、見水，為當運財神方。零神兩旁（" + adj(ldir).join("、") + "）為零照神，亦宜見水助財；正神兩旁（" + adj(zdir).join("、") + "）為正照神，宜實。"
+  };
+}
+
+// 城門訣（向首兩旁宮，取天元龍陰陽逆飛能引令星者為正城門）
+function zbChengMen(res) {
+  const yun = res.period, P = res.palaces;
+  const fi = ZB_COMPASS_CW.indexOf(res.facing.dir);
+  return [ZB_COMPASS_CW[(fi + 7) % 8], ZB_COMPASS_CW[(fi + 1) % 8]].map((d) => {
+    const pal = ZB_DIR_TO_PALACE[d], g = P[pal].yun;
+    const tianYuan = ZB_PALACE_MOUNTAINS[pal] ? ZB_PALACE_MOUNTAINS[pal][1] : null;
+    const yy = tianYuan ? ZB_YANG[tianYuan] : true;
+    return { name: ZB_DIR_NAME[d], diPan: g, yinyang: yy ? "陽" : "陰", valid: zbFly(g, yy)[pal] === yun };
+  });
+}
+
+// 煞氣／旺氣（掃描九宮顯著飛星）
+function zbWangSha(res) {
+  const yun = res.period, out = [];
+  res.cells.forEach((c) => {
+    if (c.center) return;
+    const notes = [];
+    if (c.xiang === yun) notes.push({ tone: "good", txt: "當運旺向星到此——財位，宜見水、開門、擺動態以催財。" });
+    if (c.shan === yun) notes.push({ tone: "good", txt: "當運旺山星到此——丁位，宜見山、安床、高實靜以旺人丁。" });
+    if (c.xiang === 5 || c.shan === 5) notes.push({ tone: "bad", txt: "五黃廉貞到此——大凶災星，忌動土修造，宜靜，以金（銅鈴／六帝錢）洩化。" });
+    if (c.xiang === 2 || c.shan === 2) notes.push({ tone: "bad", txt: "二黑病符到此——主疾病，忌久留，以金洩土氣化解。" });
+    if (c.xiang === 3 || c.shan === 3) notes.push({ tone: "warn", txt: "三碧是非到此——主口舌官非，宜靜，以紅（火）洩或以金剋。" });
+    if ((c.xiang === 7 || c.shan === 7) && yun !== 7) notes.push({ tone: "warn", txt: "七赤破軍到此（退運）——主破財口舌，以水洩金氣化解。" });
+    if (notes.length) out.push({ dir: c.dirName, notes });
+  });
+  return out;
+}
+
+function analyzeZibai(res) {
+  return { geju: zbGeju(res), formations: zbFormations(res), zhengling: zbZhengLing(res), chengmen: zbChengMen(res), wangsha: zbWangSha(res) };
+}
+
+// ============================================================
+//  宅主命卦（八宅）——命卦推演＋游年翻卦四吉四凶方
+// ============================================================
+const ZB_GUA_CHAR = { 1: "坎", 2: "坤", 3: "震", 4: "巽", 6: "乾", 7: "兌", 8: "艮", 9: "離" };
+const ZB_GUA_WX = { 1: "水", 2: "土", 3: "木", 4: "木", 6: "金", 7: "金", 8: "土", 9: "火" };
+const ZB_EAST_GUA = [1, 9, 3, 4]; // 東四命
+
+function zbDigitRoot(n) {
+  let s = String(Math.abs(n)).split("").reduce((a, d) => a + (+d), 0);
+  while (s > 9) s = String(s).split("").reduce((a, d) => a + (+d), 0);
+  return s;
+}
+
+// 命卦：西元年（立春換年）數字根，男 11−根、女 根＋4，得 5 男作坤2女作艮8
+function zbLifeGua(year, month, day, isMale) {
+  const yy = zbYuanYear(year, month, day);
+  const S = zbDigitRoot(yy);
+  let g = isMale ? (11 - S) : (S + 4);
+  g = ((g - 1) % 9 + 9) % 9 + 1;
+  if (g === 5) g = isMale ? 2 : 8;
+  const group = ZB_EAST_GUA.includes(g) ? "東" : "西";
+  const dir = ZB_PALACE_TO_DIR[g];
+  return { num: g, gua: ZB_GUA_CHAR[g], group, groupName: group + "四命", dir, dirName: ZB_DIR_NAME[dir], wx: ZB_GUA_WX[g], lichunYear: yy, isMale };
+}
+
+// 游年翻卦：由本卦依序翻爻（上中下…）得八方游年星
+const ZB_BAGUA_LINES = { 1: [0, 1, 0], 9: [1, 0, 1], 3: [1, 0, 0], 4: [0, 1, 1], 6: [1, 1, 1], 2: [0, 0, 0], 8: [0, 0, 1], 7: [1, 1, 0] };
+const ZB_LINES_TO_GUA = {};
+Object.keys(ZB_BAGUA_LINES).forEach((k) => { ZB_LINES_TO_GUA[ZB_BAGUA_LINES[k].join(",")] = +k; });
+// 翻爻序（0下爻1中爻2上爻，累進）：生氣上、五鬼中、延年下、六煞中、禍害上、天醫中、絕命下，末伏位＝本卦
+const ZB_GAME_SEQ = [["生氣", 2], ["五鬼", 1], ["延年", 0], ["六煞", 1], ["禍害", 2], ["天醫", 1], ["絕命", 0]];
+const ZB_GAME_META = {
+  生氣: { tone: "good", lv: "大吉", wx: "木", note: "貪狼，主活力、名利、添丁" },
+  延年: { tone: "good", lv: "大吉", wx: "金", note: "武曲，主健康長壽、感情和合" },
+  天醫: { tone: "good", lv: "中吉", wx: "土", note: "巨門，主健康、財富、貴人" },
+  伏位: { tone: "good", lv: "小吉", wx: "木", note: "輔弼，主平穩、蓄氣安定" },
+  絕命: { tone: "bad", lv: "大凶", wx: "金", note: "破軍，主重病、破敗、絕嗣" },
+  五鬼: { tone: "bad", lv: "大凶", wx: "火", note: "廉貞，主火災、官非、小人" },
+  六煞: { tone: "warn", lv: "次凶", wx: "水", note: "文曲，主是非、桃花、破財" },
+  禍害: { tone: "warn", lv: "小凶", wx: "土", note: "祿存，主口舌、疾病、爭執" }
+};
+function zbGameStars(gua) {
+  let lines = ZB_BAGUA_LINES[gua].slice();
+  const map = { 伏位: gua };
+  ZB_GAME_SEQ.forEach(([star, li]) => { lines = lines.slice(); lines[li] ^= 1; map[star] = ZB_LINES_TO_GUA[lines.join(",")]; });
+  return ["生氣", "延年", "天醫", "伏位", "絕命", "五鬼", "六煞", "禍害"].map((star) => {
+    const gg = map[star], dir = ZB_PALACE_TO_DIR[gg];
+    return Object.assign({ star, gua: gg, guaChar: ZB_GUA_CHAR[gg], dir, dirName: ZB_DIR_NAME[dir] }, ZB_GAME_META[star]);
+  });
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { calculateZibai, zbPeriodFromDate, zbMountainIndex, zbFly, ZB_MOUNTAINS };
+  module.exports = { calculateZibai, zbPeriodFromDate, zbMountainIndex, zbFly, ZB_MOUNTAINS, analyzeZibai, zbLifeGua, zbGameStars };
 }
