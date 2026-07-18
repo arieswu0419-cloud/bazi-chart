@@ -40,7 +40,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -56,7 +56,8 @@ function effectivePermissions(data) {
     mingpian: !!raw.mingpian,
     zibai: !!raw.zibai,
     bazhai: !!raw.bazhai,
-    cuiwang: !!raw.cuiwang
+    cuiwang: !!raw.cuiwang,
+    qimenshuzi: !!raw.qimenshuzi
   };
 }
 
@@ -96,7 +97,7 @@ requireApprovedUser(function (user, data) {
 
   // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
   // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
-  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水", cuiwang: "奇門催旺" };
+  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水", cuiwang: "奇門催旺", qimenshuzi: "奇門數字" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
@@ -132,6 +133,10 @@ requireApprovedUser(function (user, data) {
         showCuiwangView();
         return;
       }
+      if (key === "qimenshuzi") {
+        showQimenShuziView();
+        return;
+      }
       if (key === "qimenSansheng") {
         showQimenSanshengView();
         return;
@@ -154,7 +159,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -3378,6 +3383,92 @@ function gy17Init() {
   renderGuanyin17Bag();
   renderGuanyin17Board();
 }
+
+// ================= 奇門數字（號碼奇門；六位數字對應六符號，排盤見 qimen-shuzi-engine.js）=================
+function showQimenShuziView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("qimenShuziView").style.display = "";
+  setActiveNav("奇門數字");
+}
+function hideQimenShuziView() {
+  document.getElementById("qimenShuziView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("qimenShuziBackBtn").addEventListener("click", hideQimenShuziView);
+// 只能輸入數字
+document.getElementById("qsz-input").addEventListener("input", function () {
+  this.value = this.value.replace(/\D/g, "");
+});
+
+function buildQimenShuziHtml(res) {
+  const c = res.cells;
+  const cell = (k) => {
+    const x = c[k];
+    return '<div class="qsz-cell qsz-' + x.meta.pos + " qsz-t-" + k + '">' +
+      '<span class="qsz-cell-label">' + x.meta.label + "</span>" +
+      '<span class="qsz-cell-value">' + x.value + "</span>" +
+      '<span class="qsz-cell-digit">' + x.digit + "</span></div>";
+  };
+  // 值符（八神）在上中、開門（八門）在正中金圈
+  const plate = '<div class="qsz-plate"><div class="qsz-frame"><div class="qsz-grid">' +
+    cell("xing") + cell("shen") + cell("tian") + cell("men") + cell("gong") + cell("di") +
+    "</div></div></div>";
+
+  // 逐符號說明
+  const order = ["xing", "shen", "gong", "tian", "di", "men"];
+  const rows = order.map((k) => {
+    const x = c[k];
+    const jx = x.jx ? '<span class="qsz-jx qsz-jx-' + (x.jx.indexOf("凶") >= 0 || x.jx === "空亡" ? "bad" : (x.jx.indexOf("吉") >= 0 ? "good" : "neu")) + '">' + x.jx + "</span>" : "";
+    return '<div class="qsz-explain-row"><span class="qsz-explain-type">' + x.meta.label + "（" + x.digit + "）</span>" +
+      '<span class="qsz-explain-val">' + x.value + "</span>" + jx +
+      '<span class="qsz-explain-mean">' + x.meta.mean + (x.kong ? "　※空亡：" + x.kong : "") + "</span></div>";
+  }).join("");
+
+  const geju = res.geju
+    ? '<div class="qsz-geju"><b>天地盤格局：' + c.tian.value + c.di.value + "　" + res.geju.name + "</b>　" + res.geju.desc + "</div>"
+    : (c.tian.value !== "空亡" && c.di.value !== "空亡" ? "" : '<div class="qsz-geju">天／地盤干含空亡，暫不列格局。</div>');
+
+  return '<div class="qsz-result-head">末六碼：<b>' + res.six.split("").join(" ") + "</b></div>" +
+    plate +
+    '<div class="zibai-section-title" style="margin-top:16px">盤面六符號說明</div>' +
+    '<div class="qsz-explain">' + rows + "</div>" +
+    geju +
+    '<div class="zibai-disclaimer">※ 九星＝性格發展時機、八神＝想法觀念運勢、宮位＝定位環境平臺、天盤干＝外表行為、地盤干＝內在想法、八門＝自己心態行為；吉凶須合整體綜參。</div>';
+}
+
+function runQimenShuzi() {
+  const raw = document.getElementById("qsz-input").value.replace(/\D/g, "");
+  if (raw.length < 6) { document.getElementById("qimenShuziHint").textContent = "數字不足 6 位，請至少輸入 6 位數字。"; return; }
+  const res = calcQimenShuzi(raw);
+  if (!res) { document.getElementById("qimenShuziHint").textContent = "排盤失敗，請確認輸入。"; return; }
+  document.getElementById("qimenShuziHint").textContent = "已取末六碼 " + res.six + " 排盤。";
+  document.getElementById("qimenShuziResult").innerHTML = buildQimenShuziHtml(res);
+  document.getElementById("qimenShuziCard").style.display = "block";
+}
+document.getElementById("qimenShuziRunBtn").addEventListener("click", runQimenShuzi);
+document.getElementById("qsz-input").addEventListener("keydown", function (e) { if (e.key === "Enter") runQimenShuzi(); });
+
+document.getElementById("exportQimenShuziPdfBtn").addEventListener("click", async function () {
+  const btn = this, orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 10;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 奇門數字", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    const sections = Array.from(document.querySelectorAll("#qimenShuziCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("奇門數字.pdf");
+  } catch (err) { alert("匯出失敗：" + err.message); }
+  finally { btn.disabled = false; btn.textContent = orig; }
+});
 
 // ================= 奇門催旺（催財佈局；排盤重用藍盤 calculateQimenHeader，評分見 cuiwang-engine.js）=================
 function showCuiwangView() {
