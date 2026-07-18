@@ -402,9 +402,14 @@ function calcWuxingPct(pillars) {
   return wuxingPct;
 }
 
-// 十神比重表：天干（不含日主自己）權重 1；藏干本氣權重 0.63、中氣／餘氣權重各 0.2；
-// 只有一個藏干的地支（子午卯酉）視為全部力量集中在該干，權重比照天干＝1。
-// 這組權重是拿多筆命盤跟參考網站的十神比重表數字比對回推校正出來的，非傳統典籍固定公式。
+// 十神比重表：官網（meta.securelayers.cloud）數值反推出的精確整數權重公式——
+// 天干（不含日主）每字 5 分；地支藏干共 5 分：單藏干[5]、雙藏干[3,2]、三藏干[3,1,1]
+// （本氣／中氣／餘氣順序）。總分固定 3×5＋4×5＝35，官網所有百分比都是 k/35 的
+// 「無條件捨去」一位小數（5/35=14.28→14.2、8/35=22.85→22.8，非四捨五入）。
+// 以 2026-02-07 16:00（丙午庚寅壬子戊申）解出權重、再以 2026-11-07 17:55
+// （丙午己亥乙酉乙酉，含雙藏干亥＋兩個單藏干酉）盲測預測 7 項數值全部命中驗證。
+// 舊版近似權重（1／0.63／0.2／0.2）在雙藏干（午亥）與捨入上會偏差最多約 3 個百分點，已汰換。
+const HIDE_WEIGHTS = { 1: [5], 2: [3, 2], 3: [3, 1, 1] };
 function weightedShishenTally(pillars, dayGan) {
   const shishenW = {};
   let total = 0;
@@ -415,19 +420,15 @@ function weightedShishenTally(pillars, dayGan) {
   }
   pillars.forEach((p) => {
     if (p.gan.char !== dayGan || p.label !== "日柱") {
-      add(getShiShen(dayGan, p.gan.char), 1);
+      add(getShiShen(dayGan, p.gan.char), 5);
     }
     const hg = p.hideGans;
-    if (hg.length === 1) {
-      add(hg[0].shiShen, 1);
-    } else {
-      add(hg[0].shiShen, 0.63);
-      for (let i = 1; i < hg.length; i++) add(hg[i].shiShen, 0.2);
-    }
+    const ws = HIDE_WEIGHTS[hg.length] || HIDE_WEIGHTS[3];
+    hg.forEach((h, i) => add(h.shiShen, ws[i]));
   });
   const shishenPct = {};
   ["比肩", "劫財", "食神", "傷官", "正財", "偏財", "正官", "七殺", "正印", "偏印"].forEach((k) => {
-    shishenPct[k] = total ? Math.round(((shishenW[k] || 0) / total) * 1000) / 10 : 0;
+    shishenPct[k] = total ? Math.floor(((shishenW[k] || 0) / total) * 1000) / 10 : 0;
   });
   return shishenPct;
 }
