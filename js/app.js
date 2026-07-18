@@ -492,6 +492,91 @@ document.getElementById("exportPdfBtn").addEventListener("click", async function
   }
 });
 
+// ===== 製作個人命書（PDF）=====
+// 參考教材《個人命書》格式：封面（命書／以你為名的人生／姓名）＋八字命卷＋大運流年＋
+// 日主定策等敘述＋神煞。上下左右留邊 20mm（2cm），逐區塊分頁不切到文字。
+document.getElementById("makeMingshuBtn").addEventListener("click", async function () {
+  if (!currentChart) { alert("請先產生八字命卷報告。"); return; }
+  const btn = this, orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "製作中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 20; // 2cm 邊界
+    const centerImg = (img, y) => pdf.addImage(img.dataUrl, "PNG", (pageWidth - img.widthMM) / 2, y, img.widthMM, img.heightMM);
+
+    // ---- 封面 ----
+    const cvTitle = textToImage("命　書", 58, "#b8860b");
+    centerImg(cvTitle, 78);
+    const cvSub = textToImage("以你為名的人生", 18, "#8a7943");
+    centerImg(cvSub, 78 + cvTitle.heightMM + 8);
+    const cvName = textToImage(currentChart.name, 30, "#212529");
+    centerImg(cvName, 128);
+    const infoLines = [
+      "性別：" + (GENDER_TEXT[currentChart.gender] || ""),
+      "陽曆生辰：" + currentChart.solarText,
+      "農曆生辰：" + currentChart.lunarText,
+      "生肖：" + currentChart.shengxiao + "　命格：" + currentChart.geju
+    ];
+    let iy = 128 + cvName.heightMM + 12;
+    infoLines.forEach((ln) => { const im = textToImage(ln, 13, "#5F5E5A"); centerImg(im, iy); iy += im.heightMM + 3; });
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", (pageWidth - 14) / 2, pageHeight - margin - 14, 14, 14);
+
+    // 智慧分頁：區塊放得下就放；過高且是「垂直堆疊文字」就拆成子區塊（避免切到文字）；
+    // 過高且是原子視覺塊（四柱圖／表格）就整塊等比縮放置入一頁，絕不從中間切開。
+    const ctx = { margin, pageWidth, pageHeight, contentW: pageWidth - margin * 2, maxH: pageHeight - margin * 2, y: margin, startY: margin };
+    async function addSmart(el) {
+      const rect = el.getBoundingClientRect();
+      if (rect.height < 2 || rect.width < 2) return;
+      const canvas = await html2canvas(el, { scale: 1.5, backgroundColor: "#ffffff" });
+      const fullH = canvas.height * ctx.contentW / canvas.width;
+      if (fullH <= ctx.maxH) {
+        if (ctx.y + fullH > ctx.pageHeight - ctx.margin) { pdf.addPage(); ctx.y = ctx.margin; }
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.86), "JPEG", ctx.margin, ctx.y, ctx.contentW, fullH);
+        ctx.y += fullH + 5;
+        return;
+      }
+      const disp = getComputedStyle(el).display;
+      const rowish = el.tagName === "TABLE" || disp === "grid" || disp.indexOf("flex") >= 0;
+      const kids = Array.from(el.children).filter((c) => { const r = c.getBoundingClientRect(); return r.height > 2 && r.width > 2; });
+      if (!rowish && kids.length >= 2) { for (const k of kids) await addSmart(k); return; }
+      // 原子且過高：等比縮放置入單頁
+      let h2 = ctx.maxH, w2 = canvas.width * h2 / canvas.height;
+      if (w2 > ctx.contentW) { w2 = ctx.contentW; h2 = canvas.height * w2 / canvas.width; }
+      if (ctx.y > ctx.margin + 0.1) { pdf.addPage(); ctx.y = ctx.margin; }
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", (ctx.pageWidth - w2) / 2, ctx.y, w2, h2);
+      ctx.y += h2 + 5;
+    }
+    const startSection = async (titleText, sections) => {
+      pdf.addPage();
+      ctx.y = ctx.margin;
+      const th = textToImage(titleText, 20, "#b8860b");
+      centerImg(th, ctx.margin);
+      ctx.y = ctx.margin + th.heightMM + 6;
+      for (const el of (sections || [])) await addSmart(el);
+    };
+
+    // ---- 八字命卷 ----
+    await startSection("八字命卷", Array.from(document.querySelectorAll("#resultCard > *:not(.card-head)")));
+    // ---- 大運與流年 ----
+    await startSection("大運與流年", Array.from(document.querySelectorAll("#dayunCard .dayun-block")));
+    // ---- 日主定策・陰陽性格・九運行業趨勢 ----
+    const strat = Array.from(document.querySelectorAll("#dayunStrategyPanel > *"));
+    if (strat.length) await startSection("日主定策・陰陽性格・九運行業趨勢", strat);
+    // ---- 神煞解釋（若已點選產生）----
+    const shensha = Array.from(document.querySelectorAll("#shenshaExplainPanel > *"));
+    if (shensha.length) await startSection("神煞解釋", shensha);
+
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save(currentChart.name + "-個人命書.pdf");
+  } catch (err) {
+    alert("製作失敗：" + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = orig;
+  }
+});
+
 function charCell(part) {
   return '<span class="p-char ' + part.cls + '">' + part.char + '<span class="p-sign">' + part.sign + part.wuxing + "</span></span>";
 }
@@ -540,6 +625,7 @@ function buildPillarsTable(pillars, selectedIdx) {
 function renderChart(data) {
   document.getElementById("resultCard").style.display = "block";
   document.getElementById("dayunCard").style.display = "block";
+  document.getElementById("mingshuBtnWrap").style.display = "";
 
   const info = document.getElementById("infoPanel");
   info.innerHTML =
