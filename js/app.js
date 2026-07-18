@@ -3113,13 +3113,15 @@ function hideGuanyinView() {
 document.getElementById("guanyinBackBtn").addEventListener("click", hideGuanyinView);
 
 function setGuanyinTab(which) {
-  const kai = which === "kaimen";
-  document.getElementById("guanyinPaneKaimen").style.display = kai ? "" : "none";
-  document.getElementById("guanyinPaneRef").style.display = kai ? "none" : "";
-  document.getElementById("guanyinTabKaimen").classList.toggle("active", kai);
-  document.getElementById("guanyinTabRef").classList.toggle("active", !kai);
+  document.getElementById("guanyinPaneKaimen").style.display = which === "kaimen" ? "" : "none";
+  document.getElementById("guanyinPane17").style.display = which === "s17" ? "" : "none";
+  document.getElementById("guanyinPaneRef").style.display = which === "ref" ? "" : "none";
+  document.getElementById("guanyinTabKaimen").classList.toggle("active", which === "kaimen");
+  document.getElementById("guanyinTab17").classList.toggle("active", which === "s17");
+  document.getElementById("guanyinTabRef").classList.toggle("active", which === "ref");
 }
 document.getElementById("guanyinTabKaimen").addEventListener("click", function () { setGuanyinTab("kaimen"); });
+document.getElementById("guanyinTab17").addEventListener("click", function () { setGuanyinTab("s17"); });
 document.getElementById("guanyinTabRef").addEventListener("click", function () { setGuanyinTab("ref"); });
 
 let guanyinStarted = false;
@@ -3245,6 +3247,90 @@ function initGuanyin() {
   renderGuanyinBag();
   renderGuanyinBoard();
   renderGuanyinRef("");
+  gy17Init();
+}
+
+// ---- 17 支卦（3 組開門見山天/人/地 ＋ 2 支關鍵棋；擺棋邏輯同開門見山，17 個位置）----
+const GY17_POS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+let gy17Bag = [];
+let gy17Picked = null;
+let gy17Board = {};
+GY17_POS.forEach((p) => { gy17Board[p] = null; });
+
+function gy17BuildBag() {
+  gy17Bag = [];
+  GY_BAG.forEach((t) => { for (let i = 0; i < t.count; i++) gy17Bag.push({ name: t.name, color: t.color, used: false }); });
+}
+function gy17Next() { return GY17_POS.find((p) => !gy17Board[p]) || null; }
+
+function renderGuanyin17Bag() {
+  document.getElementById("guanyin17Bag").innerHTML = gy17Bag.map((p, i) =>
+    '<button type="button" class="gy-piece gy-' + p.color + (p.used ? " gy-used" : "") +
+    (gy17Picked === i ? " gy-picked" : "") + '" data-idx="' + i + '"' + (p.used ? " disabled" : "") + ">" + p.name + "</button>"
+  ).join("");
+}
+function renderGuanyin17Board() {
+  document.querySelectorAll("#guanyin17Board .gy-pos").forEach((cell) => {
+    const p = gy17Board[cell.dataset.pos];
+    const pe = cell.querySelector(".gy-pos-piece");
+    cell.classList.toggle("gy-filled", !!p);
+    if (p) { pe.textContent = p.name; pe.className = "gy-pos-piece gy-" + p.color; }
+    else { pe.textContent = ""; pe.className = "gy-pos-piece"; }
+  });
+  const nx = gy17Next();
+  document.getElementById("guanyin17Next").textContent = nx ? nx : "已滿";
+  const placed = GY17_POS.map((p) => gy17Board[p]).filter(Boolean);
+  const red = placed.filter((p) => p.color === "red").length;
+  document.getElementById("guanyin17Count").textContent = placed.length
+    ? "　紅（陽）× " + red + "　黑（陰）× " + (placed.length - red) + "　（已放 " + placed.length + "/17）" : "";
+}
+function gy17Place(pos) {
+  if (gy17Picked === null || gy17Board[pos]) return;
+  const p = gy17Bag[gy17Picked];
+  if (!p || p.used) return;
+  p.used = true;
+  gy17Board[pos] = { name: p.name, color: p.color, bagIdx: gy17Picked };
+  gy17Picked = null;
+  document.getElementById("guanyin17Selected").textContent = "尚未選擇";
+  renderGuanyin17Bag(); renderGuanyin17Board();
+}
+document.getElementById("guanyin17Bag").addEventListener("click", function (e) {
+  const btn = e.target.closest(".gy-piece");
+  if (!btn || btn.disabled) return;
+  gy17Picked = Number(btn.dataset.idx);
+  document.getElementById("guanyin17Selected").textContent = gy17Bag[gy17Picked].name + "（" + (gy17Bag[gy17Picked].color === "red" ? "紅" : "黑") + "）";
+  renderGuanyin17Bag();
+});
+document.getElementById("guanyin17Board").addEventListener("click", function (e) {
+  const cell = e.target.closest(".gy-pos");
+  if (!cell) return;
+  const pos = cell.dataset.pos;
+  if (gy17Board[pos]) {
+    gy17Bag[gy17Board[pos].bagIdx].used = false;
+    gy17Board[pos] = null;
+    renderGuanyin17Bag(); renderGuanyin17Board();
+    return;
+  }
+  if (gy17Picked !== null) gy17Place(pos);
+});
+document.getElementById("guanyin17ClearBtn").addEventListener("click", function () {
+  gy17BuildBag(); gy17Picked = null; GY17_POS.forEach((p) => { gy17Board[p] = null; });
+  document.getElementById("guanyin17Selected").textContent = "尚未選擇";
+  renderGuanyin17Bag(); renderGuanyin17Board();
+});
+document.getElementById("guanyin17Random17Btn").addEventListener("click", function () {
+  gy17BuildBag(); GY17_POS.forEach((p) => { gy17Board[p] = null; }); gy17Picked = null;
+  const avail = gy17Bag.map((_, i) => i);
+  for (let i = avail.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [avail[i], avail[j]] = [avail[j], avail[i]]; }
+  const pick = avail.slice(0, 17);
+  GY17_POS.forEach((pos, k) => { const idx = pick[k]; gy17Bag[idx].used = true; gy17Board[pos] = { name: gy17Bag[idx].name, color: gy17Bag[idx].color, bagIdx: idx }; });
+  document.getElementById("guanyin17Selected").textContent = "尚未選擇";
+  renderGuanyin17Bag(); renderGuanyin17Board();
+});
+function gy17Init() {
+  gy17BuildBag();
+  renderGuanyin17Bag();
+  renderGuanyin17Board();
 }
 
 // ================= 奇門催旺（催財佈局；排盤重用藍盤 calculateQimenHeader，評分見 cuiwang-engine.js）=================

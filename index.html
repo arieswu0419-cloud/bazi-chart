@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=219">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=219">
+<link rel="stylesheet" href="css/style.css?v=221">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=221">
 </head>
 <body>
 
@@ -684,6 +684,7 @@
       <h2 class="zibai-title">觀音棋卦</h2>
       <div class="zibai-tabs" data-html2canvas-ignore="true">
         <button type="button" class="zibai-tab-btn active" id="guanyinTabKaimen">開門見山卦</button>
+        <button type="button" class="zibai-tab-btn" id="guanyinTab17">17 支卦</button>
         <button type="button" class="zibai-tab-btn" id="guanyinTabRef">速查表</button>
       </div>
     </div>
@@ -721,6 +722,73 @@
         <div class="gy-side">
           <div class="gy-axis">左側＝陰　│　右側＝陽　│　上位（2·3）力量大　│　下位（4·5）能量弱</div>
           <div class="gy-count" id="guanyinCount"></div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div id="guanyinPane17" style="display:none">
+    <div class="card">
+      <p class="jigong-intro">
+        17 支卦：3 組開門見山（天／人／地，各 5 支）＋ 2 支關鍵棋，共 17 支。<br>
+        從下方 32 顆棋子袋點選一顆，再點盤面位置放入；依 <b>1～17 號順序</b>放置（天盤 1-5 → 人盤 6-10 → 地盤 11-15 → 關鍵棋 16-17）。點盤面已放的棋可取回。
+      </p>
+      <div class="gy-controls" data-html2canvas-ignore="true">
+        <span class="gy-selected-label">目前已選：<b id="guanyin17Selected">尚未選擇</b></span>
+        <span class="gy-selected-label">下一個號碼：<b id="guanyin17Next">1</b></span>
+        <div class="gy-btn-row">
+          <button type="button" class="btn secondary" id="guanyin17ClearBtn">清空</button>
+          <button type="button" class="btn secondary" id="guanyin17Random17Btn">🎲 隨機抽 17 顆</button>
+        </div>
+      </div>
+      <div class="gy-bag" id="guanyin17Bag"></div>
+
+      <div class="gy17-board-wrap">
+        <div class="gy17-board" id="guanyin17Board">
+          <div class="gy17-group gy17-guanjian">
+            <div class="gy17-glabel">關鍵棋</div>
+            <div class="gy17-gj-cells">
+              <div class="gy-pos" data-pos="16"><span class="gy-pos-num">16</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="17"><span class="gy-pos-num">17</span><span class="gy-pos-piece"></span></div>
+            </div>
+          </div>
+          <div class="gy17-group">
+            <div class="gy17-glabel">地盤</div>
+            <div class="gy17-cross">
+              <div class="gy-pos" data-pos="13" style="grid-area:tl"><span class="gy-pos-num">13</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="12" style="grid-area:tr"><span class="gy-pos-num">12</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos gy-pos-main" data-pos="11" style="grid-area:mc"><span class="gy-pos-num">11</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="14" style="grid-area:bl"><span class="gy-pos-num">14</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="15" style="grid-area:br"><span class="gy-pos-num">15</span><span class="gy-pos-piece"></span></div>
+            </div>
+          </div>
+          <div class="gy17-group">
+            <div class="gy17-glabel">人盤</div>
+            <div class="gy17-cross">
+              <div class="gy-pos" data-pos="8" style="grid-area:tl"><span class="gy-pos-num">8</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="7" style="grid-area:tr"><span class="gy-pos-num">7</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos gy-pos-main" data-pos="6" style="grid-area:mc"><span class="gy-pos-num">6</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="9" style="grid-area:bl"><span class="gy-pos-num">9</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="10" style="grid-area:br"><span class="gy-pos-num">10</span><span class="gy-pos-piece"></span></div>
+            </div>
+          </div>
+          <div class="gy17-group">
+            <div class="gy17-glabel">天盤</div>
+            <div class="gy17-cross">
+              <div class="gy-pos" data-pos="3" style="grid-area:tl"><span class="gy-pos-num">3</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="2" style="grid-area:tr"><span class="gy-pos-num">2</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos gy-pos-main" data-pos="1" style="grid-area:mc"><span class="gy-pos-num">1</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="4" style="grid-area:bl"><span class="gy-pos-num">4</span><span class="gy-pos-piece"></span></div>
+              <div class="gy-pos" data-pos="5" style="grid-area:br"><span class="gy-pos-num">5</span><span class="gy-pos-piece"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="gy17-legend">
+          <b>天盤</b>（1-5）先天／過去、運勢時運（流年）、出生家庭、與生俱來　｜
+          <b>人盤</b>（6-10）個人行為／現在、人事因果、感情／工作　｜
+          <b>地盤</b>（11-15）陽宅居住地／不動產、未來、地點因素　｜
+          <b>關鍵棋</b>（16-17）關鍵應用。每組主卦（中宮）為紅框，讀序 1→17。
+          <span id="guanyin17Count" class="gy-count"></span>
         </div>
       </div>
     </div>
@@ -1192,30 +1260,30 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=219"></script>
-<script src="js/auth.js?v=219"></script>
+<script src="js/firebase-config.js?v=221"></script>
+<script src="js/auth.js?v=221"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=219"></script>
-<script src="js/dayun-strategy-content.js?v=219"></script>
-<script src="js/shensha-content.js?v=219"></script>
-<script src="js/renge-content.js?v=219"></script>
-<script src="js/renge-engine.js?v=219"></script>
-<script src="js/lifenum-engine.js?v=219"></script>
-<script src="js/mingpian-engine.js?v=219"></script>
-<script src="js/name-strokes-data.js?v=219"></script>
-<script src="js/lunar-convert.js?v=219"></script>
-<script src="js/shuzi-engine.js?v=219"></script>
-<script src="js/jigong-engine.js?v=219"></script>
-<script src="js/guanyin-data.js?v=219"></script>
+<script src="js/bazi-engine.js?v=221"></script>
+<script src="js/dayun-strategy-content.js?v=221"></script>
+<script src="js/shensha-content.js?v=221"></script>
+<script src="js/renge-content.js?v=221"></script>
+<script src="js/renge-engine.js?v=221"></script>
+<script src="js/lifenum-engine.js?v=221"></script>
+<script src="js/mingpian-engine.js?v=221"></script>
+<script src="js/name-strokes-data.js?v=221"></script>
+<script src="js/lunar-convert.js?v=221"></script>
+<script src="js/shuzi-engine.js?v=221"></script>
+<script src="js/jigong-engine.js?v=221"></script>
+<script src="js/guanyin-data.js?v=221"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=219"></script>
-<script src="js/qimen-engine.js?v=219"></script>
-<script src="js/cuiwang-engine.js?v=219"></script>
-<script src="js/qimen-hongpan-engine.js?v=219"></script>
-<script src="js/qimen-sansheng-engine.js?v=219"></script>
-<script src="js/fengshui-zibai-engine.js?v=219"></script>
+<script src="js/jigong-bugua.js?v=221"></script>
+<script src="js/qimen-engine.js?v=221"></script>
+<script src="js/cuiwang-engine.js?v=221"></script>
+<script src="js/qimen-hongpan-engine.js?v=221"></script>
+<script src="js/qimen-sansheng-engine.js?v=221"></script>
+<script src="js/fengshui-zibai-engine.js?v=221"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=219"></script>
+<script src="js/app.js?v=221"></script>
 </body>
 </html>

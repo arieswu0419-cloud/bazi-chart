@@ -1690,3 +1690,24 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .cw-s8  { background: #4a90d9; }
 .cw-s7  { background: #9a8a55; }
 .cw-wupin { font-size: 12px; color: #6b3410; max-width: 260px; }
+
+/* ===== 觀音棋卦：17 支卦（3 組開門見山天/人/地 + 2 關鍵棋） ===== */
+.gy17-board-wrap { margin-top: 12px; }
+.gy17-board { display: flex; flex-direction: row; justify-content: center; align-items: stretch;
+  gap: 10px; overflow-x: auto; padding: 6px 2px 12px; }
+.gy17-group { display: flex; flex-direction: column; align-items: center; gap: 6px;
+  border: 1px dashed #c9b06a; border-radius: 8px; padding: 8px 6px; min-width: 0; }
+.gy17-glabel { font-size: 13px; font-weight: 700; color: var(--gold-darker); white-space: nowrap; }
+.gy17-cross { display: grid; grid-template-columns: repeat(3, auto); grid-template-rows: repeat(3, auto);
+  grid-template-areas: "tl . tr" ". mc ." "bl . br"; gap: 4px; }
+.gy17-gj-cells { display: grid; grid-template-rows: repeat(3, auto); align-items: center; height: 100%;
+  grid-template-areas: "tr" "mc" "br"; gap: 4px; }
+.gy17-gj-cells .gy-pos:first-child { grid-area: tr; }
+.gy17-gj-cells .gy-pos:last-child { grid-area: br; }
+/* 17 支盤的棋位比開門見山小一號，才能一排容納 4 組 */
+.gy17-board .gy-pos { width: clamp(44px, 13vw, 58px); border-width: 2px; }
+.gy17-board .gy-pos-num { font-size: 10px; top: 2px; left: 4px; }
+.gy17-board .gy-pos-piece { font-size: clamp(18px, 5.5vw, 28px); }
+.gy17-legend { font-size: 12.5px; line-height: 1.8; color: var(--text-secondary);
+  background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; margin-top: 6px; }
+.gy17-legend b { color: var(--gold-darker); }
