@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=213">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=213">
+<link rel="stylesheet" href="css/style.css?v=214">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=214">
 </head>
 <body>
 
@@ -675,6 +675,65 @@
     </div>
     </div>
 
+    <div id="guanyinView" style="display:none">
+    <div class="card" id="guanyinHeadCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="guanyinBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="zibai-title">觀音棋卦</h2>
+      <div class="zibai-tabs" data-html2canvas-ignore="true">
+        <button type="button" class="zibai-tab-btn active" id="guanyinTabKaimen">開門見山卦</button>
+        <button type="button" class="zibai-tab-btn" id="guanyinTabRef">速查表</button>
+      </div>
+    </div>
+
+    <div id="guanyinPaneKaimen">
+    <div class="card">
+      <p class="jigong-intro">
+        開門見山（5 支）：五只成一局，順序很重要。<br>
+        從下方 32 顆棋子袋（紅 16＋黑 16）點選一顆，再點盤面位置放入（順序 1 主卦→2→3→4→5）；主卦（1）與尾卦（5）為紅框重點。
+      </p>
+      <div class="gy-controls" data-html2canvas-ignore="true">
+        <span class="gy-selected-label">目前已選：<b id="guanyinSelected">尚未選擇</b></span>
+        <div class="gy-btn-row">
+          <button type="button" class="btn secondary" id="guanyinClearBtn">清空</button>
+          <button type="button" class="btn secondary" id="guanyinRandom5Btn">🎲 隨機抽 5 顆</button>
+        </div>
+      </div>
+      <div class="gy-bag" id="guanyinBag"></div>
+
+      <div class="gy-board-wrap">
+        <div class="gy-board" id="guanyinBoard">
+          <div class="gy-pos" data-pos="3" style="grid-area:tl"><span class="gy-pos-num">3</span><span class="gy-pos-piece"></span></div>
+          <div class="gy-pos" data-pos="2" style="grid-area:tr"><span class="gy-pos-num">2</span><span class="gy-pos-piece"></span></div>
+          <div class="gy-pos gy-pos-main" data-pos="1" style="grid-area:mc"><span class="gy-pos-num">1</span><span class="gy-pos-piece"></span></div>
+          <div class="gy-pos" data-pos="4" style="grid-area:bl"><span class="gy-pos-num">4</span><span class="gy-pos-piece"></span></div>
+          <div class="gy-pos gy-pos-tail" data-pos="5" style="grid-area:br"><span class="gy-pos-num">5</span><span class="gy-pos-piece"></span></div>
+          <svg class="gy-board-lines" viewBox="0 0 300 300" aria-hidden="true">
+            <defs><marker id="gyArrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#8a7943"/></marker></defs>
+            <line x1="150" y1="150" x2="228" y2="66" marker-end="url(#gyArrow)"/>
+            <line x1="228" y1="52" x2="86" y2="52" marker-end="url(#gyArrow)"/>
+            <line x1="72" y1="66" x2="72" y2="228" marker-end="url(#gyArrow)"/>
+            <line x1="86" y1="248" x2="214" y2="248" marker-end="url(#gyArrow)"/>
+          </svg>
+        </div>
+        <div class="gy-side">
+          <div class="gy-axis">左側＝陰　│　右側＝陽　│　上位（2·3）力量大　│　下位（4·5）能量弱</div>
+          <div class="gy-count" id="guanyinCount"></div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div id="guanyinPaneRef" style="display:none">
+    <div class="card">
+      <p class="jigong-intro">速查表：象棋卜卦棋子釋義與詞彙，可用上方搜尋框即時查詢。</p>
+      <input type="text" id="guanyinSearch" class="gy-search" placeholder="🔍 輸入棋名或關鍵字（如：帥、婚姻、破相、三合局、隱藏棋…）">
+      <div class="gy-ref" id="guanyinRefContent"></div>
+    </div>
+    </div>
+    </div>
+
     <div id="qimenDunjiaView" style="display:none">
     <div class="card" id="qimenDunjiaFormCard">
       <div class="card-head">
@@ -1095,28 +1154,29 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=213"></script>
-<script src="js/auth.js?v=213"></script>
+<script src="js/firebase-config.js?v=214"></script>
+<script src="js/auth.js?v=214"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=213"></script>
-<script src="js/dayun-strategy-content.js?v=213"></script>
-<script src="js/shensha-content.js?v=213"></script>
-<script src="js/renge-content.js?v=213"></script>
-<script src="js/renge-engine.js?v=213"></script>
-<script src="js/lifenum-engine.js?v=213"></script>
-<script src="js/mingpian-engine.js?v=213"></script>
-<script src="js/name-strokes-data.js?v=213"></script>
-<script src="js/lunar-convert.js?v=213"></script>
-<script src="js/shuzi-engine.js?v=213"></script>
-<script src="js/jigong-engine.js?v=213"></script>
+<script src="js/bazi-engine.js?v=214"></script>
+<script src="js/dayun-strategy-content.js?v=214"></script>
+<script src="js/shensha-content.js?v=214"></script>
+<script src="js/renge-content.js?v=214"></script>
+<script src="js/renge-engine.js?v=214"></script>
+<script src="js/lifenum-engine.js?v=214"></script>
+<script src="js/mingpian-engine.js?v=214"></script>
+<script src="js/name-strokes-data.js?v=214"></script>
+<script src="js/lunar-convert.js?v=214"></script>
+<script src="js/shuzi-engine.js?v=214"></script>
+<script src="js/jigong-engine.js?v=214"></script>
+<script src="js/guanyin-data.js?v=214"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=213"></script>
-<script src="js/qimen-engine.js?v=213"></script>
-<script src="js/qimen-hongpan-engine.js?v=213"></script>
-<script src="js/qimen-sansheng-engine.js?v=213"></script>
-<script src="js/fengshui-zibai-engine.js?v=213"></script>
+<script src="js/jigong-bugua.js?v=214"></script>
+<script src="js/qimen-engine.js?v=214"></script>
+<script src="js/qimen-hongpan-engine.js?v=214"></script>
+<script src="js/qimen-sansheng-engine.js?v=214"></script>
+<script src="js/fengshui-zibai-engine.js?v=214"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=213"></script>
+<script src="js/app.js?v=214"></script>
 </body>
 </html>

@@ -115,6 +115,10 @@ requireApprovedUser(function (user, data) {
         showJigongView();
         return;
       }
+      if (key === "guanyin") {
+        showGuanyinView();
+        return;
+      }
       if (key === "qimenDunjia") {
         showQimenDunjiaView();
         return;
@@ -145,7 +149,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "qimenSanshengView", "jigongView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -3085,6 +3089,158 @@ document.getElementById("exportBazhaiPdfBtn").addEventListener("click", async fu
     btn.textContent = originalLabel;
   }
 });
+
+// ================= 觀音棋卦（開門見山卦擺棋＋速查表；資料見 js/guanyin-data.js）=================
+// 開門見山圖版面（對照教材 象棋卜卦.pptx 第14堂 CAD 圖）：3左上、2右上、1中(主卦)、4左下、5右下(尾卦)，讀序 1→2→3→4→5。
+function showGuanyinView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("guanyinView").style.display = "";
+  setActiveNav("觀音棋卦");
+  if (!guanyinStarted) initGuanyin();
+  setGuanyinTab("kaimen");
+}
+function hideGuanyinView() {
+  document.getElementById("guanyinView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("guanyinBackBtn").addEventListener("click", hideGuanyinView);
+
+function setGuanyinTab(which) {
+  const kai = which === "kaimen";
+  document.getElementById("guanyinPaneKaimen").style.display = kai ? "" : "none";
+  document.getElementById("guanyinPaneRef").style.display = kai ? "none" : "";
+  document.getElementById("guanyinTabKaimen").classList.toggle("active", kai);
+  document.getElementById("guanyinTabRef").classList.toggle("active", !kai);
+}
+document.getElementById("guanyinTabKaimen").addEventListener("click", function () { setGuanyinTab("kaimen"); });
+document.getElementById("guanyinTabRef").addEventListener("click", function () { setGuanyinTab("ref"); });
+
+let guanyinStarted = false;
+let gyBag = [];          // 目前棋子袋（每顆一物件，含 used 狀態）
+let gyPicked = null;     // 目前選中的棋子（袋內索引）
+let gyBoard = { 1: null, 2: null, 3: null, 4: null, 5: null }; // 盤面各位置放的棋（{name,color,bagIdx}）
+
+function gyBuildBag() {
+  gyBag = [];
+  GY_BAG.forEach((t) => { for (let i = 0; i < t.count; i++) gyBag.push({ name: t.name, color: t.color, used: false }); });
+}
+
+function renderGuanyinBag() {
+  const el = document.getElementById("guanyinBag");
+  el.innerHTML = gyBag.map((p, i) =>
+    '<button type="button" class="gy-piece gy-' + p.color + (p.used ? " gy-used" : "") +
+    (gyPicked === i ? " gy-picked" : "") + '" data-idx="' + i + '"' + (p.used ? " disabled" : "") + ">" + p.name + "</button>"
+  ).join("");
+}
+
+function renderGuanyinBoard() {
+  document.querySelectorAll("#guanyinBoard .gy-pos").forEach((cell) => {
+    const pos = cell.dataset.pos;
+    const p = gyBoard[pos];
+    const pe = cell.querySelector(".gy-pos-piece");
+    cell.classList.toggle("gy-filled", !!p);
+    if (p) { pe.textContent = p.name; pe.className = "gy-pos-piece gy-" + p.color; }
+    else { pe.textContent = ""; pe.className = "gy-pos-piece"; }
+  });
+  // 紅黑數量統計
+  const placed = [1, 2, 3, 4, 5].map((n) => gyBoard[n]).filter(Boolean);
+  const red = placed.filter((p) => p.color === "red").length, black = placed.length - red;
+  const box = document.getElementById("guanyinCount");
+  if (!placed.length) { box.textContent = ""; return; }
+  let note = "紅（陽）× " + red + "　黑（陰）× " + black + "　（已放 " + placed.length + "/5）";
+  if (placed.length === 5) {
+    if (black === 5) note += "　⚠ 五支全黑＝黑絕卦";
+    else if (red === 5) note += "　⚠ 五支全紅（也非好卦，除非三合局）";
+  }
+  box.textContent = note;
+}
+
+// 下一個空位（依讀序 1→2→3→4→5）
+function gyNextEmpty() {
+  return [1, 2, 3, 4, 5].find((n) => !gyBoard[n]);
+}
+function gyPlaceAt(pos) {
+  if (gyPicked === null) return;
+  if (gyBoard[pos]) return; // 已有棋
+  const p = gyBag[gyPicked];
+  if (!p || p.used) return;
+  p.used = true;
+  gyBoard[pos] = { name: p.name, color: p.color, bagIdx: gyPicked };
+  gyPicked = null;
+  document.getElementById("guanyinSelected").textContent = "尚未選擇";
+  renderGuanyinBag(); renderGuanyinBoard();
+}
+
+document.getElementById("guanyinBag").addEventListener("click", function (e) {
+  const btn = e.target.closest(".gy-piece");
+  if (!btn || btn.disabled) return;
+  gyPicked = Number(btn.dataset.idx);
+  document.getElementById("guanyinSelected").textContent = gyBag[gyPicked].name + "（" + (gyBag[gyPicked].color === "red" ? "紅" : "黑") + "）";
+  renderGuanyinBag();
+});
+document.getElementById("guanyinBoard").addEventListener("click", function (e) {
+  const cell = e.target.closest(".gy-pos");
+  if (!cell) return;
+  const pos = Number(cell.dataset.pos);
+  if (gyBoard[pos]) { // 點已放的棋 → 取回
+    gyBag[gyBoard[pos].bagIdx].used = false;
+    gyBoard[pos] = null;
+    renderGuanyinBag(); renderGuanyinBoard();
+    return;
+  }
+  if (gyPicked !== null) gyPlaceAt(pos);
+});
+document.getElementById("guanyinClearBtn").addEventListener("click", function () {
+  gyBuildBag(); gyPicked = null; gyBoard = { 1: null, 2: null, 3: null, 4: null, 5: null };
+  document.getElementById("guanyinSelected").textContent = "尚未選擇";
+  renderGuanyinBag(); renderGuanyinBoard();
+});
+document.getElementById("guanyinRandom5Btn").addEventListener("click", function () {
+  gyBuildBag(); gyBoard = { 1: null, 2: null, 3: null, 4: null, 5: null }; gyPicked = null;
+  const avail = gyBag.map((_, i) => i);
+  for (let i = avail.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [avail[i], avail[j]] = [avail[j], avail[i]]; }
+  const pick = avail.slice(0, 5);
+  [1, 2, 3, 4, 5].forEach((pos, k) => {
+    const idx = pick[k]; gyBag[idx].used = true;
+    gyBoard[pos] = { name: gyBag[idx].name, color: gyBag[idx].color, bagIdx: idx };
+  });
+  document.getElementById("guanyinSelected").textContent = "尚未選擇";
+  renderGuanyinBag(); renderGuanyinBoard();
+});
+
+// 速查表
+function renderGuanyinRef(filter) {
+  const kw = (filter || "").trim();
+  const match = (s) => !kw || s.indexOf(kw) !== -1;
+  const pieceCards = GY_PIECES.filter((p) =>
+    match(p.name) || match(p.persons) || match(p.desc) || match(p.gua) || match(p.li)
+  ).map((p) =>
+    '<div class="gy-ref-card"><div class="gy-ref-head"><span class="gy-ref-chip gy-' + p.color + '">' + p.name + "</span>" +
+    '<span class="gy-ref-tags">' + (p.color === "red" ? "紅・陽" : "黑・陰") + "　" + p.li + "　" + p.gua + "</span></div>" +
+    '<div class="gy-ref-persons">人物：' + p.persons + "</div>" +
+    '<div class="gy-ref-desc">' + p.desc + "</div></div>"
+  ).join("");
+  const glossRows = GY_GLOSSARY.filter((g) => match(g.term) || match(g.desc) || match(g.cat))
+    .map((g) => '<div class="gy-gloss-row"><span class="gy-gloss-cat">' + g.cat + "</span>" +
+      '<span class="gy-gloss-term">' + g.term + "</span>" +
+      '<span class="gy-gloss-desc">' + g.desc + "</span></div>").join("");
+  const el = document.getElementById("guanyinRefContent");
+  if (!pieceCards && !glossRows) { el.innerHTML = '<div class="empty-msg">查無「' + kw + "」相關詞彙。</div>"; return; }
+  el.innerHTML =
+    (pieceCards ? '<div class="gy-ref-section-title">棋子釋義（14 種）</div><div class="gy-ref-grid">' + pieceCards + "</div>" : "") +
+    (glossRows ? '<div class="gy-ref-section-title">詞彙・格局・規則</div><div class="gy-gloss">' + glossRows + "</div>" : "");
+}
+document.getElementById("guanyinSearch").addEventListener("input", function () { renderGuanyinRef(this.value); });
+
+function initGuanyin() {
+  guanyinStarted = true;
+  gyBuildBag();
+  renderGuanyinBag();
+  renderGuanyinBoard();
+  renderGuanyinRef("");
+}
 
 // ================= 奇門紅盤（獨立頁面，洋紅配色；四柱／八卦位置沿用，天地盤干/神/星/門的排盤 =================
 // Phase 2 完成：排盤改用獨立的 js/qimen-hongpan-engine.js（calculateQimenHongpan），
