@@ -55,35 +55,16 @@ function getShiShen(dayGan, otherGan) {
   return null;
 }
 
-// 節氣進位到整點：用官網（product.meta-academy.biz）3組節氣交叉比對出來，官網的「節」交節判斷不是
-// 精確到分鐘，而是無條件進位到下一個整點才算交節（大雪05:57→06:00、小寒17:14→18:00、驚蟄22:43→
-// 23:00，三組都精準卡在下一個整點，不是最近整點也不是捨去分鐘）。這只影響「節」（不影響「氣」，
-// 氣不會改變月柱）交界後、到下一整點之間這段「灰色地帶」的月柱判斷——lunar-javascript 本身的
-// getMonthGan／getMonthZhi 精確到分鐘，這段時間內已經算成新月柱，但官網還沒切換。做法：如果最近
-// 一個交節是「節」且還在灰色地帶內，就把查詢時間往前退到「精確節氣前一分鐘」重新算一次
-// lunar-javascript 的月柱，沿用它本身正確的月柱判斷邏輯（不用自己重刻五虎遁），只取月干／月支兩個
-// 字；十神／十二長生仍然用「真正」的日干搭配這兩個字現算（getShiShen／getDiShi 是跟日期無關的
-// 純函式，不受這裡的時間位移影響）。用9筆資料核對過（3個節氣各自的灰色地帶前／中／進位後）。
+// 月柱交節：直接採用 lunar-javascript 依「精確節氣時刻」（到分秒）判斷的月干支。
+// 官網（meta.securelayers.cloud 動態命卷）分鐘級實測證實：官網在節氣精確時刻當下就換月柱，
+// 並非舊版所推測的「無條件進位到下一整點」。2026 十筆跨節氣＋立春／小寒／立夏／小暑／立冬
+// 灰色地帶逐分鐘探測全部吻合（例：小寒16:23:10→16:23仍子月、16:24換丑月；立冬17:52:05→
+// 17:51仍戌月、17:52換亥月；立春04:02:08→04:02仍舊、04:03年月同換），與 lunar-javascript
+// 原生月柱一致，故移除舊的整點進位修正（該邏輯會把節後未滿整點的月柱錯誤地延後最多近一小時）。
 function getEffectiveMonthGanZhi(solar) {
-  const lunar = solar.getLunar();
-  const ec = lunar.getEightChar();
+  const ec = solar.getLunar().getEightChar();
   ec.setSect(1);
-  const prevJieQi = lunar.getPrevJieQi(false);
-  if (!prevJieQi.isJie()) {
-    return { gan: ec.getMonthGan(), zhi: ec.getMonthZhi() };
-  }
-  const js = prevJieQi.getSolar();
-  const jy = js.getYear(), jmo = js.getMonth(), jd = js.getDay(), jh = js.getHour(), jmi = js.getMinute();
-  const ceiled = jmi === 0 ? new Date(jy, jmo - 1, jd, jh, 0, 0) : new Date(jy, jmo - 1, jd, jh + 1, 0, 0);
-  const queryTime = new Date(solar.getYear(), solar.getMonth() - 1, solar.getDay(), solar.getHour(), solar.getMinute(), solar.getSecond());
-  if (queryTime >= ceiled) {
-    return { gan: ec.getMonthGan(), zhi: ec.getMonthZhi() };
-  }
-  const adjDate = new Date(jy, jmo - 1, jd, jh, jmi - 1, 0);
-  const adjSolar = Solar.fromYmdHms(adjDate.getFullYear(), adjDate.getMonth() + 1, adjDate.getDate(), adjDate.getHours(), adjDate.getMinutes(), 0);
-  const adjEc = adjSolar.getLunar().getEightChar();
-  adjEc.setSect(1);
-  return { gan: adjEc.getMonthGan(), zhi: adjEc.getMonthZhi() };
+  return { gan: ec.getMonthGan(), zhi: ec.getMonthZhi() };
 }
 
 // 三合局：申子辰 / 亥卯未 / 寅午戌 / 巳酉丑，各自對應桃花／驛馬／華蓋／將星／劫煞／亡神
@@ -176,7 +157,9 @@ const LIU_XIU = ["丙午", "丁未", "戊子", "戊午", "己丑", "己未"];
 // 日德固定 5 組；日貴口訣「丙丁豬雞、壬癸兔蛇」但補充教材表格只列出丁、癸兩干（丙、壬未列），
 // 依表格實際內容照登，不额外用口訣推測丙／壬的組合。
 const RI_DE = ["甲寅", "戊辰", "丙辰", "庚辰", "壬戌"];
-const RI_GUI = ["丁酉", "丁亥", "癸卯", "癸巳"];
+// 丁酉原列為日貴，但官網（meta.securelayers.cloud）2026 實測丁酉日柱不顯示日貴，已移除；
+// 丁亥／癸卯／癸巳 尚無官網反證，暫依補充神煞.pdf 保留。
+const RI_GUI = ["丁亥", "癸卯", "癸巳"];
 // 天赦貴：以月支所在三會方局查一組固定干支，對照日柱（春戊寅、夏甲午、秋戊申、冬甲子）
 const TIAN_SHE = { 寅卯辰: "戊寅", 巳午未: "甲午", 申酉戌: "戊申", 亥子丑: "甲子" };
 
@@ -206,13 +189,18 @@ function getShenShaForPillar(pillarRole, targetGan, targetZhi, ctx) {
     // 以日支、年支查三合局：桃花、驛馬、華蓋、將星、劫煞、亡神
     // 華蓋／將星等落在辰戌丑未「庫」位時，該庫支對自己的三合局查會剛好等於自己，
     // 這種自我對應不是有意義的命中，所以日柱查自己時跳過日支三合局、年柱查自己時跳過年支三合局
+    // 去重：當年支與日支落在「同一個三合局」時（如巳酉丑：年巳、日酉），同一顆星會被年、日
+    // 兩條查詢各命中一次而重複；官網（meta.securelayers.cloud）同一柱同一星只顯示一次，故先收進
+    // Set 去重再推入。不同三合局不會把同名星映到同一地支，所以此 Set 不會誤刪跨局的合法結果。
+    const triadStarSet = new Set();
     [{ src: "year", zhi: yearZhi }, { src: "day", zhi: dayZhi }].forEach(({ src, zhi: refZhi }) => {
       if (src === pillarRole) return;
       const triad = TRIADS[refZhi];
       if (!triad) return;
       const stars = TRIAD_STAR[triad];
-      Object.keys(stars).forEach((name) => { if (stars[name] === targetZhi) push(name); });
+      Object.keys(stars).forEach((name) => { if (stars[name] === targetZhi) triadStarSet.add(name); });
     });
+    triadStarSet.forEach((name) => push(name));
     // 金匱貴人：只以年支查三合局，取值同將星（寅午戌見午、巳酉丑見酉、申子辰見子、亥卯未見卯）。
     // 實測比對發現只用年支查才準，加上日支查會多出參考網站沒有的金匱，所以不像桃花／驛馬等同時查年支、日支；
     // 年柱本身永遠不算目標
@@ -287,7 +275,9 @@ function getShenShaForPillar(pillarRole, targetGan, targetZhi, ctx) {
 //    （月支未，中氣丁透月干、餘氣乙透時干，兩個都透，命卷官網命格顯示正財格＝乙，不是中氣丁的正官格）
 //    交叉比對 01.pdf 判斷3 的例題（月支戌，中氣辛透年干、餘氣丁因為剛好等於日干本身視為自透，結果取
 //    餘氣丁的比肩格，不是中氣辛的偏財格）驗證一致
-// 4. 都不透，仍以本氣為格（僅本氣單獨透干與都不透干，兩種情況都退回本氣）
+// 4. 本氣不透時：中氣／餘氣有透干者為格（都透取餘氣）；若中餘氣「也都不透」則取餘氣（最後一個
+//    藏干）為格——官網（meta.securelayers.cloud）2026 資料實測：乙日亥月（亥藏壬本／甲餘，壬甲皆不透）
+//    命格顯示「劫財格」＝餘氣甲，不是本氣壬的正印格，故都不透時退回「餘氣」而非「本氣」。
 const GEJU_NAME = {
   比肩: "比肩格", 劫財: "劫財格", 食神: "食神格", 傷官: "傷官格",
   正財: "正財格", 偏財: "偏財格", 正官: "正官格", 七殺: "七殺格",
@@ -295,7 +285,8 @@ const GEJU_NAME = {
 };
 function determineGeju(dayGan, monthZhi, monthDiShi, visibleGans) {
   if (monthDiShi === "臨官") return "建祿格";
-  if (monthDiShi === "帝旺") return "羊刃格";
+  // 羊刃格只論「陽干」（陽刃）：官網實測己日月支帝旺（如己@巳）不作羊刃格，改依藏干取格。
+  if (monthDiShi === "帝旺" && YINYANG_OF_GAN[dayGan] === 1) return "羊刃格";
 
   const hideGans = NATIVE_HIDE_GAN[monthZhi];
   let chosen = hideGans[0];
@@ -303,8 +294,8 @@ function determineGeju(dayGan, monthZhi, monthDiShi, visibleGans) {
     const primary = hideGans[0];
     if (!visibleGans.includes(primary)) {
       const others = hideGans.slice(1).filter((g) => visibleGans.includes(g));
-      // 中氣、餘氣都透干時取「最後一個」（餘氣）為格，只有一個透干就用那一個
-      if (others.length >= 1) chosen = others[others.length - 1];
+      // 中氣、餘氣有透干就用（都透取最後一個＝餘氣）；都不透則退回餘氣（最後一個藏干）
+      chosen = others.length >= 1 ? others[others.length - 1] : hideGans[hideGans.length - 1];
     }
   }
   const ss = getShiShen(dayGan, chosen);
