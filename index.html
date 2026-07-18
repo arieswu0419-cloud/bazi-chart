@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=208">
+<link rel="stylesheet" href="css/style.css?v=209">
 </head>
 <body>
 
@@ -34,6 +34,7 @@
       <button type="button" class="main-nav-link" data-feature="數字易經" data-perm="fengshui">數字易經</button>
       <button type="button" class="main-nav-link" data-feature="名片風水" data-perm="mingpian">名片風水</button>
       <button type="button" class="main-nav-link" data-feature="紫白風水" data-perm="zibai">紫白風水</button>
+      <button type="button" class="main-nav-link" data-feature="八宅風水" data-perm="bazhai">八宅風水</button>
     </nav>
   </div>
 </header>
@@ -719,6 +720,46 @@
         </div>
         <div class="zibai-hint" id="zibaiFeixingHint"></div>
       </div>
+
+      <div class="form-block">
+        <h2>宅主命卦（八宅）</h2>
+        <div class="form-date-row">
+          <div class="field">
+            <label for="zbfx-oyear">出生西元年</label>
+            <select id="zbfx-oyear"></select>
+          </div>
+          <div class="field">
+            <label for="zbfx-omonth">月</label>
+            <select id="zbfx-omonth"></select>
+          </div>
+          <div class="field">
+            <label for="zbfx-oday">日</label>
+            <select id="zbfx-oday"></select>
+          </div>
+          <div class="field">
+            <label for="zbfx-ogender">性別</label>
+            <select id="zbfx-ogender">
+              <option value="male">男</option>
+              <option value="female">女</option>
+            </select>
+          </div>
+        </div>
+        <div class="zibai-hint" id="zbfxGuaHint"></div>
+      </div>
+
+      <div class="form-block">
+        <h2>陽宅面向</h2>
+        <div class="form-date-row">
+          <div class="field zibai-angle-field">
+            <label for="zbfx-angle">面向（人在室內往大門／大窗看出去的方向）</label>
+            <select id="zbfx-angle"></select>
+          </div>
+          <div class="field zibai-mountain-field">
+            <label>座向</label>
+            <div class="zibai-mountain-out" id="zbfxMountainOut">—</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card" id="zibaiFeixingCard" style="display:none">
@@ -727,6 +768,68 @@
       </div>
       <div class="zibai-plate-wrap" id="zibaiFeixingResult"></div>
     </div>
+    </div>
+    </div>
+
+    <div id="bazhaiView" style="display:none">
+    <div class="card" id="bazhaiFormCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="bazhaiBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="zibai-title">八宅風水</h2>
+
+      <div id="bazhaiForm">
+        <div class="form-block">
+          <h2>宅主命卦（八宅）</h2>
+          <div class="form-date-row">
+            <div class="field">
+              <label for="bz-oyear">出生西元年</label>
+              <select id="bz-oyear"></select>
+            </div>
+            <div class="field">
+              <label for="bz-omonth">月</label>
+              <select id="bz-omonth"></select>
+            </div>
+            <div class="field">
+              <label for="bz-oday">日</label>
+              <select id="bz-oday"></select>
+            </div>
+            <div class="field">
+              <label for="bz-ogender">性別</label>
+              <select id="bz-ogender">
+                <option value="male">男</option>
+                <option value="female">女</option>
+              </select>
+            </div>
+          </div>
+          <div class="zibai-hint" id="bazhaiGuaHint"></div>
+        </div>
+
+        <div class="form-block">
+          <h2>陽宅面向</h2>
+          <div class="form-date-row">
+            <div class="field zibai-angle-field">
+              <label for="bz-angle">面向（人在室內往大門／大窗看出去的方向）</label>
+              <select id="bz-angle"></select>
+            </div>
+            <div class="field zibai-mountain-field">
+              <label>座向</label>
+              <div class="zibai-mountain-out" id="bazhaiMountainOut">—</div>
+            </div>
+            <div class="field zibai-run-field" data-html2canvas-ignore="true">
+              <label>&nbsp;</label>
+              <button type="button" class="btn" id="bazhaiRunBtn">排盤</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="bazhaiCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end">
+        <button class="btn secondary" id="exportBazhaiPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+      <div class="zibai-plate-wrap" id="bazhaiResult"></div>
     </div>
     </div>
 
@@ -817,26 +920,26 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=208"></script>
-<script src="js/auth.js?v=208"></script>
+<script src="js/firebase-config.js?v=209"></script>
+<script src="js/auth.js?v=209"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=208"></script>
-<script src="js/dayun-strategy-content.js?v=208"></script>
-<script src="js/shensha-content.js?v=208"></script>
-<script src="js/renge-content.js?v=208"></script>
-<script src="js/renge-engine.js?v=208"></script>
-<script src="js/lifenum-engine.js?v=208"></script>
-<script src="js/mingpian-engine.js?v=208"></script>
-<script src="js/name-strokes-data.js?v=208"></script>
-<script src="js/lunar-convert.js?v=208"></script>
-<script src="js/shuzi-engine.js?v=208"></script>
-<script src="js/jigong-engine.js?v=208"></script>
-<script src="js/qimen-engine.js?v=208"></script>
-<script src="js/qimen-hongpan-engine.js?v=208"></script>
-<script src="js/qimen-sansheng-engine.js?v=208"></script>
-<script src="js/fengshui-zibai-engine.js?v=208"></script>
+<script src="js/bazi-engine.js?v=209"></script>
+<script src="js/dayun-strategy-content.js?v=209"></script>
+<script src="js/shensha-content.js?v=209"></script>
+<script src="js/renge-content.js?v=209"></script>
+<script src="js/renge-engine.js?v=209"></script>
+<script src="js/lifenum-engine.js?v=209"></script>
+<script src="js/mingpian-engine.js?v=209"></script>
+<script src="js/name-strokes-data.js?v=209"></script>
+<script src="js/lunar-convert.js?v=209"></script>
+<script src="js/shuzi-engine.js?v=209"></script>
+<script src="js/jigong-engine.js?v=209"></script>
+<script src="js/qimen-engine.js?v=209"></script>
+<script src="js/qimen-hongpan-engine.js?v=209"></script>
+<script src="js/qimen-sansheng-engine.js?v=209"></script>
+<script src="js/fengshui-zibai-engine.js?v=209"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=208"></script>
+<script src="js/app.js?v=209"></script>
 </body>
 </html>

@@ -1580,3 +1580,14 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .zbfx-plate-cell { display: flex; align-items: center; justify-content: center; cursor: default; }
 .zbfx-num { font-size: clamp(20px, 5.6vw, 30px); font-weight: 800; line-height: 1; }
 .zbfx-sep { font-size: clamp(20px, 5.6vw, 30px); font-weight: 800; color: #111; margin: 0 2px; line-height: 1; }
+
+/* ===== 八宅風水（大遊年九宮吉凶） ===== */
+.bz-cell-in { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.bz-star { font-size: clamp(17px, 4.6vw, 24px); font-weight: 800; }
+.bz-good { color: #2e9e4b; }
+.bz-bad  { color: #d13b3b; }
+.bz-warn { color: #d08a00; }
+.bz-star-sub { font-size: 11px; color: var(--text-secondary); font-style: normal; margin-top: 2px; }
+.bz-center-cell { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.bz-center-cell b { font-size: clamp(16px, 4.4vw, 22px); color: var(--gold-darker); }
+.bz-center-cell i { font-size: 11px; color: var(--text-secondary); font-style: normal; }

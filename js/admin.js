@@ -22,11 +22,11 @@ function formatCreatedAt(ts) {
 // 實際看到的權限一樣，管理者才不會誤判目前狀態。舊帳號（完全沒有 permissions 欄位）：八字／人格解碼／
 // 生命靈數／奇門命盤沿用舊行為視為開放，五個新導覽功能一律未開放；有 permissions 欄位但缺新欄位的帳號：
 // 奇門命盤沿用開放（避免現有使用者權限系統上線後突然被鎖），其餘新欄位視為未開放。
-const PERM_KEYS = ["bazi", "renge", "lifenum", "qimen", "qimenDunjia", "qimenHongpan", "qimenSansheng", "guanyin", "jigong", "fengshui", "mingpian", "zibai"];
+const PERM_KEYS = ["bazi", "renge", "lifenum", "qimen", "qimenDunjia", "qimenHongpan", "qimenSansheng", "guanyin", "jigong", "fengshui", "mingpian", "zibai", "bazhai"];
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -40,7 +40,8 @@ function effectivePermissions(data) {
     jigong: !!raw.jigong,
     fengshui: !!raw.fengshui,
     mingpian: !!raw.mingpian,
-    zibai: !!raw.zibai
+    zibai: !!raw.zibai,
+    bazhai: !!raw.bazhai
   };
 }
 

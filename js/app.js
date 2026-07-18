@@ -40,7 +40,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -54,7 +54,8 @@ function effectivePermissions(data) {
     jigong: !!raw.jigong,
     fengshui: !!raw.fengshui,
     mingpian: !!raw.mingpian,
-    zibai: !!raw.zibai
+    zibai: !!raw.zibai,
+    bazhai: !!raw.bazhai
   };
 }
 
@@ -94,7 +95,7 @@ requireApprovedUser(function (user, data) {
 
   // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
   // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
-  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水" };
+  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
@@ -130,6 +131,10 @@ requireApprovedUser(function (user, data) {
         showZibaiView();
         return;
       }
+      if (key === "bazhai") {
+        showBazhaiView();
+        return;
+      }
       showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
     });
   });
@@ -140,7 +145,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "qimenSanshengView", "jigongView", "shuziView", "mingpianView", "zibaiView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "qimenSanshengView", "jigongView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -2334,9 +2339,13 @@ function fillZibaiYearSelect() {
   document.getElementById("zb-oyear").innerHTML = oyHtml;
   document.getElementById("zb-omonth").innerHTML = mHtml;
   document.getElementById("zb-oday").innerHTML = dHtml;
-  // 陽宅飛星：流年/流月
+  // 陽宅飛星：流年/流月＋宅主命卦＋面向（與陽宅風水頁籤鏡像同步）
   document.getElementById("zbfx-year").innerHTML = html;
   document.getElementById("zbfx-month").innerHTML = mHtml;
+  document.getElementById("zbfx-oyear").innerHTML = oyHtml;
+  document.getElementById("zbfx-omonth").innerHTML = mHtml;
+  document.getElementById("zbfx-oday").innerHTML = dHtml;
+  document.getElementById("zbfx-angle").innerHTML = aHtml;
 }
 
 function showZibaiView() {
@@ -2356,11 +2365,24 @@ function showZibaiView() {
   document.getElementById("zb-ogender").value = "male";
   document.getElementById("zbfx-year").value = String(now.getFullYear());
   document.getElementById("zbfx-month").value = String(now.getMonth() + 1);
+  syncZibaiMirrors(); // 鏡像欄位（命卦/面向）與陽宅風水頁籤同步
   setZibaiTab("house");
   updateZibaiHints();
   updateZibaiGuaHint();
   runZibai();
   runZibaiFeixing();
+}
+
+// 陽宅風水 ⇄ 陽宅流年流月盤 的共用欄位鏡像（命卦出生年月日/性別、面向）
+const ZB_MIRROR_PAIRS = [
+  ["zb-oyear", "zbfx-oyear"], ["zb-omonth", "zbfx-omonth"], ["zb-oday", "zbfx-oday"],
+  ["zb-ogender", "zbfx-ogender"], ["zb-angle", "zbfx-angle"]
+];
+function syncZibaiMirrors(fromFeixing) {
+  ZB_MIRROR_PAIRS.forEach(([houseId, fxId]) => {
+    const h = document.getElementById(houseId), f = document.getElementById(fxId);
+    if (fromFeixing) h.value = f.value; else f.value = h.value;
+  });
 }
 function hideZibaiView() {
   document.getElementById("zibaiView").style.display = "none";
@@ -2660,11 +2682,19 @@ function buildZibaiFeixingHtml(fx) {
   const sitting = ZB_MOUNTAINS[(fIdx + 12) % 24];
   const fi = ZB_COMPASS_CW.indexOf(facing.dir);
 
+  // 宅主命卦入中順飛（第三個數字）
+  const guaPan = currentZibaiGua ? zbFly(currentZibaiGua.num, true) : null;
+
   const pair = (pal) => {
     const y = fx.yearPan[pal], m = fx.monthPan[pal];
-    return '<span class="zbfx-num ' + zbWxClass(y) + '">' + y + "</span>" +
+    let h = '<span class="zbfx-num ' + zbWxClass(y) + '">' + y + "</span>" +
       '<span class="zbfx-sep">|</span>' +
       '<span class="zbfx-num ' + zbWxClass(m) + '">' + m + "</span>";
+    if (guaPan) {
+      h += '<span class="zbfx-sep">|</span>' +
+        '<span class="zbfx-num ' + zbWxClass(guaPan[pal]) + '">' + guaPan[pal] + "</span>";
+    }
+    return h;
   };
 
   // 中宮 ＋ 外八宮（同 zbLayout 的螢幕/羅盤順時針對位）
@@ -2684,7 +2714,8 @@ function buildZibaiFeixingHtml(fx) {
     '<line x1="22" y1="1" x2="22" y2="15"/><line x1="6" y1="16" x2="38" y2="16" stroke-linecap="round"/></svg>';
 
   const info = fx.year + " 年 " + fx.month + " 月份飛星圖　（" + fx.yearBranch + "年 年飛星 " + fx.yearStar +
-    " 入中・" + fx.monthBranch + "月 月飛星 " + fx.monthStar + " 入中）";
+    " 入中・" + fx.monthBranch + "月 月飛星 " + fx.monthStar + " 入中" +
+    (guaPan ? "・命卦 " + currentZibaiGua.num + " " + currentZibaiGua.gua + " 入中" : "") + "）";
   return '<div class="zibai-plate">' +
     '<div class="zibai-info">' + info + "</div>" +
     '<div class="zibai-facing-top">' +
@@ -2694,7 +2725,7 @@ function buildZibaiFeixingHtml(fx) {
     "</div>" +
     '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
     '<div class="zibai-sitting">' + tSvg + '<span class="zibai-sit-text">' + sitting.name + "山" + facing.name + "向</span></div>" +
-    '<div class="zibai-note" style="text-align:center">每格 左＝流年飛星｜右＝流月飛星（數字著五行色；月份以節氣月對應，1 月屬前一年丑月）</div>' +
+    '<div class="zibai-note" style="text-align:center">每格 左＝流年飛星｜中＝流月飛星｜右＝宅主命卦飛星（數字著五行色；月份以節氣月對應，1 月屬前一年丑月）</div>' +
     "</div>";
 }
 
@@ -2702,6 +2733,16 @@ function runZibaiFeixing() {
   const f = readZibaiFeixingForm();
   const fx = calculateZibaiFeixing(f.year, f.month);
   updateZibaiFeixingHint(fx);
+  // 流年流月頁籤上的命卦／座向提示（鏡像欄位）
+  if (currentZibaiGua) {
+    const g = currentZibaiGua;
+    document.getElementById("zbfxGuaHint").textContent =
+      "宅主命卦：" + g.num + " " + g.gua + "卦（" + g.group + "命人・" + g.groupName + "・五行屬" + g.wx + "）";
+  }
+  const angle = Math.round(Number(document.getElementById("zb-angle").value) || 0);
+  const idx = zbMountainIndex(angle);
+  document.getElementById("zbfxMountainOut").textContent =
+    ZB_MOUNTAINS[(idx + 12) % 24].name + "山" + ZB_MOUNTAINS[idx].name + "向　向" + ZB_MOUNTAINS[idx].name + "（" + zbDegText(idx) + "）";
   document.getElementById("zibaiFeixingResult").innerHTML = buildZibaiFeixingHtml(fx);
   document.getElementById("zibaiFeixingCard").style.display = "block";
 }
@@ -2709,8 +2750,19 @@ function runZibaiFeixing() {
 document.getElementById("zibaiFeixingRunBtn").addEventListener("click", runZibaiFeixing);
 ["zbfx-year", "zbfx-month"].forEach((id) =>
   document.getElementById(id).addEventListener("change", runZibaiFeixing));
-// 陽宅面向變更 → 流年流月盤方位同步重排（兩盤方位一致）
-document.getElementById("zb-angle").addEventListener("change", runZibaiFeixing);
+// 陽宅面向變更 → 流年流月盤方位同步重排（兩盤方位一致，鏡像到流月頁籤欄位）
+document.getElementById("zb-angle").addEventListener("change", function () { syncZibaiMirrors(); runZibaiFeixing(); });
+// 陽宅風水頁籤的命卦欄位變更 → 鏡像到流月頁籤並重排
+["zb-oyear", "zb-omonth", "zb-oday", "zb-ogender"].forEach((id) =>
+  document.getElementById(id).addEventListener("change", function () { syncZibaiMirrors(); runZibaiFeixing(); }));
+// 流月頁籤上的鏡像欄位變更 → 回寫陽宅風水頁籤、更新命卦、重排
+["zbfx-oyear", "zbfx-omonth", "zbfx-oday", "zbfx-ogender", "zbfx-angle"].forEach((id) =>
+  document.getElementById(id).addEventListener("change", function () {
+    syncZibaiMirrors(true);
+    updateZibaiHints();
+    updateZibaiGuaHint();
+    runZibaiFeixing();
+  }));
 
 document.getElementById("exportZibaiFeixingPdfBtn").addEventListener("click", async function () {
   const btn = this;
@@ -2730,6 +2782,169 @@ document.getElementById("exportZibaiFeixingPdfBtn").addEventListener("click", as
     await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
     addPageNumbers(pdf, pageWidth, pageHeight);
     pdf.save("紫白風水—陽宅飛星.pdf");
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+// ================= 八宅風水（大遊年九宮吉凶；規則對照 03.pdf 八宅明鏡章節）=================
+// 依宅主命卦（zbLifeGua）以游年翻卦（zbGameStars，與 03.pdf 遊年表逐格核對）得八方四吉四凶，
+// 九宮金框版面與紫白盤同款、向首朝上中。24 山圓形圖（納甲歸卦）為下一階段。
+function fillBazhaiSelects() {
+  const sel = document.getElementById("bz-oyear");
+  if (sel.options.length) return; // 只填一次
+  const nowY = new Date().getFullYear();
+  let oy = "";
+  for (let y = 1920; y <= nowY; y++) oy += '<option value="' + y + '">' + y + "</option>";
+  sel.innerHTML = oy;
+  let m = "";
+  for (let i = 1; i <= 12; i++) m += '<option value="' + i + '">' + i + "</option>";
+  document.getElementById("bz-omonth").innerHTML = m;
+  let d = "";
+  for (let i = 1; i <= 31; i++) d += '<option value="' + i + '">' + i + "</option>";
+  document.getElementById("bz-oday").innerHTML = d;
+  let a = "";
+  ZB_MOUNTAINS.forEach((mt, i) => {
+    a += '<option value="' + (i * 15) + '">' + mt.name + "（" + zbDegText(i) + "）</option>";
+  });
+  document.getElementById("bz-angle").innerHTML = a;
+}
+
+function showBazhaiView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("bazhaiView").style.display = "";
+  setActiveNav("八宅風水");
+  fillBazhaiSelects();
+  document.getElementById("bz-oyear").value = "1980";
+  document.getElementById("bz-omonth").value = "1";
+  document.getElementById("bz-oday").value = "1";
+  document.getElementById("bz-ogender").value = "male";
+  document.getElementById("bz-angle").value = "0";
+  runBazhai();
+}
+function hideBazhaiView() {
+  document.getElementById("bazhaiView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("bazhaiBackBtn").addEventListener("click", hideBazhaiView);
+
+function readBazhaiForm() {
+  return {
+    oyear: Number(document.getElementById("bz-oyear").value),
+    omonth: Number(document.getElementById("bz-omonth").value),
+    oday: Number(document.getElementById("bz-oday").value),
+    isMale: document.getElementById("bz-ogender").value === "male",
+    angle: Math.round(Number(document.getElementById("bz-angle").value) || 0)
+  };
+}
+
+// 游年星 → 顯示色調
+const BZ_STAR_CLASS = { good: "bz-good", bad: "bz-bad", warn: "bz-warn" };
+
+function buildBazhaiHtml(gua, angle) {
+  const games = zbGameStars(gua.num);
+  const byDir = {};
+  games.forEach((s) => { byDir[s.dir] = s; });
+
+  const fIdx = zbMountainIndex(angle);
+  const facing = ZB_MOUNTAINS[fIdx];
+  const sitting = ZB_MOUNTAINS[(fIdx + 12) % 24];
+  const fi = ZB_COMPASS_CW.indexOf(facing.dir);
+
+  // 宅卦（依坐山所屬卦）與宅命相配
+  const zhaiGuaNum = ZB_DIR_TO_PALACE[sitting.dir];
+  const zhaiGua = ZB_GUA_CHAR[zhaiGuaNum];
+  const zhaiEast = ZB_EAST_GUA.includes(zhaiGuaNum);
+  const mingEast = gua.group === "東";
+  const match = zhaiEast === mingEast;
+
+  // 九宮：中宮＝命卦，外八宮＝游年星（向首朝上中）
+  let cellsHtml = '<div class="zibai-cell zibai-cell-center zbfx-plate-cell" style="grid-row:2;grid-column:2">' +
+    '<div class="bz-center-cell"><b>' + gua.num + " " + gua.gua + "命</b><i>" + gua.groupName + "</i></div></div>";
+  const labels = [];
+  for (let k = 0; k < 8; k++) {
+    const dir = ZB_COMPASS_CW[(fi + k) % 8];
+    const pos = ZB_SCREEN_CW[k];
+    const s = byDir[dir];
+    cellsHtml += '<div class="zibai-cell zbfx-plate-cell" style="grid-row:' + pos.r + ";grid-column:" + pos.c + '">' +
+      '<div class="bz-cell-in"><b class="bz-star ' + (BZ_STAR_CLASS[s.tone] || "") + '">' + s.star + "</b>" +
+      '<i class="bz-star-sub">' + s.guaChar + "・" + s.lv + "</i></div></div>";
+    labels.push('<span class="zibai-dir ' + zbPosClass(pos.r, pos.c) + '">' + ZB_DIR_NAME[dir] + "</span>");
+  }
+
+  const arrowSvg = '<svg class="zibai-arrow-svg" viewBox="0 0 24 44" width="24" height="44" aria-hidden="true">' +
+    '<line x1="12" y1="43" x2="12" y2="9"/><polyline points="4,20 12,5 20,20" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  const tSvg = '<svg class="zibai-t-svg" viewBox="0 0 44 22" width="44" height="22" aria-hidden="true">' +
+    '<line x1="22" y1="1" x2="22" y2="15"/><line x1="6" y1="16" x2="38" y2="16" stroke-linecap="round"/></svg>';
+
+  const info = "命卦 " + gua.num + " " + gua.gua + "卦（" + gua.groupName + "）　" +
+    sitting.name + "山" + facing.name + "向＝" + zhaiGua + "宅（" + (zhaiEast ? "東四宅" : "西四宅") + "）　" +
+    (match ? "宅命相配（吉）" : "宅命不相配（宜取吉山權變）");
+
+  // 四吉／四凶明細（游年順序）
+  const jiList = games.filter((s) => s.tone === "good");
+  const xiongList = games.filter((s) => s.tone !== "good");
+  const line = (s) => '<div class="zibai-explain-line">' +
+    '<span class="zibai-explain-role">' + s.star + "</span>" +
+    '<span class="zibai-explain-name">' + s.dirName + "方（" + s.guaChar + "卦）・" + s.lv + "・屬" + s.wx + "</span>" +
+    '<span class="zibai-explain-desc">' + s.note + "</span></div>";
+
+  return '<div class="zibai-plate">' +
+    '<div class="zibai-info">' + info + "</div>" +
+    '<div class="zibai-facing-top">' +
+      '<span class="zibai-facing-name">' + facing.name + "</span>" +
+      '<span class="zibai-facing-deg">' + zbDegText(fIdx) + "</span>" +
+      arrowSvg +
+    "</div>" +
+    '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
+    '<div class="zibai-sitting">' + tSvg + '<span class="zibai-sit-text">' + sitting.name + "山" + facing.name + "向</span></div>" +
+    "</div>" +
+    '<div class="zibai-section"><div class="zibai-section-title">四吉方</div><div class="zibai-block"><div class="zibai-block-b">' +
+      jiList.map(line).join("") + "</div></div>" +
+    '<div class="zibai-section-title">四凶方</div><div class="zibai-block"><div class="zibai-block-b">' +
+      xiongList.map(line).join("") + "</div></div>" +
+    '<div class="zibai-disclaimer">※ 依《八宅明鏡》大遊年（九星翻卦）以宅主命卦推八方吉凶；吉方宜開門、安床、書房納吉，凶方宜廁所、儲藏、灶座壓凶。宅命相配以「東四命宜居東四宅、西四命宜居西四宅」為原則，並須合巒頭綜斷。</div></div>';
+}
+
+function runBazhai() {
+  const f = readBazhaiForm();
+  const gua = zbLifeGua(f.oyear, f.omonth, f.oday, f.isMale);
+  document.getElementById("bazhaiGuaHint").textContent =
+    "宅主命卦：" + gua.num + " " + gua.gua + "卦（" + gua.group + "命人・" + gua.groupName + "・五行屬" + gua.wx + "）";
+  const idx = zbMountainIndex(f.angle);
+  document.getElementById("bazhaiMountainOut").textContent =
+    ZB_MOUNTAINS[(idx + 12) % 24].name + "山" + ZB_MOUNTAINS[idx].name + "向　向" + ZB_MOUNTAINS[idx].name + "（" + zbDegText(idx) + "）";
+  document.getElementById("bazhaiResult").innerHTML = buildBazhaiHtml(gua, f.angle);
+  document.getElementById("bazhaiCard").style.display = "block";
+}
+
+document.getElementById("bazhaiRunBtn").addEventListener("click", runBazhai);
+["bz-oyear", "bz-omonth", "bz-oday", "bz-ogender", "bz-angle"].forEach((id) =>
+  document.getElementById(id).addEventListener("change", runBazhai));
+
+document.getElementById("exportBazhaiPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 10;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 八宅風水", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    const sections = Array.from(document.querySelectorAll("#bazhaiCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("八宅風水.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {

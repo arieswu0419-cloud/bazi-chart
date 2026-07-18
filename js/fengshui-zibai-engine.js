@@ -380,6 +380,16 @@ function calculateZibaiFeixing(year, month) {
   };
 }
 
+// ============================================================
+//  納甲歸卦（八宅 24 山吉凶用；對照 03.pdf 第32章納甲表逐格核對）
+//  乾納甲、坤納乙、艮納丙、兌納丁(巳酉丑)、震納庚(亥卯未)、巽納辛、離納壬(寅午戌)、坎納癸(申子辰)
+// ============================================================
+const ZB_NAJIA_GUA = {
+  乾: 6, 甲: 6, 坤: 2, 乙: 2, 艮: 8, 丙: 8, 巽: 4, 辛: 4,
+  酉: 7, 丁: 7, 巳: 7, 丑: 7, 卯: 3, 庚: 3, 亥: 3, 未: 3,
+  午: 9, 壬: 9, 寅: 9, 戌: 9, 子: 1, 癸: 1, 申: 1, 辰: 1
+};
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { calculateZibai, zbPeriodFromDate, zbMountainIndex, zbFly, ZB_MOUNTAINS, analyzeZibai, zbLifeGua, zbGameStars, calculateZibaiFeixing, zbYearStar, zbMonthStar };
+  module.exports = { calculateZibai, zbPeriodFromDate, zbMountainIndex, zbFly, ZB_MOUNTAINS, analyzeZibai, zbLifeGua, zbGameStars, calculateZibaiFeixing, zbYearStar, zbMonthStar, ZB_NAJIA_GUA };
 }
