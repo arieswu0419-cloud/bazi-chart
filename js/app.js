@@ -3155,13 +3155,18 @@ function renderGuanyinBoard() {
   const placed = [1, 2, 3, 4, 5].map((n) => gyBoard[n]).filter(Boolean);
   const red = placed.filter((p) => p.color === "red").length, black = placed.length - red;
   const box = document.getElementById("guanyinCount");
-  if (!placed.length) { box.textContent = ""; return; }
+  if (!placed.length) { box.textContent = ""; document.getElementById("guanyinExplain").innerHTML = ""; return; }
   let note = "紅（陽）× " + red + "　黑（陰）× " + black + "　（已放 " + placed.length + "/5）";
   if (placed.length === 5) {
     if (black === 5) note += "　⚠ 五支全黑＝黑絕卦";
     else if (red === 5) note += "　⚠ 五支全紅（也非好卦，除非三合局）";
   }
   box.textContent = note;
+  // 五支滿 → 下方列出說明
+  const ex = document.getElementById("guanyinExplain");
+  if (placed.length === 5) {
+    ex.innerHTML = gyFiveExplainHtml("開門見山・五支棋說明", [1, 2, 3, 4, 5].map((n) => ({ name: gyBoard[n].name, color: gyBoard[n].color })));
+  } else ex.innerHTML = "";
 }
 
 // 下一個空位（依讀序 1→2→3→4→5）
@@ -3250,6 +3255,34 @@ function initGuanyin() {
   gy17Init();
 }
 
+// ---- 五支棋（開門見山）說明產生器（棋義取自 GY_PIECES，位置角色照教材） ----
+const GY_ROLE5 = ["主卦（中宮・自己）", "上位・右（陽）", "上位・左（陰）", "下位・左（陰）", "尾卦・右（陽・結果）"];
+function gyPieceInfo(name) { return GY_PIECES.find((p) => p.name === name) || { persons: "", desc: "" }; }
+function gyPieceRow(roleLabel, name, color) {
+  const info = gyPieceInfo(name);
+  return '<div class="gy-explain-row">' +
+    '<span class="gy-explain-role">' + roleLabel + "</span>" +
+    '<span class="gy-explain-chip gy-' + color + '">' + name + "</span>" +
+    '<span class="gy-explain-body">' + (info.persons ? '<b class="gy-explain-persons">' + info.persons + "</b>" : "") +
+    '<span class="gy-explain-desc">' + (info.desc || "") + "</span></span></div>";
+}
+// arr：長度 5，依位置 1..5 的 {name,color}
+function gyFiveExplainHtml(title, arr) {
+  const rows = arr.map((c, i) => gyPieceRow(GY_ROLE5[i], c.name, c.color)).join("");
+  const red = arr.filter((c) => c.color === "red").length;
+  let note;
+  if (red === 0) note = "五支全黑＝黑絕卦（大凶）";
+  else if (red === 5) note = "五支全紅（也非好卦，除非三合局）";
+  else note = "紅（陽）× " + red + "　黑（陰）× " + (5 - red);
+  // 重覆棋
+  const dup = {};
+  arr.forEach((c) => { dup[c.name] = (dup[c.name] || 0) + 1; });
+  const dups = Object.keys(dup).filter((n) => dup[n] >= 2).map((n) => n + n);
+  return '<div class="gy-explain-block"><div class="gy-explain-title">' + title + "</div>" +
+    '<div class="gy-explain-summary">' + note + "　｜　主卦：<b>" + arr[0].name + "</b>　尾卦：<b>" + arr[4].name + "</b>" +
+    (dups.length ? "　｜　重覆棋：" + dups.join("、") : "") + "</div>" + rows + "</div>";
+}
+
 // ---- 17 支卦（3 組開門見山天/人/地 ＋ 2 支關鍵棋；擺棋邏輯同開門見山，17 個位置）----
 const GY17_POS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 let gy17Bag = [];
@@ -3283,6 +3316,19 @@ function renderGuanyin17Board() {
   const red = placed.filter((p) => p.color === "red").length;
   document.getElementById("guanyin17Count").textContent = placed.length
     ? "　紅（陽）× " + red + "　黑（陰）× " + (placed.length - red) + "　（已放 " + placed.length + "/17）" : "";
+  // 各盤滿 5 支 → 列出說明；關鍵棋 2 支滿 → 列出說明
+  let html = "";
+  [["天盤", [1, 2, 3, 4, 5]], ["人盤", [6, 7, 8, 9, 10]], ["地盤", [11, 12, 13, 14, 15]]].forEach((grp) => {
+    if (grp[1].every((p) => gy17Board[p])) {
+      html += gyFiveExplainHtml(grp[0] + "・五支棋說明", grp[1].map((p) => ({ name: gy17Board[p].name, color: gy17Board[p].color })));
+    }
+  });
+  if (gy17Board[16] && gy17Board[17]) {
+    html += '<div class="gy-explain-block"><div class="gy-explain-title">關鍵棋說明</div>' +
+      gyPieceRow("關鍵棋 16", gy17Board[16].name, gy17Board[16].color) +
+      gyPieceRow("關鍵棋 17", gy17Board[17].name, gy17Board[17].color) + "</div>";
+  }
+  document.getElementById("guanyin17Explain").innerHTML = html;
 }
 function gy17Place(pos) {
   if (gy17Picked === null || gy17Board[pos]) return;

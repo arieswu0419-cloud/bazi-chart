@@ -1711,3 +1711,26 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .gy17-legend { font-size: 12.5px; line-height: 1.8; color: var(--text-secondary);
   background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; margin-top: 6px; }
 .gy17-legend b { color: var(--gold-darker); }
+
+/* ===== 觀音棋卦：五支棋說明區（開門見山／17支盤滿時） ===== */
+.gy-explain-wrap { margin-top: 14px; }
+.gy-explain-block { background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 12px; }
+.gy-explain-title { font-size: 15px; font-weight: 800; color: var(--gold-darker);
+  border-left: 4px solid var(--gold); padding-left: 9px; margin-bottom: 6px; }
+.gy-explain-summary { font-size: 13px; color: #555; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed #e0d9c0; }
+.gy-explain-summary b { color: var(--gold-darker); }
+.gy-explain-row { display: grid; grid-template-columns: 108px 34px 1fr; gap: 8px; align-items: start;
+  padding: 6px 0; font-size: 13px; line-height: 1.6; }
+.gy-explain-row + .gy-explain-row { border-top: 1px dashed #e8e1cc; }
+.gy-explain-role { font-weight: 700; color: #6b3410; }
+.gy-explain-chip { width: 30px; height: 30px; border-radius: 50%; border: 2px solid; display: flex;
+  align-items: center; justify-content: center; font-size: 17px; font-weight: 800; }
+.gy-explain-chip.gy-red { color: #c00000; border-color: #c00000; }
+.gy-explain-chip.gy-black { color: #1a1a1a; border-color: #333; }
+.gy-explain-persons { display: block; color: #333; }
+.gy-explain-desc { color: var(--text-secondary); }
+@media (max-width: 480px) {
+  .gy-explain-row { grid-template-columns: 78px 28px 1fr; }
+  .gy-explain-role { font-size: 12px; }
+}
