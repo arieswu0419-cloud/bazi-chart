@@ -1500,7 +1500,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .zibai-shan, .zibai-xiang { position: absolute; top: 4px; display: flex; flex-direction: column; align-items: center; line-height: 1; }
 .zibai-shan  { left: 5px; }
 .zibai-xiang { right: 5px; }
-.zibai-shan .zb-star-num, .zibai-xiang .zb-star-num { font-size: clamp(15px, 4.2vw, 20px); font-weight: 800; }
+.zibai-shan .zb-star-num, .zibai-xiang .zb-star-num { font-size: clamp(18px, 5vw, 24px); font-weight: 800; }
 .zibai-shan .zb-star-tag, .zibai-xiang .zb-star-tag { font-size: 9px; font-weight: 600; color: #9a9a9a; font-style: normal; margin-top: 1px; }
 /* 運星（中央）：五行著色，加圓形外框 */
 .zibai-yun { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%);
