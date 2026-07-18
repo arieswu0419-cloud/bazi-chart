@@ -3378,11 +3378,24 @@ function renderGuanyinRef(filter) {
     .map((g) => '<div class="gy-gloss-row"><span class="gy-gloss-cat">' + g.cat + "</span>" +
       '<span class="gy-gloss-term">' + g.term + "</span>" +
       '<span class="gy-gloss-desc">' + g.desc + "</span></div>").join("");
+  // 詞彙對照（詞彙2026）：key 命中→整組顯示；否則只顯示命中的類別列
+  const vocabCards = (typeof GY_VOCAB !== "undefined" ? GY_VOCAB : []).map((v) => {
+    const keyHit = match(v.key) || match(v.type);
+    const groups = v.groups.filter((g) => keyHit || match(g.cat) || g.words.some(match));
+    if (!groups.length) return "";
+    const rows = groups.map((g) =>
+      '<div class="gy-vocab-row">' +
+      (g.cat ? '<span class="gy-gloss-cat">' + g.cat + "</span>" : '<span class="gy-gloss-cat gy-vocab-cat-none">一般</span>') +
+      '<span class="gy-gloss-desc">' + g.words.join("／") + "</span></div>").join("");
+    return '<div class="gy-vocab-card"><div class="gy-vocab-head"><span class="gy-vocab-key">' + v.key + "</span>" +
+      '<span class="gy-ref-tags">' + v.type + "</span></div>" + rows + "</div>";
+  }).filter(Boolean).join("");
   const el = document.getElementById("guanyinRefContent");
-  if (!pieceCards && !glossRows) { el.innerHTML = '<div class="empty-msg">查無「' + kw + "」相關詞彙。</div>"; return; }
+  if (!pieceCards && !glossRows && !vocabCards) { el.innerHTML = '<div class="empty-msg">查無「' + kw + "」相關詞彙。</div>"; return; }
   el.innerHTML =
     (pieceCards ? '<div class="gy-ref-section-title">棋子釋義（14 種）</div><div class="gy-ref-grid">' + pieceCards + "</div>" : "") +
-    (glossRows ? '<div class="gy-ref-section-title">詞彙・格局・規則</div><div class="gy-gloss">' + glossRows + "</div>" : "");
+    (glossRows ? '<div class="gy-ref-section-title">詞彙・格局・規則</div><div class="gy-gloss">' + glossRows + "</div>" : "") +
+    (vocabCards ? '<div class="gy-ref-section-title">詞彙對照（詞彙2026・單棋／組合）</div><div class="gy-vocab">' + vocabCards + "</div>" : "");
 }
 document.getElementById("guanyinSearch").addEventListener("input", function () { renderGuanyinRef(this.value); });
 

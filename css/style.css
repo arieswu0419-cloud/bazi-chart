@@ -1655,6 +1655,19 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   .gy-gloss-desc { grid-column: 1 / -1; }
 }
 
+/* 詞彙對照（詞彙2026）：每個單棋/組合一張卡，列＝類別＋詞彙 */
+.gy-vocab { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.gy-vocab-card { background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 12px; }
+.gy-vocab-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.gy-vocab-key { font-size: 16px; font-weight: 800; color: var(--gold-darker); }
+.gy-vocab-row { display: grid; grid-template-columns: 110px 1fr; gap: 8px; padding: 6px 0;
+  border-top: 1px dashed #e0d9c0; font-size: 13px; line-height: 1.6; align-items: baseline; }
+.gy-vocab-cat-none { background: #b9b09a; }
+@media (max-width: 560px) {
+  .gy-vocab { grid-template-columns: 1fr; }
+  .gy-vocab-row { grid-template-columns: 90px 1fr; }
+}
+
 /* ===== 奇門催旺（催財佈局） ===== */
 .cuiwang-range { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
 .cuiwang-range-group { display: flex; align-items: center; gap: 4px; }
