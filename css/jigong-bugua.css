@@ -1,0 +1,931 @@
+/* 濟公象棋卜卦系統（移植自 adan3862936.github.io/bugua-system，scope 於 .bugua-scope） */
+
+  .bugua-scope * { box-sizing: border-box; margin: 0; padding: 0; }
+  .bugua-scope {
+    font-family: "PingFang TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    background: linear-gradient(135deg, #f5e6d3 0%, #e8d4b8 100%);
+    color: #2c1810;
+    /* Aries 整合：原站 body 為滿版頁面（min-height:100vh），嵌入卡片內改為隨內容高度 */
+    min-height: 0;
+    padding: 14px;
+    border-radius: 10px;
+  }
+  .bugua-scope .container { max-width: 1280px; margin: 0 auto; }
+  .bugua-scope .auth-hidden { display: none !important; }
+  .bugua-scope .auth-gate {
+    min-height: calc(100vh - 40px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 0;
+  }
+  .bugua-scope .auth-card {
+    width: min(100%, 420px);
+    background: rgba(255,255,255,0.96);
+    border: 1px solid rgba(139,69,19,0.18);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 14px 40px rgba(74,40,16,0.18);
+  }
+  .bugua-scope .auth-mark {
+    width: 68px;
+    height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: #8b4513;
+    font-size: 34px;
+    box-shadow: 0 6px 16px rgba(139,69,19,0.24);
+  }
+  .bugua-scope .auth-card h1 { margin-bottom: 8px; }
+  .bugua-scope .auth-intro {
+    text-align: center;
+    color: #6b3410;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .bugua-scope .auth-field { margin-bottom: 16px; }
+  .bugua-scope .auth-field label {
+    display: block;
+    color: #4a2810;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 7px;
+  }
+  .bugua-scope .auth-field input {
+    width: 100%;
+    border: 2px solid #d4b896;
+    border-radius: 8px;
+    padding: 11px 12px;
+    color: #2c1810;
+    background: #fffdf9;
+    font: inherit;
+    outline: none;
+  }
+  .bugua-scope .auth-field input:focus {
+    border-color: #8b4513;
+    box-shadow: 0 0 0 3px rgba(139,69,19,0.12);
+  }
+  .bugua-scope .auth-submit {
+    width: 100%;
+    border: 0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fff;
+    background: #8b4513;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .bugua-scope .auth-submit:hover { background: #6b3410; }
+  .bugua-scope .auth-submit:disabled { opacity: 0.65; cursor: wait; }
+  .bugua-scope .auth-message {
+    min-height: 22px;
+    margin-top: 12px;
+    color: #b42318;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .bugua-scope .auth-session-bar {
+    max-width: 1280px;
+    margin: 0 auto 10px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    color: #6b3410;
+    font-size: 12px;
+  }
+  .bugua-scope .auth-logout {
+    border: 1px solid #8b4513;
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: #8b4513;
+    background: rgba(255,255,255,0.72);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+  }
+  .bugua-scope .auth-logout:hover { color: #fff; background: #8b4513; }
+  @media (max-width: 520px) {
+    .bugua-scope { padding: 12px; }
+    .bugua-scope .auth-gate { min-height: calc(100vh - 24px); }
+    .bugua-scope .auth-card { padding: 26px 20px; }
+  }
+  .bugua-scope h1 {
+    text-align: center;
+    color: #8b4513;
+    font-size: 28px;
+    margin-bottom: 6px;
+    letter-spacing: 2px;
+  }
+  .bugua-scope .subtitle {
+    text-align: center;
+    color: #6b3410;
+    font-size: 14px;
+    margin-bottom: 20px;
+    opacity: 0.8;
+  }
+  .bugua-scope .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #8b4513;
+    flex-wrap: wrap;
+  }
+  .bugua-scope .tab {
+    padding: 10px 20px;
+    background: #d4b896;
+    color: #4a2810;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s;
+  }
+  .bugua-scope .tab.active {
+    background: #8b4513;
+    color: #fff;
+  }
+  .bugua-scope .tab:hover:not(.active) { background: #c9a878; }
+  .bugua-scope .panel { display: none; }
+  .bugua-scope .panel.active { display: block; }
+
+  .bugua-scope .layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 900px) {
+    .bugua-scope .layout { grid-template-columns: 1fr; }
+  }
+
+  /* 卦盤 */
+  .bugua-scope .board-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(139,69,19,0.15);
+  }
+  .bugua-scope .board-title {
+    text-align: center;
+    color: #8b4513;
+    font-size: 18px;
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+  .bugua-scope .board {
+    position: relative;
+    width: 360px;
+    height: 360px;
+    margin: 0 auto;
+    background: #6b3410;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .bugua-scope .slot {
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: #f5e6d3;
+    border: 3px solid #4a2810;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 38px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .bugua-scope .slot:hover { transform: scale(1.05); box-shadow: 0 0 12px rgba(255,200,100,0.6); }
+  .bugua-scope .slot.empty { color: #aaa; font-size: 14px; font-weight: normal; }
+  .bugua-scope .slot.red { color: #c8102e; border-color: #c8102e; }
+  .bugua-scope .slot.black { color: #1a1a1a; border-color: #1a1a1a; }
+  /* 位置編號角標：中宮(1)、左(2)、右(3)、上(4)、下(5) */
+  .bugua-scope .slot::before {
+    content: attr(data-num);
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    background: #8b4513;
+    color: #fff;
+    font-size: 13px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    z-index: 10;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .bugua-scope .slot.red::before { background: #c8102e; }
+  .bugua-scope .slot.black::before { background: #1a1a1a; }
+  .bugua-scope .slot[data-pos="center"] { top: 135px; left: 135px; }
+  .bugua-scope .slot[data-pos="top"] { top: 25px;  left: 135px; }
+  .bugua-scope .slot[data-pos="bottom"] { top: 245px; left: 135px; }
+  .bugua-scope .slot[data-pos="left"] { top: 135px; left: 25px; }
+  .bugua-scope .slot[data-pos="right"] { top: 135px; left: 245px; }
+  .bugua-scope .pos-label {
+    position: absolute;
+    font-size: 11px;
+    color: #f5e6d3;
+    text-align: center;
+    width: 90px;
+  }
+  .bugua-scope .pos-label[data-pos="top"] { top: 5px;   left: 135px; }
+  .bugua-scope .pos-label[data-pos="bottom"] { top: 340px; left: 135px; }
+  .bugua-scope .pos-label[data-pos="left"] { top: 230px; left: 25px; }
+  .bugua-scope .pos-label[data-pos="right"] { top: 230px; left: 245px; }
+
+  /* 棋子選單 */
+  .bugua-scope .picker {
+    margin-top: 16px;
+    background: #faf3e8;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .bugua-scope .picker-title {
+    font-size: 13px;
+    color: #6b3410;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .bugua-scope .picker-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .bugua-scope .pick-btn {
+    aspect-ratio: 1;
+    border: 2px solid;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.15s;
+  }
+  .bugua-scope .pick-btn.red { color: #c8102e; border-color: #c8102e; }
+  .bugua-scope .pick-btn.black { color: #1a1a1a; border-color: #1a1a1a; }
+  .bugua-scope .pick-btn:hover { background: #fff8e0; transform: scale(1.05); }
+  .bugua-scope .pick-btn.disabled { opacity: 0.3; cursor: not-allowed; }
+  .bugua-scope .picker-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .bugua-scope .btn {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .bugua-scope .btn-primary { background: #8b4513; color: #fff; }
+  .bugua-scope .btn-secondary { background: #d4b896; color: #4a2810; }
+  .bugua-scope .btn-danger { background: #c8102e; color: #fff; }
+
+  /* 分析面板 */
+  .bugua-scope .analysis {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(139,69,19,0.15);
+  }
+  .bugua-scope .section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed #d4b896;
+  }
+  .bugua-scope .section:last-child { border-bottom: none; margin-bottom: 0; }
+  .bugua-scope .section-title {
+    color: #8b4513;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .bugua-scope .section-title::before {
+    content: "▎";
+    color: #c8102e;
+  }
+  .bugua-scope .item {
+    margin-bottom: 6px;
+    padding: 6px 10px;
+    background: #faf3e8;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .bugua-scope .item.warn { background: #ffe8d6; border-left: 3px solid #ff6b35; }
+  .bugua-scope .item.good { background: #e8f5d8; border-left: 3px solid #5b8c3e; }
+  .bugua-scope .item.info { background: #e0f0ff; border-left: 3px solid #3a7bc8; }
+  .bugua-scope .item.muted { color: #888; }
+  .bugua-scope .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+  .bugua-scope .stat-row b { color: #8b4513; }
+  .bugua-scope .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin: 2px 3px;
+    font-weight: 600;
+  }
+  .bugua-scope .badge-good { background: #5b8c3e; color: #fff; }
+  .bugua-scope .badge-warn { background: #ff6b35; color: #fff; }
+  .bugua-scope .badge-info { background: #3a7bc8; color: #fff; }
+  .bugua-scope .badge-neutral { background: #d4b896; color: #4a2810; }
+  .bugua-scope .empty-msg {
+    text-align: center;
+    padding: 40px;
+    color: #888;
+    font-size: 14px;
+  }
+
+  /* 命盤 */
+  .bugua-scope .natal-input {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(139,69,19,0.15);
+  }
+  .bugua-scope .natal-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .bugua-scope .natal-slot {
+    aspect-ratio: 1;
+    border: 2px solid #4a2810;
+    border-radius: 50%;
+    background: #f5e6d3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  .bugua-scope .natal-slot.red { color: #c8102e; border-color: #c8102e; }
+  .bugua-scope .natal-slot.black { color: #1a1a1a; border-color: #1a1a1a; }
+  .bugua-scope .natal-slot.selected { box-shadow: 0 0 0 3px #ff8c00; }
+  .bugua-scope .natal-slot::after {
+    content: attr(data-num);
+    position: absolute;
+    top: -6px;
+    right: -3px;
+    background: #8b4513;
+    color: #fff;
+    font-size: 9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .bugua-scope .natal-output { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .bugua-scope .layer-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(139,69,19,0.1);
+    border-left: 4px solid #8b4513;
+  }
+  .bugua-scope .layer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .bugua-scope .layer-title {
+    color: #8b4513;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  /* 五子棋盤十字陣形（中、左、右、上、下） */
+  .bugua-scope .layer-mini-board {
+    display: grid;
+    grid-template-columns: repeat(3, 36px);
+    grid-template-rows: repeat(3, 36px);
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .bugua-scope .mini-piece {
+    width: 36px;
+    height: 36px;
+    border: 2px solid;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    background: #fff;
+  }
+  .bugua-scope .mini-piece.pos-top { grid-column: 2; grid-row: 1; }
+  .bugua-scope .mini-piece.pos-left { grid-column: 1; grid-row: 2; }
+  .bugua-scope .mini-piece.pos-center { grid-column: 2; grid-row: 2; }
+  .bugua-scope .mini-piece.pos-right { grid-column: 3; grid-row: 2; }
+  .bugua-scope .mini-piece.pos-bottom { grid-column: 2; grid-row: 3; }
+  .bugua-scope .mini-piece.red { color: #c8102e; border-color: #c8102e; }
+  .bugua-scope .mini-piece.black { color: #1a1a1a; border-color: #1a1a1a; }
+  .bugua-scope .mini-piece.empty { border-style: dashed; color: #ccc; border-color: #ccc; }
+  .bugua-scope .mini-pos { font-size: 9px; color: #888; }
+
+  /* 詳細解說區塊樣式 */
+  .bugua-scope .narrative-section {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #fff8f0;
+    border-radius: 6px;
+    border-left: 3px solid #d4a574;
+  }
+  .bugua-scope .narrative-section .nh {
+    font-weight: 700;
+    color: #8b4513;
+    font-size: 13.5px;
+    margin: 6px 0 4px;
+  }
+  .bugua-scope .narrative-section .nh:first-child { margin-top: 0; }
+  .bugua-scope .narrative-section .nb {
+    color: #3a3a3a;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 2px;
+  }
+
+  /* 命格選單分析總表（書版命格選單對照） */
+  .bugua-scope .minge-table { border-left-color: #9b59b6 !important; }
+  .bugua-scope .minge-table .minge-cat {
+    background: #f4ecf7;
+    color: #6c3483;
+    font-weight: 700;
+    padding: 8px 12px;
+    margin: 10px 0 6px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .bugua-scope .minge-table .minge-subcat {
+    color: #884ea0;
+    font-weight: 600;
+    font-size: 13px;
+    margin: 8px 0 4px 4px;
+  }
+  .bugua-scope .minge-table .minge-yes {
+    color: #1a1a1a;
+    background: #fff8f0;
+    padding: 5px 8px;
+    margin: 3px 0;
+    border-left: 3px solid #c0392b;
+    border-radius: 3px;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .bugua-scope .minge-table .minge-yes .minge-src {
+    color: #888;
+    font-size: 11px;
+    font-style: italic;
+  }
+  .bugua-scope .minge-table .minge-empty {
+    color: #aaa;
+    font-size: 12px;
+    padding: 4px 8px;
+    font-style: italic;
+  }
+  .bugua-scope .minge-table .minge-destiny-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: start;
+    padding: 5px 8px;
+    margin: 3px 0;
+    border-left: 3px solid #c0392b;
+    background: #fff8f0;
+    border-radius: 3px;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .bugua-scope .minge-table .minge-ages {
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  /* 生死關警示專區（書版 P31-P32 + IMG_0819 學習） */
+  .bugua-scope .death-pass-warning {
+    border-left-color: #c0392b !important;
+    background: linear-gradient(to right, #fff8f5, #fef0eb) !important;
+  }
+  .bugua-scope .death-pass-warning .dp-title {
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .bugua-scope .death-pass-warning .dp-summary {
+    background: #fff;
+    border-left: 3px solid #c0392b;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+    border-radius: 4px;
+  }
+  .bugua-scope .death-pass-warning .dp-summary .dp-sub {
+    color: #888;
+    font-size: 12px;
+    display: block;
+    margin-top: 4px;
+  }
+  .bugua-scope .death-pass-warning .dp-card {
+    background: #fff;
+    border-left: 4px solid #e67e22;
+    padding: 12px 14px;
+    margin: 10px 0;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(192,57,43,0.08);
+  }
+  .bugua-scope .death-pass-warning .dp-card.dp-possible {
+    border-left-color: #f39c12;
+  }
+  .bugua-scope .death-pass-warning .dp-age {
+    font-weight: 700;
+    color: #c0392b;
+    font-size: 16px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed #f0c0b0;
+    padding-bottom: 6px;
+  }
+  .bugua-scope .death-pass-warning .dp-section {
+    margin: 6px 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+  }
+  .bugua-scope .death-pass-warning .dp-section b {
+    color: #c0392b;
+  }
+  .bugua-scope .death-pass-warning .dp-trigger-line {
+    background: #fef9f5;
+    padding: 6px 10px;
+    border-radius: 3px;
+    margin: 4px 0;
+    font-size: 13px;
+  }
+  .bugua-scope .death-pass-warning .dp-cause {
+    background: #fdf2ec;
+    padding: 6px 10px;
+    border-radius: 3px;
+    color: #8b3a1a;
+    font-size: 13px;
+  }
+  .bugua-scope .death-pass-warning .dp-escape {
+    background: #f0f9f0;
+    border-left: 3px solid #27ae60;
+    padding: 6px 10px;
+    border-radius: 3px;
+    color: #1e6e3a;
+    font-size: 13px;
+    margin: 6px 0;
+  }
+  .bugua-scope .death-pass-warning .dp-noescape {
+    background: #fdecea;
+    border-left: 3px solid #c0392b;
+    padding: 6px 10px;
+    border-radius: 3px;
+    color: #c0392b;
+    font-weight: 600;
+    font-size: 13px;
+    margin: 6px 0;
+  }
+  .bugua-scope .death-pass-warning .dp-cta {
+    background: #fffbf3;
+    border-left: 3px solid #d4a574;
+    padding: 8px 12px;
+    border-radius: 3px;
+    margin-top: 12px;
+    color: #8b4513;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .bugua-scope .death-pass-warning .dp-none {
+    background: #f0f9f0;
+    border-left: 3px solid #27ae60;
+    padding: 10px 14px;
+    border-radius: 5px;
+    color: #1e6e3a;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  /* 顯化淨化建議（咒輪紙內容 + 念誦內容） */
+  .bugua-scope .purification-card { border-left-color: #d4a574 !important; background: #fffbf3; }
+  .bugua-scope .purification-card .purif-title { color: #8b4513; font-weight:700; font-size:16px; }
+  .bugua-scope .purification-card .purif-section {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: #fff;
+    border-radius: 6px;
+    border-left: 3px solid #c0392b;
+  }
+  .bugua-scope .purification-card .purif-h {
+    color: #c0392b;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .bugua-scope .purification-card .purif-zhuluen {
+    background: linear-gradient(135deg, #fff5e1 0%, #ffe8c4 100%);
+    border: 2px dashed #d4a574;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin: 8px 0;
+    font-size: 14px;
+    line-height: 1.85;
+    color: #6b3410;
+    text-align: center;
+  }
+  .bugua-scope .purification-card .purif-zhuluen .zl-tag {
+    display:inline-block;
+    background:#c0392b;
+    color:#fff;
+    padding:2px 8px;
+    border-radius:10px;
+    font-size:11px;
+    margin-bottom:6px;
+  }
+  .bugua-scope .purification-card .purif-quote {
+    background: #f8f4ec;
+    padding: 10px 14px;
+    border-left: 3px solid #8b4513;
+    margin: 6px 0;
+    font-size: 13px;
+    line-height: 1.85;
+    color: #3a3a3a;
+    white-space: pre-line;
+  }
+  .bugua-scope .purification-card .purif-step-num {
+    display:inline-block;
+    background:#8b4513;
+    color:#fff;
+    border-radius:50%;
+    width:22px;
+    height:22px;
+    text-align:center;
+    line-height:22px;
+    font-size:12px;
+    margin-right:6px;
+    font-weight:700;
+  }
+  .bugua-scope .purification-card .purif-tip {
+    color: #888;
+    font-size: 11.5px;
+    font-style: italic;
+    margin-top: 4px;
+  }
+
+  /* 字義說明 */
+  .bugua-scope .piece-meta {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #faf3e8;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .bugua-scope .piece-meta b { color: #8b4513; }
+  .bugua-scope details { margin-top: 6px; }
+  .bugua-scope summary {
+    cursor: pointer;
+    color: #8b4513;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 0;
+  }
+  .bugua-scope details[open] summary { margin-bottom: 4px; }
+  .bugua-scope .narrative-block {
+    background: #fff8e0;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 6px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  .bugua-scope .help {
+    background: #faf3e8;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #4a2810;
+  }
+  .bugua-scope .help b { color: #8b4513; }
+
+  /* 列印（依 body class 切換要列印的分頁） */
+  @media print {
+    @page { margin: 1.2cm; size: A4 portrait; }
+
+    /* === 全域 reset：避免印表機 A4 紙寬下被 fixed width / grid 溢出截斷 === */
+    .bugua-scope, .bugua-scope {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      color: #000;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .bugua-scope .container {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    /* 隱藏螢幕專用 UI */
+    .bugua-scope .tabs, .bugua-scope .help { display: none !important; }
+    .bugua-scope .picker, .bugua-scope .picker-actions { display: none !important; }
+    .bugua-scope h1 { font-size: 22px; margin-bottom: 4px; }
+    .bugua-scope .subtitle { font-size: 12px; margin-bottom: 12px; }
+
+    /* 預設隱藏所有 panel */
+    .bugua-scope .panel { display: none !important; }
+
+    /* 模式控制：依 body class 顯示對應 panel（用 #id 高 specificity 覆蓋桌面 CSS）*/
+    .bugua-scope body.print-single #panel-single, .bugua-scope body.print-natal #panel-natal, .bugua-scope body.print-pastlife #panel-pastlife, .bugua-scope body.print-lingshu #panel-lingshu, .bugua-scope body.print-reference #panel-reference {
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    /* === 重點修正：把所有 grid layout 強制變 block，覆蓋桌面「420px 1fr」固定寬度 ===
+       桌面 CSS：`.layout { grid-template-columns: 420px 1fr; }` 在 A4 紙寬（21cm≈595pt）下
+       iOS Safari 印表機驅動對 grid 計算有 bug，會把右欄 .analysis 整個截到頁外 → 空白頁。
+       改成 block 後上下排列，每個元素 100% 寬度，所有印表機都能正確列印。
+    */
+    .bugua-scope .layout, .bugua-scope .natal-output {
+      display: block !important;
+      grid-template-columns: none !important;
+    }
+    .bugua-scope .layout > * {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin-bottom: 12px;
+      box-sizing: border-box !important;
+    }
+    .bugua-scope .board-card, .bugua-scope .analysis, .bugua-scope .layer-card {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      box-shadow: none !important;
+      border: 1px solid #d4b896;
+    }
+    .bugua-scope .analysis {
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+    }
+
+    /* 確保 inline grid（如生命靈數結果摘要 6 欄、9 宮格、五行生克 5 卡片）也不溢出 */
+    .bugua-scope [style*="grid-template-columns"], .bugua-scope [style*="display:grid"], .bugua-scope [style*="display: grid"] {
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    /* 單卦列印補強 */
+    .bugua-scope body.print-single textarea {
+      border: 1px solid #d4b896 !important; padding: 10px !important;
+      background: #faf3e8 !important; min-height: auto !important;
+      width: 100% !important; box-sizing: border-box !important;
+    }
+    .bugua-scope body.print-single select { border: 1px solid #d4b896 !important; }
+
+    /* === 單卦盤面 .board print 修正 ===
+       桌面 .board 用 position:relative + 360x360 固定 + position:absolute 的 slots
+       iOS Safari 對實體印表機 paginate 含 absolute 內容的固定尺寸塊有 bug
+       → 整個 panel 被視為「無內容」變空白頁
+       解法：print 時把 .board 改成 grid 3x3，slots 用 grid-column/row 排列
+    */
+    .bugua-scope body.print-single .board {
+      position: relative !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
+      grid-template-rows: 1fr 1fr 1fr !important;
+      gap: 8px;
+      width: 100% !important;
+      max-width: 320px !important;
+      height: auto !important;
+      aspect-ratio: 1 / 1;
+      margin: 12px auto !important;
+      padding: 12px !important;
+      background: #fff !important;
+      border: 3px solid #6b3410;
+      page-break-inside: avoid !important;
+      overflow: visible !important;
+    }
+    .bugua-scope body.print-single .slot {
+      position: relative !important;
+      top: auto !important; left: auto !important; right: auto !important; bottom: auto !important;
+      width: 100% !important;
+      height: 100% !important;
+      aspect-ratio: 1 / 1;
+      margin: 0 !important;
+      overflow: visible !important;
+    }
+    .bugua-scope body.print-single .slot[data-pos="top"] { grid-column: 2; grid-row: 1; }
+    .bugua-scope body.print-single .slot[data-pos="left"] { grid-column: 1; grid-row: 2; }
+    .bugua-scope body.print-single .slot[data-pos="center"] { grid-column: 2; grid-row: 2; }
+    .bugua-scope body.print-single .slot[data-pos="right"] { grid-column: 3; grid-row: 2; }
+    .bugua-scope body.print-single .slot[data-pos="bottom"] { grid-column: 2; grid-row: 3; }
+    /* pos-label 在板子外圍的 absolute 標籤 — 列印時不需要 */
+    .bugua-scope body.print-single .pos-label { display: none !important; }
+
+    /* 命盤列印補強 */
+    .bugua-scope body.print-natal .natal-input { padding: 8px; }
+
+    /* === 命盤盤面 .natal-grid print 修正 ===
+       同樣可能因 grid + absolute children 在實體印表機 paginate 出 bug
+       強制 grid 8 欄，所有 cell visibility 確保
+    */
+    .bugua-scope body.print-natal .natal-grid {
+      display: grid !important;
+      grid-template-columns: repeat(8, 1fr) !important;
+      gap: 4px !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      page-break-inside: avoid !important;
+      overflow: visible !important;
+    }
+    .bugua-scope body.print-natal .natal-cell {
+      visibility: visible !important;
+      overflow: visible !important;
+      width: auto !important;
+      min-width: 0 !important;
+    }
+
+    /* === 命盤每局十字陣形 .layer-mini-board print 修正 === */
+    .bugua-scope .layer-mini-board {
+      display: grid !important;
+      visibility: visible !important;
+      overflow: visible !important;
+    }
+    .bugua-scope .mini-piece {
+      visibility: visible !important;
+      overflow: visible !important;
+    }
+
+    /* === 全域：所有 panel 子元素 visibility + overflow 強制 === */
+    .bugua-scope .panel, .bugua-scope .panel * {
+      visibility: visible;
+    }
+    .bugua-scope .container, .bugua-scope .panel, .bugua-scope .layout, .bugua-scope .layer-card, .bugua-scope .board-card, .bugua-scope .analysis, .bugua-scope .natal-input, .bugua-scope .natal-output, .bugua-scope .section {
+      overflow: visible !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    /* 生命靈數列印補強 */
+    .bugua-scope body.print-lingshu input[type="text"], .bugua-scope body.print-lingshu input[type="number"] {
+      border: 1px solid #d4b896 !important;
+      background: #faf3e8 !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    .bugua-scope body.print-lingshu .board-card { page-break-after: avoid; }
+
+    /* 全頁面元素都不要被切割 */
+    .bugua-scope .section, .bugua-scope .layer-card, .bugua-scope .board, .bugua-scope .natal-grid {
+      page-break-inside: avoid;
+    }
+  }

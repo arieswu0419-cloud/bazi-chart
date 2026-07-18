@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=212">
+<link rel="stylesheet" href="css/style.css?v=213">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=213">
 </head>
 <body>
 
@@ -452,9 +453,24 @@
     </div>
 
     <div id="jigongView" style="display:none">
-    <div class="card jigong-card" id="jigongCard">
+    <div class="card" id="jigongHeadCard">
       <div class="card-head">
         <button type="button" class="btn secondary" id="jigongBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="jigong-title">濟公棋卦</h2>
+      <div class="bugua-scope">
+        <div class="tabs" id="jigongTabs">
+          <button class="tab active" data-tab="pastlife">前世因果</button>
+          <button class="tab" data-tab="single">５棋單卦</button>
+          <button class="tab" data-tab="natal">３２棋命卦</button>
+          <button class="tab" data-tab="reference">速查表</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="jigongPanelPastlife">
+    <div class="card jigong-card" id="jigongCard">
+      <div class="card-head" style="justify-content:flex-end">
         <button class="btn secondary" id="exportJigongPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
       </div>
       <h2 class="jigong-title">濟公棋卦・前世因果</h2>
@@ -497,6 +513,165 @@
           </div>
         </div>
       </div>
+    </div>
+    </div>
+    </div>
+
+    <div id="jigongPanelBugua" style="display:none">
+    <div class="card">
+      <div class="bugua-scope">
+<!-- 單卦 -->
+  <div class="panel" id="panel-single">
+    <div class="help">
+      <b>使用方式：</b>① <b>先寫問題</b>＋選卦種 → ② 從下方棋子選單點選一支棋 → ③ 再點盤面位置放上去（順序：中→左→右→上→下）→ 系統會即時自動判讀並針對問題解答。
+      <br><b>提醒：</b>實體卜卦時請先洗手、淨棋、默念恭請濟公菩薩或指導靈，講清楚問題（人事時地物五要素），再摸棋按順序排。
+    </div>
+    <!-- 問事欄位 -->
+    <div class="board-card" style="margin-bottom: 16px;">
+      <div class="board-title">📝 問事內容（請以「自己」為主體寫問題）</div>
+      <div style="display: grid; grid-template-columns: 1fr 200px; gap: 12px; align-items: start;">
+        <div>
+          <textarea id="question-text" placeholder="範例：&#10;✅ 這件事會不會讓我開心？&#10;✅ 我會不會在 6 月底前以 1500 萬成交 XX 路 XX 號的房子？&#10;✅ 王小明對我的合作提案有沒有好影響？&#10;✅ 這個月我的財運如何？&#10;&#10;❌ 不要直接問：「他愛不愛我」「某人會不會選上」「他今天怎樣」 → 請改寫為以「我」為主體&#10;❌ 配偶、兄弟姊妹不能直接代問" style="width:100%;min-height:120px;padding:10px;border:2px solid #d4b896;border-radius:8px;font-size:14px;font-family:inherit;resize:vertical;background:#faf3e8;"></textarea>
+          <div id="question-hint" style="font-size:12px;color:#888;margin-top:4px;"></div>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin-bottom:6px;">卦種類別</label>
+          <select id="question-type" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="auto">🤖 自動判讀（依問題）</option>
+            <option value="event">📋 事件卦（一般）</option>
+            <option value="love">❤️ 感情卦</option>
+            <option value="career">💼 事業/工作卦</option>
+            <option value="business">🤝 合作/生意卦</option>
+            <option value="health">🏥 健康卦</option>
+            <option value="wealth">💰 財運卦</option>
+            <option value="property">🏠 買賣房子卦</option>
+            <option value="recruit">✅ 錄取/考試卦</option>
+            <option value="decision">🤔 決策卦</option>
+            <option value="fortune">🔮 運勢卦（周/月/年）</option>
+            <option value="achieve">🎯 會不會成（達到/做到）</option>
+            <option value="lostitem">🔍 失物找回</option>
+            <option value="moneyback">💸 錢能拿回</option>
+            <option value="doctor">👨‍⚕️ 選擇醫生/保健品</option>
+            <option value="pastlife">🌀 前世關係</option>
+            <option value="healing">🧘 療癒淨化效果卦</option>
+          </select>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin:10px 0 6px;">卜主性別（影響位置代表角色）</label>
+          <select id="querent-gender" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="">未指定（用通用）</option>
+            <option value="male">👨 男性</option>
+            <option value="female">👩 女性</option>
+          </select>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin:10px 0 6px;">婚姻狀態</label>
+          <select id="querent-married" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="">未指定</option>
+            <option value="no">未婚</option>
+            <option value="yes">已婚</option>
+          </select>
+          <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5;">
+            說明：性別+婚姻會影響②③位置代表的人物（婚前=姊妹/兄弟，婚後=妻子/丈夫）。
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="layout">
+      <div>
+        <div class="board-card">
+          <div class="board-title">五子卦盤</div>
+          <div class="board" id="board-single">
+            <div class="pos-label" data-pos="top">④ 上 (長輩/老闆)</div>
+            <div class="pos-label" data-pos="bottom">⑤ 下 (晚輩/子女)</div>
+            <div class="pos-label" data-pos="left">② 左 (女平輩/老婆)</div>
+            <div class="pos-label" data-pos="right">③ 右 (男平輩/老公)</div>
+            <div class="slot empty" data-pos="center" data-num="1" data-role="slot">中宮自己</div>
+            <div class="slot empty" data-pos="top" data-num="4" data-role="slot">上</div>
+            <div class="slot empty" data-pos="bottom" data-num="5" data-role="slot">下</div>
+            <div class="slot empty" data-pos="left" data-num="2" data-role="slot">左</div>
+            <div class="slot empty" data-pos="right" data-num="3" data-role="slot">右</div>
+          </div>
+          <div class="picker">
+            <div class="picker-title">選棋子（選好之後點盤面位置）：當前選擇 <span id="cur-pick">尚未選擇</span></div>
+            <div class="picker-grid" id="picker-single"></div>
+            <div class="picker-actions">
+              <button class="btn btn-secondary" id="btn-clear-single">清空盤面</button>
+              <button class="btn btn-primary" id="btn-random-single" style="background:#9b59b6;">🎲 隨機抽 5 子</button>
+              <button class="btn btn-primary" id="btn-random-next-single" style="background:#8e44ad;">🎲 抽下一顆</button>
+              <button class="btn btn-primary" id="btn-print">📄 匯出單卦 PDF</button>
+            </div>
+            <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.4;">
+              💡 <b>🎲 隨機抽 5 子</b>：模擬書版實體 32 顆棋子袋（紅 16 + 黑 16），搖一搖抽 5 顆填滿盤面（中→左→右→上→下）。<b>🎲 抽下一顆</b>：依空格順序逐顆抽。
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="analysis" id="analysis-single">
+        <div class="empty-msg">請先在盤面放上棋子（至少中宮）。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 命盤 -->
+  <div class="panel" id="panel-natal">
+    <div class="help">
+      <b>命盤 32 子輸入：</b>依序摸 32 支棋（一輩子只能摸一次），按順序輸入下方格子。系統依書版 IMG_0819 拆成 8 個五子局（每局新增 4 支，「上」=前一局的「下」；最後一局「下」=總格的「上」=第 4 支，形成閉環）：<br>
+      ① 總格（1-10歲／81-90歲）：中1+左2+右3+上4+下5｜② 學習格（11-20歲）：中6+左7+右8+上5+下9｜③ 情感格（21-30歲）：中10+左11+右12+上9+下13<br>
+      ④ 事業格（31-40歲）：中14+左15+右16+上13+下17｜⑤ 41-50歲：中18+左19+右20+上17+下21｜⑥ 51-60歲：中22+左23+右24+上21+下25<br>
+      ⑦ 61-70歲：中26+左27+右28+上25+下29｜⑧ 71-80歲：中30+左31+右32+上29+下4（接回總格的「上」）
+      <br><b>用法：</b>先在下方點選棋子 → 再依序點 1～32 號格子放入。
+    </div>
+    <div class="natal-input">
+      <!-- 卜主性別＋婚姻狀態（影響②③位置代表角色 + 女命盤離婚格判定） -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin-bottom:6px;">卜主性別（影響位置代表角色＋女命盤離婚格判定）</label>
+          <select id="natal-querent-gender" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="">未指定（用通用）</option>
+            <option value="male">👨 男性</option>
+            <option value="female">👩 女性</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;color:#6b3410;font-weight:600;margin-bottom:6px;">婚姻狀態</label>
+          <select id="natal-querent-married" style="width:100%;padding:8px;border:2px solid #d4b896;border-radius:6px;font-size:13px;background:#fff;">
+            <option value="">未指定</option>
+            <option value="no">未婚</option>
+            <option value="yes">已婚</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5;">
+        說明：性別+婚姻會影響②③位置代表的人物（男未婚=②姊妹/女友 ③兄弟｜男已婚=②妻子 ③兄弟｜女未婚=②姊妹 ③兄弟/男友｜女已婚=②兄弟姊妹 ③丈夫）。<b>女性卜主</b>命盤會自動觸發離婚格判定（書版 v2.9.6）。
+      </div>
+      <div class="picker-title">選棋子（也可以重複放）：當前選擇 <span id="cur-pick-natal">尚未選擇</span></div>
+      <div class="picker-grid" id="picker-natal"></div>
+      <div style="margin-top:10px;">
+        <div class="natal-grid" id="natal-grid"></div>
+        <div class="picker-actions">
+          <button class="btn btn-secondary" id="btn-clear-natal">清空命盤</button>
+          <button class="btn btn-primary" id="btn-random-natal" style="background:#9b59b6;">🎲 隨機抽 32 子</button>
+          <button class="btn btn-primary" id="btn-random-next-natal" style="background:#8e44ad;">🎲 抽下一顆</button>
+          <button class="btn btn-primary" id="btn-analyze-natal">產出命盤分析</button>
+          <button class="btn btn-primary" id="btn-print-natal" style="background:#5b8c3e;">📄 匯出命盤 PDF</button>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:6px;line-height:1.4;">
+          💡 <b>🎲 隨機抽 32 子</b>：模擬書版實體 32 顆棋子袋（紅 16+黑 16），搖一搖依序摸 32 次填滿命盤。<b>🎲 抽下一顆</b>：依空格順序逐顆抽。
+        </div>
+      </div>
+    </div>
+    <div class="natal-output" id="natal-output">
+      <div class="empty-msg">請先輸入 32 支棋並按「產出命盤分析」。</div>
+    </div>
+  </div>
+
+  <!-- 前世因果 -->
+  <div class="panel" id="panel-reference">
+    <div class="help">
+      <b>速查表</b>：本頁列出整套濟公象棋卜卦系統的核心對照規則，方便隨時對照。所有判讀都以這套規則為基礎。
+    </div>
+    <div class="analysis" id="reference-content"></div>
+  </div>
+
+      </div>
+    </div>
     </div>
     </div>
 
@@ -920,26 +1095,28 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=212"></script>
-<script src="js/auth.js?v=212"></script>
+<script src="js/firebase-config.js?v=213"></script>
+<script src="js/auth.js?v=213"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=212"></script>
-<script src="js/dayun-strategy-content.js?v=212"></script>
-<script src="js/shensha-content.js?v=212"></script>
-<script src="js/renge-content.js?v=212"></script>
-<script src="js/renge-engine.js?v=212"></script>
-<script src="js/lifenum-engine.js?v=212"></script>
-<script src="js/mingpian-engine.js?v=212"></script>
-<script src="js/name-strokes-data.js?v=212"></script>
-<script src="js/lunar-convert.js?v=212"></script>
-<script src="js/shuzi-engine.js?v=212"></script>
-<script src="js/jigong-engine.js?v=212"></script>
-<script src="js/qimen-engine.js?v=212"></script>
-<script src="js/qimen-hongpan-engine.js?v=212"></script>
-<script src="js/qimen-sansheng-engine.js?v=212"></script>
-<script src="js/fengshui-zibai-engine.js?v=212"></script>
+<script src="js/bazi-engine.js?v=213"></script>
+<script src="js/dayun-strategy-content.js?v=213"></script>
+<script src="js/shensha-content.js?v=213"></script>
+<script src="js/renge-content.js?v=213"></script>
+<script src="js/renge-engine.js?v=213"></script>
+<script src="js/lifenum-engine.js?v=213"></script>
+<script src="js/mingpian-engine.js?v=213"></script>
+<script src="js/name-strokes-data.js?v=213"></script>
+<script src="js/lunar-convert.js?v=213"></script>
+<script src="js/shuzi-engine.js?v=213"></script>
+<script src="js/jigong-engine.js?v=213"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
+<script src="js/jigong-bugua.js?v=213"></script>
+<script src="js/qimen-engine.js?v=213"></script>
+<script src="js/qimen-hongpan-engine.js?v=213"></script>
+<script src="js/qimen-sansheng-engine.js?v=213"></script>
+<script src="js/fengshui-zibai-engine.js?v=213"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=212"></script>
+<script src="js/app.js?v=213"></script>
 </body>
 </html>
