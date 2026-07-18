@@ -2674,6 +2674,43 @@ function updateZibaiFeixingHint(fx) {
     fx.month + "月（" + fx.monthBranch + "月）流月飛星 " + fx.monthStar + " 入中（節氣月）";
 }
 
+// ---- 三星五行生剋（流年・流月・命卦）----
+const ZB_WX_NAME = { 1: "水", 2: "土", 3: "木", 4: "木", 5: "土", 6: "金", 7: "金", 8: "土", 9: "火" };
+const ZB_WX_SHENG = { 木: "火", 火: "土", 土: "金", 金: "水", 水: "木" };
+const ZB_WX_KE = { 木: "土", 土: "水", 水: "火", 火: "金", 金: "木" };
+// 兩星關係文字：A生B／A剋B／B生A／B剋A／A B比和
+function zbWxRelText(aStar, bStar, aName, bName) {
+  const a = ZB_WX_NAME[aStar], b = ZB_WX_NAME[bStar];
+  if (a === b) return aName + bName + "比和（" + a + "）";
+  if (ZB_WX_SHENG[a] === b) return aName + "生" + bName + "（" + a + "生" + b + "）";
+  if (ZB_WX_SHENG[b] === a) return bName + "生" + aName + "（" + b + "生" + a + "）";
+  if (ZB_WX_KE[a] === b) return aName + "剋" + bName + "（" + a + "剋" + b + "）";
+  return bName + "剋" + aName + "（" + b + "剋" + a + "）";
+}
+
+function buildZibaiFeixingShengKeHtml(fx, guaPan, fi) {
+  if (!guaPan) return "";
+  const starCell = (n) => '<td><span class="' + zbWxClass(n) + '" style="font-weight:700">' + n + "</span>（" + ZB_WX_NAME[n] + "）</td>";
+  const rowFor = (label, pal) => {
+    const y = fx.yearPan[pal], m = fx.monthPan[pal], g = guaPan[pal];
+    const rels = [
+      zbWxRelText(y, m, "年", "月"),
+      zbWxRelText(m, g, "月", "命"),
+      zbWxRelText(y, g, "年", "命")
+    ].join("・");
+    return "<tr><td>" + label + "</td>" + starCell(y) + starCell(m) + starCell(g) + "<td>" + rels + "</td></tr>";
+  };
+  let rows = rowFor("中宮", 5);
+  for (let k = 0; k < 8; k++) {
+    const dir = ZB_COMPASS_CW[(fi + k) % 8];
+    rows += rowFor(ZB_DIR_NAME[dir] + "方", ZB_DIR_TO_PALACE[dir]);
+  }
+  return '<div class="zibai-section"><div class="zibai-section-title">三星五行生剋（流年・流月・命卦）</div>' +
+    '<table class="zibai-mg-table"><thead><tr><th>方位</th><th>流年</th><th>流月</th><th>命卦</th><th>五行生剋</th></tr></thead><tbody>' +
+    rows + "</tbody></table>" +
+    '<div class="zibai-note">九星五行：1白水・2黑土・3碧木・4綠木・5黃土・6白金・7赤金・8白土・9紫火。相生：木→火→土→金→水；相剋：木剋土、土剋水、水剋火、火剋金、金剋木。以命卦星為主：他星生命星為吉助，剋命星宜化解（以通關五行洩化）。</div></div>';
+}
+
 function buildZibaiFeixingHtml(fx) {
   // 方位與陽宅紫白風水盤一致：取「陽宅面向」選定的向首，向首朝上中，其餘依羅盤順時針對位
   const angle = Math.round(Number(document.getElementById("zb-angle").value) || 0);
@@ -2726,7 +2763,8 @@ function buildZibaiFeixingHtml(fx) {
     '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
     '<div class="zibai-sitting">' + tSvg + '<span class="zibai-sit-text">' + sitting.name + "山" + facing.name + "向</span></div>" +
     '<div class="zibai-note" style="text-align:center">每格 左＝流年飛星｜中＝流月飛星｜右＝宅主命卦飛星（數字著五行色；月份以節氣月對應，1 月屬前一年丑月）</div>' +
-    "</div>";
+    "</div>" +
+    buildZibaiFeixingShengKeHtml(fx, guaPan, fi);
 }
 
 function runZibaiFeixing() {
