@@ -1508,12 +1508,12 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   border: 1.5px solid #c8ad63; display: flex; align-items: center; justify-content: center;
   font-size: clamp(19px, 5.6vw, 28px); font-weight: 800; }
 
-/* 九星五行色（數字著色） */
-.zb-wx-wood  { color: #1f9d3a; }  /* 木＝綠 */
-.zb-wx-fire  { color: #e23b3b; }  /* 火＝紅 */
-.zb-wx-earth { color: #c99700; }  /* 土＝黃 */
-.zb-wx-metal { color: #6b7280; }  /* 金＝白／金屬（灰） */
-.zb-wx-water { color: #1650b8; }  /* 水＝藍 */
+/* 九星五行色（數字著色）——比照奇門藍盤五行配色 */
+.zb-wx-wood  { color: #548C00; }  /* 木 */
+.zb-wx-fire  { color: #EA0000; }  /* 火 */
+.zb-wx-earth { color: #796400; }  /* 土 */
+.zb-wx-metal { color: #EAC100; }  /* 金 */
+.zb-wx-water { color: #004B97; }  /* 水 */
 
 /* 八方位標籤：貼在金框上、白色字（向首朝上旋轉後的實際方位） */
 .zibai-dir { position: absolute; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; }
