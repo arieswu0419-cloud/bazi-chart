@@ -1618,7 +1618,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .gy-pos-main { border-color: #E60012; }
 .gy-pos-tail { border-color: #E60012; }
-.gy-pos-num { position: absolute; top: 3px; left: 6px; font-size: 12px; color: #999; font-weight: 700; }
+.gy-pos-num { position: absolute; bottom: 3px; right: 6px; font-size: 14px; color: #999; font-weight: 700; }
 .gy-pos-piece { font-size: clamp(24px, 7vw, 38px); font-weight: 800; }
 .gy-pos-piece.gy-red { color: #c00000; }
 .gy-pos-piece.gy-black { color: #1a1a1a; }
@@ -1721,7 +1721,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .gy17-gj-cells .gy-pos:last-child { grid-area: br; }
 /* 17 支盤的棋位比開門見山小一號，才能一排容納 4 組 */
 .gy17-board .gy-pos { width: clamp(44px, 13vw, 58px); border-width: 2px; }
-.gy17-board .gy-pos-num { font-size: 10px; top: 2px; left: 4px; }
+.gy17-board .gy-pos-num { font-size: 12px; bottom: 2px; right: 4px; }
 .gy17-board .gy-pos-piece { font-size: clamp(18px, 5.5vw, 28px); }
 .gy17-legend { font-size: 12.5px; line-height: 1.8; color: var(--text-secondary);
   background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; margin-top: 6px; }
@@ -1738,6 +1738,11 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .gy-explain-row { display: grid; grid-template-columns: 108px 34px 1fr; gap: 8px; align-items: start;
   padding: 6px 0; font-size: 13px; line-height: 1.6; }
 .gy-explain-row + .gy-explain-row { border-top: 1px dashed #e8e1cc; }
+/* 五支棋說明附加區：神明組合／健康說明（詞彙2026） */
+.gy-explain-extra { margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e0d9c0; }
+.gy-explain-extra-title { font-size: 13px; font-weight: 800; color: var(--gold-darker); margin-bottom: 4px; }
+.gy-explain-extra-row { font-size: 13px; color: #555; line-height: 1.7; }
+.gy-explain-extra-row b { color: var(--gold-darker); }
 .gy-explain-role { font-weight: 700; color: #6b3410; }
 .gy-explain-chip { width: 30px; height: 30px; border-radius: 50%; border: 2px solid; display: flex;
   align-items: center; justify-content: center; font-size: 17px; font-weight: 800; }

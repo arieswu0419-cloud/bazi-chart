@@ -3419,6 +3419,33 @@ function gyPieceRow(roleLabel, name, color) {
     '<span class="gy-explain-body">' + (info.persons ? '<b class="gy-explain-persons">' + info.persons + "</b>" : "") +
     '<span class="gy-explain-desc">' + (info.desc || "") + "</span></span></div>";
 }
+// 從 GY_VOCAB 取「單棋」的指定類別詞彙（key 形如 "1帥"，取尾字比對棋名；類別名以前綴比對，
+// 例如 "健康" 可同時命中 "健康(身體/心理)"）
+function gyVocabSingleWords(name, catPrefix) {
+  const out = [];
+  (typeof GY_VOCAB !== "undefined" ? GY_VOCAB : []).forEach((v) => {
+    if (v.type !== "單棋" || v.key.slice(-1) !== name) return;
+    v.groups.forEach((g) => { if (g.cat.indexOf(catPrefix) === 0) out.push.apply(out, g.words); });
+  });
+  return out;
+}
+// 神明組合：GY_VOCAB「組合」類中含「神佛」類別者，組合名的每個棋字都能被目前 5 支棋
+// （多重集，兵/卒可重複）覆蓋才算成立
+function gyGodCombos(arr) {
+  const have = {};
+  arr.forEach((c) => { have[c.name] = (have[c.name] || 0) + 1; });
+  const hits = [];
+  (typeof GY_VOCAB !== "undefined" ? GY_VOCAB : []).forEach((v) => {
+    if (v.type !== "組合") return;
+    const godWords = [];
+    v.groups.forEach((g) => { if (g.cat.indexOf("神佛") === 0) godWords.push.apply(godWords, g.words); });
+    if (!godWords.length) return;
+    const need = {};
+    v.key.split("").forEach((ch) => { need[ch] = (need[ch] || 0) + 1; });
+    if (Object.keys(need).every((ch) => (have[ch] || 0) >= need[ch])) hits.push({ key: v.key, words: godWords });
+  });
+  return hits;
+}
 // arr：長度 5，依位置 1..5 的 {name,color}
 function gyFiveExplainHtml(title, arr) {
   const rows = arr.map((c, i) => gyPieceRow(GY_ROLE5[i], c.name, c.color)).join("");
@@ -3431,9 +3458,25 @@ function gyFiveExplainHtml(title, arr) {
   const dup = {};
   arr.forEach((c) => { dup[c.name] = (dup[c.name] || 0) + 1; });
   const dups = Object.keys(dup).filter((n) => dup[n] >= 2).map((n) => n + n);
+  // 神明組合（詞彙2026）：盤中棋能湊出的神佛組合
+  const gods = gyGodCombos(arr);
+  const godsHtml = gods.length
+    ? '<div class="gy-explain-extra"><div class="gy-explain-extra-title">神明組合</div>' +
+      gods.map((g) => '<div class="gy-explain-extra-row"><b>' + g.key + "</b>：" + g.words.join("／") + "</div>").join("") + "</div>"
+    : "";
+  // 健康說明（詞彙2026）：各棋（不重複）之健康(身體/心理)詞彙
+  const seen = {};
+  const healthRows = arr.filter((c) => (seen[c.name] ? false : (seen[c.name] = 1)))
+    .map((c) => {
+      const ws = gyVocabSingleWords(c.name, "健康");
+      return ws.length ? '<div class="gy-explain-extra-row"><b>' + c.name + "</b>：" + ws.join("／") + "</div>" : "";
+    }).filter(Boolean).join("");
+  const healthHtml = healthRows
+    ? '<div class="gy-explain-extra"><div class="gy-explain-extra-title">健康說明</div>' + healthRows + "</div>"
+    : "";
   return '<div class="gy-explain-block"><div class="gy-explain-title">' + title + "</div>" +
     '<div class="gy-explain-summary">' + note + "　｜　主卦：<b>" + arr[0].name + "</b>　尾卦：<b>" + arr[4].name + "</b>" +
-    (dups.length ? "　｜　重覆棋：" + dups.join("、") : "") + "</div>" + rows + "</div>";
+    (dups.length ? "　｜　重覆棋：" + dups.join("、") : "") + "</div>" + rows + godsHtml + healthHtml + "</div>";
 }
 
 // ---- 17 支卦（3 組開門見山天/人/地 ＋ 2 支關鍵棋；擺棋邏輯同開門見山，17 個位置）----
