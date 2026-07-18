@@ -2381,17 +2381,35 @@ function zbPosClass(r, c) {
   return "zb-" + map[r + "," + c];
 }
 
+// 九星五行 + 名稱 + 吉凶說明（點格解釋用）
+const ZB_STAR_INFO = {
+  1: { name: "一白貪狼", wx: "水", desc: "文昌桃花、聲名地位，主智慧與人緣（吉）" },
+  2: { name: "二黑巨門", wx: "土", desc: "病符星，主疾病、憂愁、腸胃，忌動土（凶）" },
+  3: { name: "三碧祿存", wx: "木", desc: "是非星，主口舌、官非、爭鬥破財（凶）" },
+  4: { name: "四綠文曲", wx: "木", desc: "文昌星，主讀書、考試、文才功名（吉）" },
+  5: { name: "五黃廉貞", wx: "土", desc: "正關煞，五行屬土最凶，主災病，宜靜忌動（大凶）" },
+  6: { name: "六白武曲", wx: "金", desc: "權威星，主權力、地位、偏財驛馬（吉）" },
+  7: { name: "七赤破軍", wx: "金", desc: "破軍星，主破財、口舌、盜劫（退運為凶）" },
+  8: { name: "八白左輔", wx: "土", desc: "當令財星，主財富、置業、功名，大吉（吉）" },
+  9: { name: "九紫右弼", wx: "火", desc: "喜慶星，主婚姻、喜事、名譽桃花（吉）" }
+};
+// 各飛星所屬五行 → CSS class（數字著五行色）
+const ZB_WX_OF = { 1: "water", 2: "earth", 3: "wood", 4: "wood", 5: "earth", 6: "metal", 7: "metal", 8: "earth", 9: "fire" };
+function zbWxClass(n) { return "zb-wx-" + (ZB_WX_OF[n] || "earth"); }
+
 function buildZibaiPlateHtml(res) {
   const pi = res.periodInfo;
   const info = (pi ? ZB_PERIOD_LABEL[res.period] + "（" + pi.range + "）　" : ZB_PERIOD_LABEL[res.period] + "　") +
     res.zuoXiang + "　面向 " + res.angle + "°";
 
   const cells = res.cells.map((cell) => {
+    const dir = cell.center ? "中宮" : cell.dirName;
     return '<div class="zibai-cell' + (cell.center ? " zibai-cell-center" : "") +
+      '" data-dir="' + dir + '" data-yun="' + cell.yun + '" data-shan="' + cell.shan + '" data-xiang="' + cell.xiang +
       '" style="grid-row:' + cell.r + ";grid-column:" + cell.c + '">' +
-      '<span class="zibai-shan">' + cell.shan + "</span>" +
-      '<span class="zibai-xiang">' + cell.xiang + "</span>" +
-      '<span class="zibai-yun">' + cell.yun + "</span>" +
+      '<span class="zibai-shan ' + zbWxClass(cell.shan) + '"><b class="zb-star-num">' + cell.shan + '</b><i class="zb-star-tag">山</i></span>' +
+      '<span class="zibai-xiang ' + zbWxClass(cell.xiang) + '"><b class="zb-star-num">' + cell.xiang + '</b><i class="zb-star-tag">向</i></span>' +
+      '<span class="zibai-yun ' + zbWxClass(cell.yun) + '">' + cell.yun + "</span>" +
       "</div>";
   }).join("");
 
@@ -2399,17 +2417,52 @@ function buildZibaiPlateHtml(res) {
   const labels = res.cells.filter((c) => !c.center).map((c) =>
     '<span class="zibai-dir ' + zbPosClass(c.r, c.c) + '">' + c.dirName + "</span>").join("");
 
+  // 向首↑箭頭、坐山⊥標記：改用 SVG 粗線條（比原字元約粗 3 倍）
+  const arrowSvg = '<svg class="zibai-arrow-svg" viewBox="0 0 24 44" width="24" height="44" aria-hidden="true">' +
+    '<line x1="12" y1="43" x2="12" y2="9"/><polyline points="4,20 12,5 20,20" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  const tSvg = '<svg class="zibai-t-svg" viewBox="0 0 44 22" width="44" height="22" aria-hidden="true">' +
+    '<line x1="22" y1="1" x2="22" y2="15"/><line x1="6" y1="16" x2="38" y2="16" stroke-linecap="round"/></svg>';
+
   return '<div class="zibai-plate">' +
     '<div class="zibai-info">' + info + "</div>" +
     '<div class="zibai-facing-top">' +
       '<span class="zibai-facing-name">' + res.facing.name + "</span>" +
       '<span class="zibai-facing-deg">' + res.facingDegText + "</span>" +
-      '<span class="zibai-arrow">↑</span>' +
+      arrowSvg +
     "</div>" +
     '<div class="zibai-grid">' + cells + labels + "</div>" +
-    '<div class="zibai-sitting"><span class="zibai-sit-mark">⊥</span>' + res.zuoXiang + "</div>" +
-    "</div>";
+    '<div class="zibai-sitting">' + tSvg + '<span class="zibai-sit-text">' + res.zuoXiang + "</span></div>" +
+    "</div>" +
+    '<div class="zibai-explain" id="zibaiExplain">' + zbExplainHint() + "</div>";
 }
+
+function zbExplainHint() {
+  return '<span class="zibai-explain-hint">點擊任一宮格，顯示該宮 運星／向星／山星 的五行與吉凶說明。</span>';
+}
+function zbStarLine(role, n) {
+  const s = ZB_STAR_INFO[n] || { name: "—", wx: "—", desc: "—" };
+  return '<div class="zibai-explain-line">' +
+    '<span class="zibai-explain-role">' + role + "</span>" +
+    '<span class="zibai-explain-star ' + zbWxClass(n) + '">' + n + "</span>" +
+    '<span class="zibai-explain-name">' + s.name + "（" + s.wx + "）</span>" +
+    '<span class="zibai-explain-desc">' + s.desc + "</span></div>";
+}
+function showZibaiCellExplain(cell) {
+  const box = document.getElementById("zibaiExplain");
+  if (!box) return;
+  box.innerHTML = '<div class="zibai-explain-head">' + cell.dataset.dir + "　飛星解釋</div>" +
+    zbStarLine("運星", Number(cell.dataset.yun)) +
+    zbStarLine("向星", Number(cell.dataset.xiang)) +
+    zbStarLine("山星", Number(cell.dataset.shan));
+}
+// 點宮格 → 反白該格並顯示解釋（委派於持久的 #zibaiResult 容器）
+document.getElementById("zibaiResult").addEventListener("click", function (e) {
+  const cell = e.target.closest(".zibai-cell");
+  if (!cell) return;
+  this.querySelectorAll(".zibai-cell.zibai-cell-selected").forEach((el) => el.classList.remove("zibai-cell-selected"));
+  cell.classList.add("zibai-cell-selected");
+  showZibaiCellExplain(cell);
+});
 
 function renderZibai(res) {
   currentZibai = res;
