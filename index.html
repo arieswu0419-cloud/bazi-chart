@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=214">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=214">
+<link rel="stylesheet" href="css/style.css?v=215">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=215">
 </head>
 <body>
 
@@ -29,6 +29,7 @@
       <a href="index.html" class="main-nav-link active">命理諮詢</a>
       <button type="button" class="main-nav-link" data-feature="奇門藍盤" data-perm="qimenDunjia">奇門藍盤</button>
       <button type="button" class="main-nav-link" data-feature="奇門紅盤" data-perm="qimenHongpan">奇門紅盤</button>
+      <button type="button" class="main-nav-link" data-feature="奇門催旺" data-perm="cuiwang">奇門催旺</button>
       <button type="button" class="main-nav-link" data-feature="奇門三勝宮" data-perm="qimenSansheng">奇門三勝宮</button>
       <button type="button" class="main-nav-link" data-feature="觀音棋卦" data-perm="guanyin">觀音棋卦</button>
       <button type="button" class="main-nav-link" data-feature="濟公棋卦" data-perm="jigong">濟公棋卦</button>
@@ -734,6 +735,43 @@
     </div>
     </div>
 
+    <div id="cuiwangView" style="display:none">
+    <div class="card" id="cuiwangFormCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="cuiwangBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="zibai-title">奇門催旺（催財佈局）</h2>
+      <div id="cuiwangForm">
+        <div class="form-block">
+          <h2>查詢日期區間（西元國曆）</h2>
+          <div class="cuiwang-range">
+            <div class="cuiwang-range-group">
+              <span class="cuiwang-range-label">起</span>
+              <select id="cw-fy"></select><select id="cw-fm"></select><select id="cw-fd"></select>
+            </div>
+            <span class="cuiwang-range-sep">～</span>
+            <div class="cuiwang-range-group">
+              <span class="cuiwang-range-label">迄</span>
+              <select id="cw-ty"></select><select id="cw-tm"></select><select id="cw-td"></select>
+            </div>
+            <button type="button" class="btn" id="cuiwangRunBtn" data-html2canvas-ignore="true">列出格局</button>
+          </div>
+          <div class="zibai-hint" id="cuiwangHint">列出區間內每日 12 時辰的奇門藍盤催旺格局與分數（催旺宮＝三奇＋吉門，分數 7～10）。一次最多 62 天。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="cuiwangCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end">
+        <button class="btn secondary" id="exportCuiwangPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+      <div class="cuiwang-legend">
+        催旺宮位＝該時辰奇門藍盤中「天盤三奇（乙丙丁）＋吉門（開／休／生）」之宮；分數＝7＋神分＋門分（九天+3・值符+2・太陰−1・凶神−2；休/開門+2），越高越旺。「—」＝該時辰無催旺格，不宜佈局。
+      </div>
+      <div id="cuiwangResult"></div>
+    </div>
+    </div>
+
     <div id="qimenDunjiaView" style="display:none">
     <div class="card" id="qimenDunjiaFormCard">
       <div class="card-head">
@@ -1154,29 +1192,30 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=214"></script>
-<script src="js/auth.js?v=214"></script>
+<script src="js/firebase-config.js?v=215"></script>
+<script src="js/auth.js?v=215"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=214"></script>
-<script src="js/dayun-strategy-content.js?v=214"></script>
-<script src="js/shensha-content.js?v=214"></script>
-<script src="js/renge-content.js?v=214"></script>
-<script src="js/renge-engine.js?v=214"></script>
-<script src="js/lifenum-engine.js?v=214"></script>
-<script src="js/mingpian-engine.js?v=214"></script>
-<script src="js/name-strokes-data.js?v=214"></script>
-<script src="js/lunar-convert.js?v=214"></script>
-<script src="js/shuzi-engine.js?v=214"></script>
-<script src="js/jigong-engine.js?v=214"></script>
-<script src="js/guanyin-data.js?v=214"></script>
+<script src="js/bazi-engine.js?v=215"></script>
+<script src="js/dayun-strategy-content.js?v=215"></script>
+<script src="js/shensha-content.js?v=215"></script>
+<script src="js/renge-content.js?v=215"></script>
+<script src="js/renge-engine.js?v=215"></script>
+<script src="js/lifenum-engine.js?v=215"></script>
+<script src="js/mingpian-engine.js?v=215"></script>
+<script src="js/name-strokes-data.js?v=215"></script>
+<script src="js/lunar-convert.js?v=215"></script>
+<script src="js/shuzi-engine.js?v=215"></script>
+<script src="js/jigong-engine.js?v=215"></script>
+<script src="js/guanyin-data.js?v=215"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=214"></script>
-<script src="js/qimen-engine.js?v=214"></script>
-<script src="js/qimen-hongpan-engine.js?v=214"></script>
-<script src="js/qimen-sansheng-engine.js?v=214"></script>
-<script src="js/fengshui-zibai-engine.js?v=214"></script>
+<script src="js/jigong-bugua.js?v=215"></script>
+<script src="js/qimen-engine.js?v=215"></script>
+<script src="js/cuiwang-engine.js?v=215"></script>
+<script src="js/qimen-hongpan-engine.js?v=215"></script>
+<script src="js/qimen-sansheng-engine.js?v=215"></script>
+<script src="js/fengshui-zibai-engine.js?v=215"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=214"></script>
+<script src="js/app.js?v=215"></script>
 </body>
 </html>

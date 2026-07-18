@@ -40,7 +40,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -55,7 +55,8 @@ function effectivePermissions(data) {
     fengshui: !!raw.fengshui,
     mingpian: !!raw.mingpian,
     zibai: !!raw.zibai,
-    bazhai: !!raw.bazhai
+    bazhai: !!raw.bazhai,
+    cuiwang: !!raw.cuiwang
   };
 }
 
@@ -95,7 +96,7 @@ requireApprovedUser(function (user, data) {
 
   // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
   // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
-  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水" };
+  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水", cuiwang: "奇門催旺" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
@@ -127,6 +128,10 @@ requireApprovedUser(function (user, data) {
         showQimenHongpanView();
         return;
       }
+      if (key === "cuiwang") {
+        showCuiwangView();
+        return;
+      }
       if (key === "qimenSansheng") {
         showQimenSanshengView();
         return;
@@ -149,7 +154,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -3241,6 +3246,117 @@ function initGuanyin() {
   renderGuanyinBoard();
   renderGuanyinRef("");
 }
+
+// ================= 奇門催旺（催財佈局；排盤重用藍盤 calculateQimenHeader，評分見 cuiwang-engine.js）=================
+function showCuiwangView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("cuiwangView").style.display = "";
+  setActiveNav("奇門催旺");
+  fillCuiwangSelects();
+}
+function hideCuiwangView() {
+  document.getElementById("cuiwangView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("cuiwangBackBtn").addEventListener("click", hideCuiwangView);
+
+let cuiwangFilled = false;
+function fillCuiwangSelects() {
+  if (cuiwangFilled) return;
+  cuiwangFilled = true;
+  const now = new Date(), thisY = now.getFullYear();
+  let yH = "";
+  for (let y = thisY - 5; y <= thisY + 10; y++) yH += '<option value="' + y + '">' + y + "</option>";
+  let mH = ""; for (let m = 1; m <= 12; m++) mH += '<option value="' + m + '">' + m + "</option>";
+  let dH = ""; for (let d = 1; d <= 31; d++) dH += '<option value="' + d + '">' + d + "</option>";
+  ["cw-fy", "cw-ty"].forEach((id) => document.getElementById(id).innerHTML = yH);
+  ["cw-fm", "cw-tm"].forEach((id) => document.getElementById(id).innerHTML = mH);
+  ["cw-fd", "cw-td"].forEach((id) => document.getElementById(id).innerHTML = dH);
+  // 預設：今天 ~ 七天後
+  const to = new Date(now.getTime() + 7 * 86400000);
+  document.getElementById("cw-fy").value = thisY; document.getElementById("cw-fm").value = now.getMonth() + 1; document.getElementById("cw-fd").value = now.getDate();
+  document.getElementById("cw-ty").value = to.getFullYear(); document.getElementById("cw-tm").value = to.getMonth() + 1; document.getElementById("cw-td").value = to.getDate();
+}
+
+function cwScoreClass(sc) {
+  if (sc >= 10) return "cw-s10";
+  if (sc === 9) return "cw-s9";
+  if (sc === 8) return "cw-s8";
+  return "cw-s7";
+}
+
+function renderCuiwang(res) {
+  const box = document.getElementById("cuiwangResult");
+  const html = res.days.map((day) => {
+    const rows = day.hours.map((h) => {
+      const ju = h.juInfo ? (h.juInfo.isYang ? "陽" : "陰") + h.juInfo.ju + "局" : "";
+      if (!h.best) {
+        return '<tr class="cw-none"><td>' + h.shi + '<span class="cw-range">' + h.range + "</span></td>" +
+          '<td class="cw-ju">' + ju + "</td><td>—</td><td>—</td><td>—</td><td class=\"cw-score-cell\">—</td><td>—</td></tr>";
+      }
+      const b = h.best;
+      return '<tr><td>' + h.shi + '<span class="cw-range">' + h.range + "</span></td>" +
+        '<td class="cw-ju">' + ju + "</td>" +
+        '<td class="cw-dir">' + b.dir + "</td>" +
+        '<td>' + b.ganName + "</td>" +
+        '<td class="cw-geju"><b>' + b.geju + "</b><span class=\"cw-detail\">" + b.xing + "・" + b.men + "門・" + b.shen + "</span></td>" +
+        '<td class="cw-score-cell"><span class="cw-score ' + cwScoreClass(b.score) + '">' + b.score + "</span></td>" +
+        '<td class="cw-wupin">' + b.wupin + "</td></tr>";
+    }).join("");
+    // 當日最佳
+    const scored = day.hours.filter((h) => h.best);
+    const top = scored.length ? Math.max.apply(null, scored.map((h) => h.best.score)) : 0;
+    const topShis = scored.filter((h) => h.best.score === top).map((h) => h.shi).join("、");
+    return '<div class="cw-day">' +
+      '<div class="cw-day-head"><b>' + day.date + "</b>　日柱 " + day.dayGZ +
+      "　<span class=\"cw-chong\">沖" + day.chongZodiac + "（屬" + day.chongZodiac + "者不宜佈局）</span>" +
+      (top ? '<span class="cw-day-top">當日最佳 ' + top + " 分：" + topShis + "</span>" : '<span class="cw-day-top cw-none-top">當日無催旺格</span>') +
+      "</div>" +
+      '<div class="cw-table-wrap"><table class="cw-table"><thead><tr>' +
+      "<th>時辰</th><th>局</th><th>催旺方位</th><th>三奇</th><th>格局（星・門・神）</th><th>分數</th><th>佈局物品</th>" +
+      "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
+  }).join("");
+  box.innerHTML = (res.truncated ? '<div class="cw-warn">※ 區間超過 62 天，僅顯示前 62 天。</div>' : "") + html;
+  document.getElementById("cuiwangCard").style.display = "block";
+}
+
+function runCuiwang() {
+  const fy = +document.getElementById("cw-fy").value, fm = +document.getElementById("cw-fm").value, fd = +document.getElementById("cw-fd").value;
+  const ty = +document.getElementById("cw-ty").value, tm = +document.getElementById("cw-tm").value, td = +document.getElementById("cw-td").value;
+  if (new Date(fy, fm - 1, fd) > new Date(ty, tm - 1, td)) { alert("起始日期不可晚於結束日期"); return; }
+  const btn = document.getElementById("cuiwangRunBtn");
+  btn.disabled = true; btn.textContent = "排盤中…";
+  setTimeout(function () {
+    try {
+      const res = analyzeCuiwangRange(fy, fm, fd, ty, tm, td, 62);
+      renderCuiwang(res);
+    } catch (e) { alert("排盤失敗：" + e.message); }
+    finally { btn.disabled = false; btn.textContent = "列出格局"; }
+  }, 20);
+}
+document.getElementById("cuiwangRunBtn").addEventListener("click", runCuiwang);
+
+document.getElementById("exportCuiwangPdfBtn").addEventListener("click", async function () {
+  const btn = this, orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 10;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 奇門催旺", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    const sections = Array.from(document.querySelectorAll("#cuiwangCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("奇門催旺.pdf");
+  } catch (err) { alert("匯出失敗：" + err.message); }
+  finally { btn.disabled = false; btn.textContent = orig; }
+});
 
 // ================= 奇門紅盤（獨立頁面，洋紅配色；四柱／八卦位置沿用，天地盤干/神/星/門的排盤 =================
 // Phase 2 完成：排盤改用獨立的 js/qimen-hongpan-engine.js（calculateQimenHongpan），

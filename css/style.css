@@ -1654,3 +1654,38 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   .gy-gloss-row { grid-template-columns: 56px 1fr; }
   .gy-gloss-desc { grid-column: 1 / -1; }
 }
+
+/* ===== 奇門催旺（催財佈局） ===== */
+.cuiwang-range { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.cuiwang-range-group { display: flex; align-items: center; gap: 4px; }
+.cuiwang-range-label { font-weight: 700; color: var(--gold-darker); }
+.cuiwang-range-group select { padding: 6px 4px; }
+.cuiwang-range-sep { font-weight: 700; color: var(--gold-darker); }
+.cuiwang-legend { font-size: 13px; line-height: 1.7; color: var(--text-secondary);
+  background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 14px; }
+.cw-warn { font-size: 13px; color: #c00; margin-bottom: 10px; }
+.cw-day { margin-bottom: 20px; }
+.cw-day-head { font-size: 15px; color: #333; padding: 8px 12px; background: #EFE7CE;
+  border-radius: var(--radius) var(--radius) 0 0; border: 1px solid var(--gold); border-bottom: none; }
+.cw-day-head b { color: var(--gold-darker); font-size: 16px; }
+.cw-chong { color: #c0392b; font-size: 13px; }
+.cw-day-top { float: right; font-weight: 700; color: #2e9e4b; }
+.cw-day-top.cw-none-top { color: #999; }
+.cw-table-wrap { overflow-x: auto; border: 1px solid var(--gold); border-radius: 0 0 var(--radius) var(--radius); }
+.cw-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cw-table th, .cw-table td { border: 1px solid #e0d9c0; padding: 6px 8px; text-align: left; vertical-align: top; }
+.cw-table th { background: #F7F3E6; color: var(--gold-darker); font-weight: 700; white-space: nowrap; }
+.cw-table tr.cw-none td { color: #bbb; background: #fafafa; }
+.cw-range { display: block; font-size: 11px; color: #aaa; }
+.cw-ju { white-space: nowrap; color: var(--text-secondary); }
+.cw-dir { font-weight: 800; color: #333; font-size: 15px; white-space: nowrap; }
+.cw-geju b { color: #333; }
+.cw-detail { display: block; font-size: 11px; color: #999; }
+.cw-score-cell { text-align: center; }
+.cw-score { display: inline-block; min-width: 26px; text-align: center; font-weight: 800; font-size: 16px;
+  color: #fff; border-radius: 6px; padding: 2px 6px; }
+.cw-s10 { background: #d4a017; }
+.cw-s9  { background: #2e9e4b; }
+.cw-s8  { background: #4a90d9; }
+.cw-s7  { background: #9a8a55; }
+.cw-wupin { font-size: 12px; color: #6b3410; max-width: 260px; }
