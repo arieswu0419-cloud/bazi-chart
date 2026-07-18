@@ -3588,23 +3588,33 @@ function hideQimenShuziView() {
   setActiveNav(null);
 }
 document.getElementById("qimenShuziBackBtn").addEventListener("click", hideQimenShuziView);
-// 只能輸入數字
+// 只能輸入數字或英文字（大小寫皆可；A或a=1、B或b=2…Z或z=26，轉數字後取末六碼）
 document.getElementById("qsz-input").addEventListener("input", function () {
-  this.value = this.value.replace(/\D/g, "");
+  this.value = this.value.replace(/[^0-9A-Za-z]/g, "");
 });
+// 英文字轉數字：A/a=1…Z/z=26（Z 轉成 "26" 兩位數字），數字原樣保留
+function qszToDigits(str) {
+  return str.split("").map(function (ch) {
+    if (/[0-9]/.test(ch)) return ch;
+    if (/[A-Za-z]/.test(ch)) return String(ch.toUpperCase().charCodeAt(0) - 64);
+    return "";
+  }).join("");
+}
 
 function qszWxClass(wx) { return wx ? "qsz-wx-" + { 木: "wood", 火: "fire", 土: "earth", 金: "metal", 水: "water" }[wx] : "qsz-wx-none"; }
 
 function buildQimenShuziHtml(res) {
   const c = res.cells;
-  const val = (k) => '<span class="qsz-v ' + qszWxClass(c[k].wx) + '">' + c[k].value + "</span>";
-  // 白底單宮：九星(左上,五行色) 八神(中上,黑) 天盤干/地盤干(右上,五行色,換行) 八門(正中,五行圓底白字) 宮位(左下,五行色)
+  const val = (k, extra) => '<span class="qsz-v ' + qszWxClass(c[k].wx) + (extra ? " " + extra : "") + '">' + c[k].value + "</span>";
+  // 白底單宮：九星(左上,五行色,直式逐字,縮2號) 八神(中上,黑) 天盤干/地盤干(右上,五行色,換行,縮2號)
+  // 八門(正中,加大五行圓底白字,只顯示門名首字,字加大2號) 宮位(左下,五行色,縮2號)
+  const menShort = c.men.value.slice(-1) === "門" ? c.men.value.charAt(0) : c.men.value;
   const plate = '<div class="qsz-plate"><div class="qsz-grid">' +
-    '<div class="qsz-cell qsz-tl">' + val("xing") + "</div>" +
+    '<div class="qsz-cell qsz-tl">' + val("xing", "qsz-sm qsz-vertical") + "</div>" +
     '<div class="qsz-cell qsz-tc"><span class="qsz-v qsz-shen">' + c.shen.value + "</span></div>" +
-    '<div class="qsz-cell qsz-tr">' + val("tian") + val("di") + "</div>" +
-    '<div class="qsz-cell qsz-mc"><span class="qsz-men-circle ' + qszWxClass(c.men.wx) + '">' + c.men.value + "</span></div>" +
-    '<div class="qsz-cell qsz-bl">' + val("gong") + "</div>" +
+    '<div class="qsz-cell qsz-tr">' + val("tian", "qsz-sm") + val("di", "qsz-sm") + "</div>" +
+    '<div class="qsz-cell qsz-mc"><span class="qsz-men-circle ' + qszWxClass(c.men.wx) + '">' + menShort + "</span></div>" +
+    '<div class="qsz-cell qsz-bl">' + val("gong", "qsz-sm") + "</div>" +
     "</div></div>";
 
   // 逐符號說明
@@ -3630,8 +3640,8 @@ function buildQimenShuziHtml(res) {
 }
 
 function runQimenShuzi() {
-  const raw = document.getElementById("qsz-input").value.replace(/\D/g, "");
-  if (raw.length < 6) { document.getElementById("qimenShuziHint").textContent = "數字不足 6 位，請至少輸入 6 位數字。"; return; }
+  const raw = qszToDigits(document.getElementById("qsz-input").value);
+  if (raw.length < 6) { document.getElementById("qimenShuziHint").textContent = "轉換後數字不足 6 位，請至少輸入 6 位數字或英文字。"; return; }
   const res = calcQimenShuzi(raw);
   if (!res) { document.getElementById("qimenShuziHint").textContent = "排盤失敗，請確認輸入。"; return; }
   document.getElementById("qimenShuziHint").textContent = "已取末六碼 " + res.six + " 排盤。";
