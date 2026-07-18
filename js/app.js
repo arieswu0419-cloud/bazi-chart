@@ -2334,6 +2334,9 @@ function fillZibaiYearSelect() {
   document.getElementById("zb-oyear").innerHTML = oyHtml;
   document.getElementById("zb-omonth").innerHTML = mHtml;
   document.getElementById("zb-oday").innerHTML = dHtml;
+  // 陽宅飛星：流年/流月
+  document.getElementById("zbfx-year").innerHTML = html;
+  document.getElementById("zbfx-month").innerHTML = mHtml;
 }
 
 function showZibaiView() {
@@ -2351,9 +2354,13 @@ function showZibaiView() {
   document.getElementById("zb-omonth").value = "1";
   document.getElementById("zb-oday").value = "1";
   document.getElementById("zb-ogender").value = "male";
+  document.getElementById("zbfx-year").value = String(now.getFullYear());
+  document.getElementById("zbfx-month").value = String(now.getMonth() + 1);
+  setZibaiTab("house");
   updateZibaiHints();
   updateZibaiGuaHint();
   runZibai();
+  runZibaiFeixing();
 }
 function hideZibaiView() {
   document.getElementById("zibaiView").style.display = "none";
@@ -2611,6 +2618,95 @@ document.getElementById("exportZibaiPdfBtn").addEventListener("click", async fun
     await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
     addPageNumbers(pdf, pageWidth, pageHeight);
     pdf.save("紫白飛星風水盤.pdf");
+  } catch (err) {
+    alert("匯出失敗：" + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+});
+
+// ---- 紫白風水頁籤：陽宅風水（原內容）／陽宅飛星（流年|流月） ----
+function setZibaiTab(which) {
+  const house = which === "house";
+  document.getElementById("zibaiHousePane").style.display = house ? "" : "none";
+  document.getElementById("zibaiFeixingPane").style.display = house ? "none" : "";
+  document.getElementById("zibaiTabHouse").classList.toggle("active", house);
+  document.getElementById("zibaiTabFeixing").classList.toggle("active", !house);
+}
+document.getElementById("zibaiTabHouse").addEventListener("click", function () { setZibaiTab("house"); });
+document.getElementById("zibaiTabFeixing").addEventListener("click", function () { setZibaiTab("feixing"); });
+
+// ---- 陽宅飛星（流年|流月紫白；演算法對照使用者 2026 年 5/6/7 月飛星圖逐格驗證）----
+// 版面固定「東南朝上中」斜排（同參考圖）：東左上、南右上、北左下、西右下，紅框淺藍底。
+const ZBFX_CELLS = [
+  { r: 1, c: 1, pal: 3 }, { r: 1, c: 2, pal: 4 }, { r: 1, c: 3, pal: 9 },
+  { r: 2, c: 1, pal: 8 }, { r: 2, c: 2, pal: 5 }, { r: 2, c: 3, pal: 2 },
+  { r: 3, c: 1, pal: 1 }, { r: 3, c: 2, pal: 6 }, { r: 3, c: 3, pal: 7 }
+];
+const ZBFX_LABELS = [["東", "tl"], ["東南", "tc"], ["南", "tr"], ["東北", "ml"], ["西南", "mr"], ["北", "bl"], ["西北", "bc"], ["西", "br"]];
+
+function readZibaiFeixingForm() {
+  return {
+    year: Number(document.getElementById("zbfx-year").value),
+    month: Number(document.getElementById("zbfx-month").value)
+  };
+}
+
+function updateZibaiFeixingHint(fx) {
+  document.getElementById("zibaiFeixingHint").textContent =
+    fx.effYear + "年（" + fx.yearBranch + "年）流年飛星 " + fx.yearStar + " 入中　" +
+    fx.month + "月（" + fx.monthBranch + "月）流月飛星 " + fx.monthStar + " 入中（節氣月）";
+}
+
+function buildZibaiFeixingHtml(fx) {
+  const cells = ZBFX_CELLS.map((o) => {
+    const y = fx.yearPan[o.pal], m = fx.monthPan[o.pal];
+    return '<div class="zbfx-cell" style="grid-row:' + o.r + ";grid-column:" + o.c + '">' +
+      '<span class="zbfx-num ' + zbWxClass(y) + '">' + y + "</span>" +
+      '<span class="zbfx-sep">|</span>' +
+      '<span class="zbfx-num ' + zbWxClass(m) + '">' + m + "</span></div>";
+  }).join("");
+  const labels = ZBFX_LABELS.map((l) => '<span class="zbfx-label zbfx-' + l[1] + '">' + l[0] + "</span>").join("");
+  const info = fx.year + " 年 " + fx.month + " 月份飛星圖　（" + fx.yearBranch + "年 年飛星 " + fx.yearStar +
+    " 入中・" + fx.monthBranch + "月 月飛星 " + fx.monthStar + " 入中）";
+  return '<div class="zibai-plate">' +
+    '<div class="zibai-info">' + info + "</div>" +
+    '<div class="zbfx-wrap">' + labels + '<div class="zbfx-grid">' + cells + "</div></div>" +
+    '<div class="zibai-note" style="text-align:center">每格 左＝流年飛星｜右＝流月飛星（數字著五行色；月份以節氣月對應，1 月屬前一年丑月）</div>' +
+    "</div>";
+}
+
+function runZibaiFeixing() {
+  const f = readZibaiFeixingForm();
+  const fx = calculateZibaiFeixing(f.year, f.month);
+  updateZibaiFeixingHint(fx);
+  document.getElementById("zibaiFeixingResult").innerHTML = buildZibaiFeixingHtml(fx);
+  document.getElementById("zibaiFeixingCard").style.display = "block";
+}
+
+document.getElementById("zibaiFeixingRunBtn").addEventListener("click", runZibaiFeixing);
+["zbfx-year", "zbfx-month"].forEach((id) =>
+  document.getElementById(id).addEventListener("change", runZibaiFeixing));
+
+document.getElementById("exportZibaiFeixingPdfBtn").addEventListener("click", async function () {
+  const btn = this;
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 10;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 紫白風水—陽宅飛星", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    const sections = Array.from(document.querySelectorAll("#zibaiFeixingCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("紫白風水—陽宅飛星.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {

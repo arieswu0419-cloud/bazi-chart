@@ -344,6 +344,42 @@ function zbGameStars(gua) {
   });
 }
 
+// ============================================================
+//  陽宅飛星（流年｜流月紫白）——年/月二盤，皆入中順飛
+//  已對照使用者提供 2026 年 5/6/7 月三張飛星圖逐格驗證
+// ============================================================
+const ZB_BRANCH_NAMES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+const ZBFX_MONTH_BRANCH = ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"];
+
+// 流年紫白入中星（y＝立春年）：九年一循環逐年遞減（2024=3、2025=2、2026=1、2027=9…）
+function zbYearStar(y) {
+  return ((11 - (y % 9)) - 1) % 9 + 1;
+}
+
+// 流月紫白入中星：子午卯酉年寅月8入中、辰戌丑未年5入中、寅申巳亥年2入中，逐月遞減
+// monthIdx：節氣月序 0=寅月…11=丑月
+function zbMonthStar(effYear, monthIdx) {
+  const b = ((effYear - 4) % 12 + 12) % 12;
+  const start = [0, 3, 6, 9].includes(b) ? 8 : ([1, 4, 7, 10].includes(b) ? 5 : 2);
+  return ((start - monthIdx - 1) % 9 + 9) % 9 + 1;
+}
+
+// 主入口：西元年/月。國曆月對應節氣月：2月=寅月…12月=子月、1月=前一年丑月
+function calculateZibaiFeixing(year, month) {
+  let effYear = year, idx = month - 2;
+  if (month === 1) { effYear = year - 1; idx = 11; }
+  const yearStar = zbYearStar(effYear);
+  const monthStar = zbMonthStar(effYear, idx);
+  return {
+    year, month, effYear,
+    yearBranch: ZB_BRANCH_NAMES[((effYear - 4) % 12 + 12) % 12],
+    monthBranch: ZBFX_MONTH_BRANCH[idx],
+    yearStar, monthStar,
+    yearPan: zbFly(yearStar, true),
+    monthPan: zbFly(monthStar, true)
+  };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { calculateZibai, zbPeriodFromDate, zbMountainIndex, zbFly, ZB_MOUNTAINS, analyzeZibai, zbLifeGua, zbGameStars };
+  module.exports = { calculateZibai, zbPeriodFromDate, zbMountainIndex, zbFly, ZB_MOUNTAINS, analyzeZibai, zbLifeGua, zbGameStars, calculateZibaiFeixing, zbYearStar, zbMonthStar };
 }
