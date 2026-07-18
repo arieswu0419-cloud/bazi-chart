@@ -1666,10 +1666,11 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .cw-warn { font-size: 13px; color: #c00; margin-bottom: 10px; }
 .cw-day { margin-bottom: 20px; }
 .cw-day-head { font-size: 15px; color: #333; padding: 8px 12px; background: #EFE7CE;
-  border-radius: var(--radius) var(--radius) 0 0; border: 1px solid var(--gold); border-bottom: none; }
+  border-radius: var(--radius) var(--radius) 0 0; border: 1px solid var(--gold); border-bottom: none;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .cw-day-head b { color: var(--gold-darker); font-size: 16px; }
 .cw-chong { color: #c0392b; font-size: 13px; }
-.cw-day-top { float: right; font-weight: 700; color: #2e9e4b; }
+.cw-day-top { margin-left: auto; font-weight: 700; color: #2e9e4b; }
 .cw-day-top.cw-none-top { color: #999; }
 .cw-table-wrap { overflow-x: auto; border: 1px solid var(--gold); border-radius: 0 0 var(--radius) var(--radius); }
 .cw-table { width: 100%; border-collapse: collapse; font-size: 13px; }

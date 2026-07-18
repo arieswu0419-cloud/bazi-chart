@@ -749,6 +749,18 @@
   }
   .bugua-scope .help b { color: #8b4513; }
 
+  /* Aries 整合：窄螢幕（手機）將固定 360px 卦盤縮放置中，避免整頁橫向溢出。
+     關鍵：grid 項目預設 min-width:auto 會被 360px 卦盤撐開，需放行縮小＋卡片裁切。 */
+  @media (max-width: 430px) {
+    .bugua-scope .layout { grid-template-columns: minmax(0, 1fr); }
+    .bugua-scope .layout > * { min-width: 0; }
+    .bugua-scope .board-card { overflow: hidden; }
+    .bugua-scope .board { transform: scale(0.82); transform-origin: top center; margin-bottom: -66px; }
+    /* 選棋子 7 欄在窄螢幕縮小以免最後一顆被裁 */
+    .bugua-scope .picker-grid { gap: 4px; }
+    .bugua-scope .pick-btn { min-width: 0; font-size: 15px; }
+  }
+
   /* 列印（依 body class 切換要列印的分頁） */
   @media print {
     @page { margin: 1.2cm; size: A4 portrait; }
