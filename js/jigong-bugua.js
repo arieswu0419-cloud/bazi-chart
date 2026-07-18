@@ -2434,28 +2434,49 @@ function setupSingle() {
 }
 
 /* ===== 命盤 ===== */
+// 命盤版面：依書版「象棋數理」表（8 個開門見山十字直向串接）排列。
+// 每列 [棋號, row, col]（col 1=左 2=中 3=右）。棋號 1-32 對應 natalBoard[棋號-1]；
+// 第 4 支同時出現在最上（局1的上）與最下（局8的下＝閉環），兩處同棋連動。
+const NATAL_VISUAL = [
+  [4, 1, 2],
+  [2, 2, 1], [1, 2, 2], [3, 2, 3],
+  [5, 3, 2],
+  [7, 4, 1], [6, 4, 2], [8, 4, 3],
+  [9, 5, 2],
+  [11, 6, 1], [10, 6, 2], [12, 6, 3],
+  [13, 7, 2],
+  [15, 8, 1], [14, 8, 2], [16, 8, 3],
+  [17, 9, 2],
+  [19, 10, 1], [18, 10, 2], [20, 10, 3],
+  [21, 11, 2],
+  [23, 12, 1], [22, 12, 2], [24, 12, 3],
+  [25, 13, 2],
+  [27, 14, 1], [26, 14, 2], [28, 14, 3],
+  [29, 15, 2],
+  [31, 16, 1], [30, 16, 2], [32, 16, 3],
+  [4, 17, 2]
+];
 function renderNatalGrid() {
   const grid = document.getElementById('natal-grid');
   grid.innerHTML = '';
-  for (let i = 0; i < 32; i++) {
+  NATAL_VISUAL.forEach(function (v) {
+    const num = v[0], i = num - 1;
     const slot = document.createElement('div');
     slot.className = 'natal-slot';
-    slot.dataset.num = (i+1).toString();
+    slot.dataset.num = num.toString();
+    slot.style.gridRow = v[1];
+    slot.style.gridColumn = v[2];
     const piece = natalBoard[i];
     if (piece) {
       slot.classList.add(piece.color);
       slot.textContent = piece.name;
     }
-    slot.addEventListener('click', () => {
-      if (pickedPieceNatal) {
-        natalBoard[i] = PIECES[pickedPieceNatal];
-      } else {
-        natalBoard[i] = null;
-      }
+    slot.addEventListener('click', function () {
+      natalBoard[i] = pickedPieceNatal ? PIECES[pickedPieceNatal] : null;
       renderNatalGrid();
     });
     grid.appendChild(slot);
-  }
+  });
 }
 
 // 命盤拆分為 8 個五子局（每局重疊一支「上=前一局的下」） — 書版 IMG_0819 公式

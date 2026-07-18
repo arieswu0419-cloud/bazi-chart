@@ -369,11 +369,14 @@
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(139,69,19,0.15);
   }
+  /* Aries：命盤改為書版「象棋數理」直向串接的開門見山十字版面（3 欄，各棋位以 grid-row/col 定位；
+     棋號沿用原本 .natal-slot::after 右上角號標） */
   .bugua-scope .natal-grid {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 6px;
-    margin-bottom: 12px;
+    grid-template-columns: repeat(3, 52px);
+    gap: 12px 14px;
+    justify-content: center;
+    margin: 6px auto 12px;
   }
   .bugua-scope .natal-slot {
     aspect-ratio: 1;
