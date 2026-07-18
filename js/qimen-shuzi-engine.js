@@ -19,6 +19,18 @@ const QSZ_MAP = {
   di: { 1: "甲", 2: "乙", 3: "丙", 4: "丁", 5: "戊", 6: "己", 7: "庚", 8: "辛", 9: "壬", 0: "癸" }
 };
 
+// 各符號五行（供著色）
+const QSZ_WX = {
+  xing: { 天蓬: "水", 天芮: "土", 天沖: "木", 天輔: "木", 天禽: "土", 天心: "金", 天柱: "金", 天任: "土", 天英: "火" },
+  men: { 休門: "水", 死門: "土", 傷門: "木", 杜門: "木", 開門: "金", 驚門: "金", 生門: "土", 景門: "火" },
+  gong: { 坎: "水", 坤: "土", 震: "木", 巽: "木", 中宮: "土", 乾: "金", 兌: "金", 艮: "土", 離: "火" },
+  gan: { 甲: "木", 乙: "木", 丙: "火", 丁: "火", 戊: "土", 己: "土", 庚: "金", 辛: "金", 壬: "水", 癸: "水" }
+};
+function qszWx(k, v) {
+  if (k === "tian" || k === "di") return QSZ_WX.gan[v] || "";
+  return (QSZ_WX[k] && QSZ_WX[k][v]) || "";
+}
+
 // 各類型的定位與意義（書版總格說明）
 const QSZ_META = {
   xing: { label: "九星", pos: "tl", mean: "性格、發展、時機（發展機會、方向）" },
@@ -59,7 +71,7 @@ function calcQimenShuzi(input) {
     else if (k === "shen") jx = QSZ_SHEN_JX[v] || "";
     else if (k === "tian" || k === "di") jx = QSZ_GAN_JX[v] || "";
     if (v === "空亡") jx = "空亡";
-    cells[k] = { digit: d, value: v, jx, meta: QSZ_META[k], kong: v === "空亡" ? (QSZ_KONG[k] || "沒有、落空、缺陷、沒方向、成果少") : "" };
+    cells[k] = { digit: d, value: v, jx, wx: qszWx(k, v), meta: QSZ_META[k], kong: v === "空亡" ? (QSZ_KONG[k] || "沒有、落空、缺陷、沒方向、成果少") : "" };
   });
   // 天盤干＋地盤干 → 81 格局（重用 qimen-engine 的 getGeju81）
   let geju = null;

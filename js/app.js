@@ -3402,19 +3402,19 @@ document.getElementById("qsz-input").addEventListener("input", function () {
   this.value = this.value.replace(/\D/g, "");
 });
 
+function qszWxClass(wx) { return wx ? "qsz-wx-" + { 木: "wood", 火: "fire", 土: "earth", 金: "metal", 水: "water" }[wx] : "qsz-wx-none"; }
+
 function buildQimenShuziHtml(res) {
   const c = res.cells;
-  const cell = (k) => {
-    const x = c[k];
-    return '<div class="qsz-cell qsz-' + x.meta.pos + " qsz-t-" + k + '">' +
-      '<span class="qsz-cell-label">' + x.meta.label + "</span>" +
-      '<span class="qsz-cell-value">' + x.value + "</span>" +
-      '<span class="qsz-cell-digit">' + x.digit + "</span></div>";
-  };
-  // 值符（八神）在上中、開門（八門）在正中金圈
-  const plate = '<div class="qsz-plate"><div class="qsz-frame"><div class="qsz-grid">' +
-    cell("xing") + cell("shen") + cell("tian") + cell("men") + cell("gong") + cell("di") +
-    "</div></div></div>";
+  const val = (k) => '<span class="qsz-v ' + qszWxClass(c[k].wx) + '">' + c[k].value + "</span>";
+  // 白底單宮：九星(左上,五行色) 八神(中上,黑) 天盤干/地盤干(右上,五行色,換行) 八門(正中,五行圓底白字) 宮位(左下,五行色)
+  const plate = '<div class="qsz-plate"><div class="qsz-grid">' +
+    '<div class="qsz-cell qsz-tl">' + val("xing") + "</div>" +
+    '<div class="qsz-cell qsz-tc"><span class="qsz-v qsz-shen">' + c.shen.value + "</span></div>" +
+    '<div class="qsz-cell qsz-tr">' + val("tian") + val("di") + "</div>" +
+    '<div class="qsz-cell qsz-mc"><span class="qsz-men-circle ' + qszWxClass(c.men.wx) + '">' + c.men.value + "</span></div>" +
+    '<div class="qsz-cell qsz-bl">' + val("gong") + "</div>" +
+    "</div></div>";
 
   // 逐符號說明
   const order = ["xing", "shen", "gong", "tian", "di", "men"];
