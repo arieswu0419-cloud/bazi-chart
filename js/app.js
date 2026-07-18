@@ -2845,6 +2845,75 @@ function readBazhaiForm() {
 
 // 游年星 → 顯示色調
 const BZ_STAR_CLASS = { good: "bz-good", bad: "bz-bad", warn: "bz-warn" };
+const BZ_TONE_COLOR = { good: "#2e9e4b", bad: "#d13b3b", warn: "#d08a00" };
+const BZ_CN_NUM = { 1: "一", 2: "二", 3: "三", 4: "四", 6: "六", 7: "七", 8: "八", 9: "九" };
+
+// ---- 24 山圓形圖（納甲歸卦；環形設計比照 03.pdf 易道總圖，向首朝上）----
+function bzPolar(cx, cy, r, angDeg) {
+  const a = (angDeg - 90) * Math.PI / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+}
+function bzRingSector(cx, cy, r1, r2, a1, a2) {
+  const p1 = bzPolar(cx, cy, r2, a1), p2 = bzPolar(cx, cy, r2, a2);
+  const p3 = bzPolar(cx, cy, r1, a2), p4 = bzPolar(cx, cy, r1, a1);
+  return "M" + p1[0].toFixed(1) + "," + p1[1].toFixed(1) +
+    " A" + r2 + "," + r2 + " 0 0 1 " + p2[0].toFixed(1) + "," + p2[1].toFixed(1) +
+    " L" + p3[0].toFixed(1) + "," + p3[1].toFixed(1) +
+    " A" + r1 + "," + r1 + " 0 0 0 " + p4[0].toFixed(1) + "," + p4[1].toFixed(1) + " Z";
+}
+function bzRingText(cx, cy, r, angDeg, text, size, color, bold) {
+  const p = bzPolar(cx, cy, r, angDeg);
+  return '<text x="' + p[0].toFixed(1) + '" y="' + p[1].toFixed(1) +
+    '" font-size="' + size + '" fill="' + (color || "#333") + '"' +
+    (bold ? ' font-weight="700"' : "") +
+    ' text-anchor="middle" dominant-baseline="central">' + text + "</text>";
+}
+
+function buildBazhaiRingSvg(gua, angle) {
+  const games = zbGameStars(gua.num);
+  const byGua = {};
+  games.forEach((s) => { byGua[s.gua] = s; });
+
+  const fIdx = zbMountainIndex(angle);
+  const fa = fIdx * 15;                 // 向首羅盤角（置頂）
+  const sIdx = (fIdx + 12) % 24;        // 坐山
+  const C = 210, R_STAR2 = 205, R_STAR1 = 162, R_MT2 = 162, R_MT1 = 122, R_DIR2 = 122, R_DIR1 = 78, R_CTR = 78;
+
+  let s = "";
+  // 外環：24 山游年星（吉綠底），中環：24 山名
+  for (let i = 0; i < 24; i++) {
+    const mt = ZB_MOUNTAINS[i];
+    const star = byGua[ZB_NAJIA_GUA[mt.name]];
+    const a1 = i * 15 - 7.5 - fa, a2 = i * 15 + 7.5 - fa, mid = i * 15 - fa;
+    const isSit = i === sIdx, isFace = i === fIdx;
+    s += '<path d="' + bzRingSector(C, C, R_STAR1, R_STAR2, a1, a2) + '" fill="' +
+      (star.tone === "good" ? "#E2F0DC" : "#fff") + '" stroke="#8a7943" stroke-width="1"/>';
+    s += '<path d="' + bzRingSector(C, C, R_MT1, R_MT2, a1, a2) + '" fill="' +
+      (isSit ? "#FDECEC" : (isFace ? "#FFF7DE" : "#fff")) + '" stroke="#8a7943" stroke-width="1"/>';
+    s += bzRingText(C, C, (R_STAR1 + R_STAR2) / 2, mid, star.star, 13, BZ_TONE_COLOR[star.tone], true);
+    s += bzRingText(C, C, (R_MT1 + R_MT2) / 2, mid, mt.name, 15, isSit ? "#d13b3b" : "#333", true);
+  }
+  // 內環：八卦名數＋方位
+  for (let k = 0; k < 8; k++) {
+    const dir = ZB_COMPASS_CW[k];
+    const pal = ZB_DIR_TO_PALACE[dir];
+    const compass = k * 45;
+    const a1 = compass - 22.5 - fa, a2 = compass + 22.5 - fa, mid = compass - fa;
+    s += '<path d="' + bzRingSector(C, C, R_DIR1, R_DIR2, a1, a2) + '" fill="#F7F3E6" stroke="#8a7943" stroke-width="1"/>';
+    s += bzRingText(C, C, (R_DIR1 + R_DIR2) / 2 + 9, mid, ZB_DIR_NAME[dir], 11, "#6b571c");
+    s += bzRingText(C, C, (R_DIR1 + R_DIR2) / 2 - 9, mid, ZB_GUA_CHAR[pal] + BZ_CN_NUM[pal], 13, "#333", true);
+  }
+  // 中心：命卦
+  s += '<circle cx="' + C + '" cy="' + C + '" r="' + R_CTR + '" fill="#FEFDF7" stroke="#c19a2e" stroke-width="2"/>';
+  s += '<text x="' + C + '" y="' + (C - 10) + '" font-size="26" font-weight="800" fill="#8a7943" text-anchor="middle">' + gua.num + " " + gua.gua + "命</text>";
+  s += '<text x="' + C + '" y="' + (C + 18) + '" font-size="13" fill="#666" text-anchor="middle">' + gua.groupName + "</text>";
+  // 坐山紅框
+  {
+    const a1 = sIdx * 15 - 7.5 - fa, a2 = sIdx * 15 + 7.5 - fa;
+    s += '<path d="' + bzRingSector(C, C, R_MT1, R_STAR2, a1, a2) + '" fill="none" stroke="#E60012" stroke-width="2.5"/>';
+  }
+  return '<svg class="bz-ring-svg" viewBox="0 0 420 420" xmlns="http://www.w3.org/2000/svg">' + s + "</svg>";
+}
 
 function buildBazhaiHtml(gua, angle) {
   const games = zbGameStars(gua.num);
@@ -2894,6 +2963,13 @@ function buildBazhaiHtml(gua, angle) {
     '<span class="zibai-explain-name">' + s.dirName + "方（" + s.guaChar + "卦）・" + s.lv + "・屬" + s.wx + "</span>" +
     '<span class="zibai-explain-desc">' + s.note + "</span></div>";
 
+  // 坐山山字級判定（納甲歸卦 → 命卦游年星）
+  const byGuaNum = {};
+  games.forEach((s) => { byGuaNum[s.gua] = s; });
+  const sitStar = byGuaNum[ZB_NAJIA_GUA[sitting.name]];
+  const sitLine = "本宅坐 <b>" + sitting.name + "</b> 山（納甲屬" + ZB_GUA_CHAR[ZB_NAJIA_GUA[sitting.name]] + "卦）＝" +
+    '<b class="' + (BZ_STAR_CLASS[sitStar.tone] || "") + '">' + sitStar.star + "</b>（" + sitStar.lv + "）——" + sitStar.note + "。";
+
   return '<div class="zibai-plate">' +
     '<div class="zibai-info">' + info + "</div>" +
     '<div class="zibai-facing-top">' +
@@ -2904,11 +2980,15 @@ function buildBazhaiHtml(gua, angle) {
     '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
     '<div class="zibai-sitting">' + tSvg + '<span class="zibai-sit-text">' + sitting.name + "山" + facing.name + "向</span></div>" +
     "</div>" +
-    '<div class="zibai-section"><div class="zibai-section-title">四吉方</div><div class="zibai-block"><div class="zibai-block-b">' +
+    '<div class="zibai-section"><div class="zibai-section-title">納甲二十四山吉凶圖</div>' +
+    buildBazhaiRingSvg(gua, angle) +
+    '<div class="zibai-block" style="margin-top:10px"><div class="zibai-block-b">' + sitLine +
+    '<div class="zibai-note">外環＝各山對命卦之游年星（綠底為吉山）；中環＝24 山（紅框＝本宅坐山、黃底＝向首）；內環＝八卦方位。納甲歸卦：乾甲、坤乙、艮丙、兌丁巳酉丑、震庚亥卯未、巽辛、離壬寅午戌、坎癸申子辰。</div></div></div>' +
+    '<div class="zibai-section-title">四吉方</div><div class="zibai-block"><div class="zibai-block-b">' +
       jiList.map(line).join("") + "</div></div>" +
     '<div class="zibai-section-title">四凶方</div><div class="zibai-block"><div class="zibai-block-b">' +
       xiongList.map(line).join("") + "</div></div>" +
-    '<div class="zibai-disclaimer">※ 依《八宅明鏡》大遊年（九星翻卦）以宅主命卦推八方吉凶；吉方宜開門、安床、書房納吉，凶方宜廁所、儲藏、灶座壓凶。宅命相配以「東四命宜居東四宅、西四命宜居西四宅」為原則，並須合巒頭綜斷。</div></div>';
+    '<div class="zibai-disclaimer">※ 依《八宅明鏡》大遊年（九星翻卦）以宅主命卦推八方吉凶；吉方宜開門、安床、書房納吉，凶方宜廁所、儲藏、灶座壓凶。宅命相配以「東四命宜居東四宅、西四命宜居西四宅」為原則，宅命不配時可依納甲 24 山在宅內另擇吉山；並須合巒頭綜斷。</div></div>';
 }
 
 function runBazhai() {

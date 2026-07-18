@@ -1591,3 +1591,4 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .bz-center-cell { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
 .bz-center-cell b { font-size: clamp(16px, 4.4vw, 22px); color: var(--gold-darker); }
 .bz-center-cell i { font-size: 11px; color: var(--text-secondary); font-style: normal; }
+.bz-ring-svg { display: block; width: min(92vw, 440px); height: auto; margin: 0 auto; }
