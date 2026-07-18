@@ -2321,6 +2321,12 @@ function fillZibaiYearSelect() {
   let dHtml = "";
   for (let d = 1; d <= 31; d++) dHtml += '<option value="' + d + '">' + d + "</option>";
   document.getElementById("zb-bday").innerHTML = dHtml;
+  // 面向下拉：24 山（值＝該山中心角度），文字為「山名（角度區間）」，依角度由子(0°)順時針排
+  let aHtml = "";
+  ZB_MOUNTAINS.forEach((m, i) => {
+    aHtml += '<option value="' + (i * 15) + '">' + m.name + "（" + zbDegText(i) + "）</option>";
+  });
+  document.getElementById("zb-angle").innerHTML = aHtml;
 }
 
 function showZibaiView() {
@@ -2366,7 +2372,7 @@ function updateZibaiHints() {
   const facing = ZB_MOUNTAINS[idx];
   const sitting = ZB_MOUNTAINS[(idx + 12) % 24];
   document.getElementById("zibaiMountainOut").textContent =
-    sitting.name + "山" + facing.name + "向（向" + facing.name + " " + a + "°）";
+    sitting.name + "山" + facing.name + "向　向" + facing.name + "（" + zbDegText(idx) + "）";
 }
 
 // 九宮版面：3×3 螢幕格對應位置代碼（給方位標籤貼齊金框）
@@ -2420,7 +2426,7 @@ function runZibai() {
 document.getElementById("zibaiRunBtn").addEventListener("click", runZibai);
 ["zb-byear", "zb-bmonth", "zb-bday"].forEach((id) =>
   document.getElementById(id).addEventListener("change", updateZibaiHints));
-document.getElementById("zb-angle").addEventListener("input", updateZibaiHints);
+document.getElementById("zb-angle").addEventListener("change", updateZibaiHints);
 
 document.getElementById("exportZibaiPdfBtn").addEventListener("click", async function () {
   const btn = this;

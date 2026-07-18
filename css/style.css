@@ -1466,7 +1466,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   background: #F3EFDF; border: 1px solid var(--gold); color: var(--gold-darker);
   font-size: 15px; font-weight: 700;
 }
-.zibai-angle-field input { width: 100%; }
+.zibai-angle-field input, .zibai-angle-field select { width: 100%; }
 .zibai-mountain-out {
   padding: 9px 12px; border-radius: var(--radius); border: 1px solid var(--gold);
   background: #fff; font-size: 15px; font-weight: 700; color: var(--gold-darker); min-height: 20px;
