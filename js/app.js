@@ -40,7 +40,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -57,7 +57,8 @@ function effectivePermissions(data) {
     zibai: !!raw.zibai,
     bazhai: !!raw.bazhai,
     cuiwang: !!raw.cuiwang,
-    qimenshuzi: !!raw.qimenshuzi
+    qimenshuzi: !!raw.qimenshuzi,
+    ziwei: !!raw.ziwei
   };
 }
 
@@ -87,12 +88,16 @@ requireApprovedUser(function (user, data) {
     document.getElementById("qimenSubmitBtn").style.display = "none";
     document.getElementById("tabQimen").style.display = "none";
   }
+  if (!perms.ziwei) {
+    document.getElementById("qimenDivineSubmitBtn").style.display = "none";
+    document.getElementById("tabZiwei").style.display = "none";
+  }
 
-  if (!perms.bazi && !perms.renge && !perms.lifenum && !perms.qimen) {
+  if (!perms.bazi && !perms.renge && !perms.lifenum && !perms.qimen && !perms.ziwei) {
     document.getElementById("permissionNote").style.display = "";
   } else if (!perms.bazi) {
     // 預設頁籤是八字報告，如果這個人沒有八字權限，切到他有權限的第一個頁籤，避免打開就是空白頁
-    setActiveTab(perms.renge ? "renge" : (perms.lifenum ? "lifenum" : "qimen"));
+    setActiveTab(perms.renge ? "renge" : (perms.lifenum ? "lifenum" : (perms.qimen ? "qimen" : "ziwei")));
   }
 
   // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
@@ -363,6 +368,35 @@ function zwDrawLines(branch) {
   svg.innerHTML = '<polygon points="' + ax + "," + ay + " " + bx + "," + by + " " + cx + "," + cy + '" fill="none"/>' +
     '<line x1="' + ax + '" y1="' + ay + '" x2="' + ox + '" y2="' + oy + '"/>';
   document.querySelectorAll("#ziweiChart .zw-cell").forEach((c) => c.classList.toggle("zw-sel", c.dataset.branch === branch));
+  zwRenderSanfang(branch);
+}
+// 三方四正解說表：本宮＋對宮（+6）＋三合二宮（+4、+8）四宮的星曜組成
+// （本宮＝主體、對宮＝遷移對照、三合＝助力借用），列出宮名/干支/主星(亮度+四化)/輔星/雜曜
+const ZW_ROLE = { 0: "本宮（主體）", 6: "對宮（遷移對照）", 4: "三合（助力）", 8: "三合（助力）" };
+function zwStarText(list) {
+  return list.map((s) => s.name + (ZW_BRIGHT_MAP[s.brightness] || s.brightness || "") + (s.mutagen ? "(" + s.mutagen + ")" : "")).join("、") || "—";
+}
+function zwRenderSanfang(branch) {
+  const box = document.getElementById("zw-sanfang");
+  if (!box || !zwState) return;
+  const bi = ZW_ZHI.indexOf(branch);
+  const rows = [0, 6, 4, 8].map((off) => {
+    const b = ZW_ZHI[(bi + off) % 12];
+    const p = zwState.a.palaces.find((x) => x.earthlyBranch === b);
+    if (!p) return "";
+    return '<tr' + (off === 0 ? ' class="zw-sf-main"' : "") + '><td class="zw-sf-role">' + ZW_ROLE[off] + "</td>" +
+      '<td class="zw-sf-pname">' + p.name + (p.isBodyPalace ? "（身宮）" : "") + "</td>" +
+      "<td>" + p.heavenlyStem + p.earthlyBranch + "</td>" +
+      '<td class="zw-sf-major">' + zwStarText(p.majorStars) + "</td>" +
+      "<td>" + zwStarText(p.minorStars) + "</td>" +
+      '<td class="zw-sf-adj">' + zwStarText(p.adjectiveStars) + "</td></tr>";
+  }).join("");
+  const anchor = zwState.a.palaces.find((x) => x.earthlyBranch === branch);
+  box.innerHTML = '<div class="zw-sf-title">三方四正・星盤解說（' + (anchor ? anchor.name : "") + " " + branch + "）</div>" +
+    '<div class="zw-table-wrap"><table class="zw-sf-table"><thead><tr>' +
+    "<th>位置</th><th>宮位</th><th>干支</th><th>主星</th><th>輔星</th><th>雜曜</th></tr></thead><tbody>" +
+    rows + "</tbody></table></div>" +
+    '<div class="zw-sf-note">三方四正＝命/事之主體（本宮）、正對面的遷移對照（對宮）、加上三合方兩宮的助力，合看四宮星曜才能綜論一宮吉凶。</div>';
 }
 // 點宮連動（事件代理，容器固定存在只綁一次）
 document.getElementById("ziweiChart").addEventListener("click", function (e) {
@@ -503,7 +537,8 @@ function zwRenderChart(scope) {
       sc.mutagen.map((s, i) => s + ["祿", "權", "科", "忌"][i]).join("、") + "</div>"
     : "";
   document.getElementById("ziweiChart").innerHTML = scopeInfo + '<div class="zw-grid">' + cells + zwState.centerHtml +
-    '<svg class="zw-lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>';
+    '<svg class="zw-lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>' +
+    '<div id="zw-sanfang"></div>';
   // 三方四正基準＝該盤命宮（本命＝命宮；點任一宮位仍可連動重畫）
   const anchor = sc ? a.palaces[sc.index] : a.palaces.find((p) => p.name === "命宮");
   zwDrawLines(anchor.earthlyBranch);

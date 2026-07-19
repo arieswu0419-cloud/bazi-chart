@@ -1724,6 +1724,19 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .zw-flow .zw-star-name { color: #0B7285; }
 .zw-mut-flow { color: #0B7285; border-color: #0B7285; }
 
+/* 三方四正・星盤解說表（點選宮位連動） */
+#zw-sanfang { margin-top: 14px; }
+.zw-sf-title { font-size: 15px; font-weight: 800; color: var(--gold-darker); margin-bottom: 6px; }
+.zw-sf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.zw-sf-table th, .zw-sf-table td { border: 1px solid #d9d2b8; padding: 6px 8px; text-align: left; vertical-align: top; }
+.zw-sf-table th { background: #F7F3E6; color: var(--gold-darker); font-weight: 700; white-space: nowrap; text-align: center; }
+.zw-sf-main { background: #FBDCDC; }
+.zw-sf-role { font-weight: 700; color: #B03030; white-space: nowrap; }
+.zw-sf-pname { font-weight: 700; color: #C62828; }
+.zw-sf-major { color: #7B1FA2; font-weight: 700; }
+.zw-sf-adj { color: #555; }
+.zw-sf-note { font-size: 12.5px; color: #666; margin-top: 6px; line-height: 1.7; }
+
 /* 三方四正線：最上層顯示（蓋過中央資訊區）、最細 1px 實線（non-scaling 不隨縮放變粗） */
 .zw-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 .zw-lines polygon, .zw-lines line { stroke: #B03030; stroke-width: 1; vector-effect: non-scaling-stroke; fill: none; }
