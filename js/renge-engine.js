@@ -138,6 +138,12 @@ function calculateRenge({ year, month, day, qYear, qMonth, qDay, hour, name }) {
   talentChainOrMain.forEach((v) => numberDigits(v).forEach((d) => digitSet.add(d)));
   stageSeq(currentBracketRaw).forEach((v) => numberDigits(v).forEach((d) => digitSet.add(d)));
   numberDigits(yearEnergy).forEach((d) => digitSet.add(d));
+  // 主命數本身一定在數字池內：官網（event.meta-academy.biz/metagroup-renge-jie-ma）實測——生日
+  // 1984-2-19、擇日 2026-7-18（天賦數34→主命數7）官網空缺數＝只有 5（不含 7），且含 7 的連線
+  // （腦力務實線147、權力線789）亮。原本 talentChainOrMain 只取天賦數化簡「過程」([34]) 不含最後
+  // 的主命數 7，導致主命數被誤判成空缺、含它的連線也不亮；補上主命數本身即與官網一致
+  // （九宮能量圖藍色本來就以主命數畫格7，此修正同時消除兩者的矛盾）。
+  numberDigits(mainNumber).forEach((d) => digitSet.add(d));
   const gapNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((d) => !digitSet.has(d));
 
   const codeLines = CODE_LINES.map((line) => ({
