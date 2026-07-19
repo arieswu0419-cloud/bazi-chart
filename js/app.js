@@ -341,11 +341,13 @@ function zwTimeZhiIdx(h) { return h === 23 ? 0 : Math.floor((h + 1) / 2) % 12; }
 function zwDouJun(yearZhiIdx, lunarMonth, timeZhiIdx) {
   return ((yearZhiIdx - (lunarMonth - 1) + timeZhiIdx) % 12 + 12) % 12;
 }
-function zwStarCol(s, cls) {
+function zwStarCol(s, cls, flowMut) {
   const bright = ZW_BRIGHT_MAP[s.brightness] || s.brightness || "";
   const mut = s.mutagen ? '<span class="zw-mut">' + s.mutagen + "</span>" : "";
+  // 流盤四化：該星在目前查詢盤（流年/月/日/時）化祿權科忌時加水鴨色小標
+  const fm = flowMut ? '<span class="zw-mut zw-mut-flow">' + flowMut + "</span>" : "";
   return '<div class="zw-star-col ' + cls + '"><span class="zw-star-name">' + s.name + "</span>" +
-    '<span class="zw-star-bright">' + bright + "</span>" + mut + "</div>";
+    '<span class="zw-star-bright">' + bright + "</span>" + mut + fm + "</div>";
 }
 // 三方四正紅線：以任一宮支為基準——三角＝本宮＋三合二宮（+4、+8），直線＝本宮→對宮（+6）。
 // 點選 12 地支宮位即連動重畫（預設命宮）。
@@ -412,30 +414,6 @@ function renderZiwei({ name, gender, y, mo, d, h, mi }) {
   const sihua = { 祿: "", 權: "", 科: "", 忌: "" };
   a.palaces.forEach((p) => [].concat(p.majorStars, p.minorStars).forEach((s) => { if (s.mutagen) sihua[s.mutagen] = s.name; }));
 
-  // 12 宮格
-  let cells = "";
-  a.palaces.forEach((p) => {
-    const [r, c] = ZW_BRANCH_GRID[p.earthlyBranch];
-    const stars = p.adjectiveStars.map((s) => zwStarCol(s, "zw-adj")).join("") +
-      p.minorStars.map((s) => zwStarCol(s, "zw-minor")).join("") +
-      p.majorStars.map((s) => zwStarCol(s, "zw-major")).join("");
-    const bg = ZW_PALACE_BG[p.name] || "";
-    cells += '<div class="zw-cell ' + bg + '" data-branch="' + p.earthlyBranch + '" style="grid-row:' + r + ";grid-column:" + c + '">' +
-      (p.isOriginalPalace ? '<div class="zw-laiyin">來因</div>' : "") +
-      '<div class="zw-stars">' + stars + "</div>" +
-      '<div class="zw-left12">' +
-      '<span class="zw-v12">' + p.boshi12 + "</span>" +
-      '<span class="zw-v12">' + p.jiangqian12 + "</span>" +
-      '<span class="zw-v12">' + p.suiqian12 + "</span></div>" +
-      '<div class="zw-right12"><span class="zw-cs12">' + p.changsheng12 + "</span>" +
-      '<span class="zw-ganzhi">' + p.heavenlyStem + p.earthlyBranch + "</span></div>" +
-      '<div class="zw-cell-bottom">' +
-      '<div class="zw-decadal">' + p.decadal.range[0] + " - " + p.decadal.range[1] + "</div>" +
-      '<div class="zw-pname">' + p.name + (p.isBodyPalace ? '<span class="zw-shen">身宮</span>' : "") + "</div>" +
-      '<div class="zw-ages">' + p.ages.slice(0, 6).join(" ") + "</div>" +
-      "</div></div>";
-  });
-
   // 中央資訊區（2×2）
   const genderText = gender === "male" ? "男" : "女";
   const pad2 = (n) => String(n).padStart(2, "0");
@@ -472,12 +450,73 @@ function renderZiwei({ name, gender, y, mo, d, h, mi }) {
     '<div class="zw-foot">本內容僅供參考，命運掌握在自己手裡</div>' +
     "</div>";
 
-  document.getElementById("ziweiChart").innerHTML = '<div class="zw-grid">' + cells + center +
-    '<svg class="zw-lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>';
-  // 預設以命宮畫三方四正（點任一地支宮位會連動重畫，見 zwDrawLines）
-  const ming = a.palaces.find((p) => p.name === "命宮");
-  zwDrawLines(ming.earthlyBranch);
+  // 存狀態供盤別切換（本命/流年/流月/流日/流時）重繪使用
+  zwState = { a, centerHtml: center };
+  // 流盤查詢時間預設＝現在
+  const now = new Date();
+  document.getElementById("zw-hdate").value = now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate());
+  document.getElementById("zw-htime").value = pad2(now.getHours()) + ":" + pad2(now.getMinutes());
+  zwRenderChart("natal");
 }
+
+// 依盤別重繪 12 宮：流盤（iztro horoscope）疊加「該盤宮名」「該盤四化小標」「流曜」，
+// 三方四正基準改為該盤命宮；本命盤維持原樣（基準＝命宮）
+let zwState = null;
+const ZW_SCOPE_PREFIX = { yearly: "年", monthly: "月", daily: "日", hourly: "時" };
+function zwRenderChart(scope) {
+  if (!zwState) return;
+  const a = zwState.a;
+  let sc = null, prefix = "";
+  if (scope !== "natal") {
+    const dt = document.getElementById("zw-hdate").value;
+    const tm = document.getElementById("zw-htime").value || "12:00";
+    if (dt) { sc = a.horoscope(dt + " " + tm)[scope]; prefix = ZW_SCOPE_PREFIX[scope]; }
+  }
+  const mutMap = {};
+  if (sc) sc.mutagen.forEach((s, i) => { mutMap[s] = ["祿", "權", "科", "忌"][i]; });
+  let cells = "";
+  a.palaces.forEach((p, idx) => {
+    const [r, c] = ZW_BRANCH_GRID[p.earthlyBranch];
+    const flowStars = sc && sc.stars && sc.stars[idx] ? sc.stars[idx].map((s) => zwStarCol(s, "zw-flow")).join("") : "";
+    const stars = p.adjectiveStars.map((s) => zwStarCol(s, "zw-adj", mutMap[s.name])).join("") +
+      p.minorStars.map((s) => zwStarCol(s, "zw-minor", mutMap[s.name])).join("") +
+      p.majorStars.map((s) => zwStarCol(s, "zw-major", mutMap[s.name])).join("") + flowStars;
+    const bg = ZW_PALACE_BG[p.name] || "";
+    cells += '<div class="zw-cell ' + bg + '" data-branch="' + p.earthlyBranch + '" style="grid-row:' + r + ";grid-column:" + c + '">' +
+      (p.isOriginalPalace ? '<div class="zw-laiyin">來因</div>' : "") +
+      '<div class="zw-stars">' + stars + "</div>" +
+      '<div class="zw-left12">' +
+      '<span class="zw-v12">' + p.boshi12 + "</span>" +
+      '<span class="zw-v12">' + p.jiangqian12 + "</span>" +
+      '<span class="zw-v12">' + p.suiqian12 + "</span></div>" +
+      '<div class="zw-right12"><span class="zw-cs12">' + p.changsheng12 + "</span>" +
+      '<span class="zw-ganzhi">' + p.heavenlyStem + p.earthlyBranch + "</span></div>" +
+      '<div class="zw-cell-bottom">' +
+      '<div class="zw-decadal">' + p.decadal.range[0] + " - " + p.decadal.range[1] + "</div>" +
+      (sc ? '<div class="zw-hname">' + prefix + "・" + sc.palaceNames[idx] + "</div>" : "") +
+      '<div class="zw-pname">' + p.name + (p.isBodyPalace ? '<span class="zw-shen">身宮</span>' : "") + "</div>" +
+      '<div class="zw-ages">' + p.ages.slice(0, 6).join(" ") + "</div>" +
+      "</div></div>";
+  });
+  const scopeInfo = sc
+    ? '<div class="zw-scope-info">' + { yearly: "流年盤", monthly: "流月盤", daily: "流日盤", hourly: "流時盤" }[scope] + "　" + sc.heavenlyStem + sc.earthlyBranch + "　四化：" +
+      sc.mutagen.map((s, i) => s + ["祿", "權", "科", "忌"][i]).join("、") + "</div>"
+    : "";
+  document.getElementById("ziweiChart").innerHTML = scopeInfo + '<div class="zw-grid">' + cells + zwState.centerHtml +
+    '<svg class="zw-lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>';
+  // 三方四正基準＝該盤命宮（本命＝命宮；點任一宮位仍可連動重畫）
+  const anchor = sc ? a.palaces[sc.index] : a.palaces.find((p) => p.name === "命宮");
+  zwDrawLines(anchor.earthlyBranch);
+  document.querySelectorAll(".zw-scope-btn").forEach((b) => b.classList.toggle("active", b.dataset.scope === scope));
+  zwState.scope = scope;
+}
+// 盤別按鍵＋查詢時間變動 → 連動重繪（控制列為固定 DOM，只綁一次）
+document.querySelectorAll(".zw-scope-btn").forEach((b) =>
+  b.addEventListener("click", function () { zwRenderChart(this.dataset.scope); }));
+["zw-hdate", "zw-htime"].forEach((id) =>
+  document.getElementById(id).addEventListener("change", function () {
+    if (zwState && zwState.scope && zwState.scope !== "natal") zwRenderChart(zwState.scope);
+  }));
 
 document.getElementById("qimenDivineSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();

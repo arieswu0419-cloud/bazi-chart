@@ -1711,6 +1711,19 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .zw-pillars th { background: #F7F3E6; }
 .zw-foot { text-align: center; font-size: 11.5px; color: #666; margin-top: 3px; }
 .zw-studio { color: var(--gold-darker); font-weight: 700; }
+/* 盤別查詢列：本命/流年/流月/流日/流時 ＋ 查詢時間 */
+.zw-scope-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.zw-scope-btn { border: 1px solid var(--gold); background: #fff; color: var(--gold-darker); border-radius: 999px;
+  padding: 5px 14px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.zw-scope-btn.active { background: var(--gold-dark); color: #fff; }
+.zw-scope-date { font-size: 13px; color: #555; display: flex; align-items: center; gap: 4px; }
+.zw-scope-date input { padding: 3px 5px; }
+.zw-scope-info { text-align: center; font-size: 14px; font-weight: 700; color: #0B7285; margin-bottom: 6px; }
+/* 流盤疊加：該盤宮名（水鴨色）、流曜、流盤四化小標 */
+.zw-hname { font-size: 11.5px; font-weight: 700; color: #0B7285; }
+.zw-flow .zw-star-name { color: #0B7285; }
+.zw-mut-flow { color: #0B7285; border-color: #0B7285; }
+
 /* 三方四正線：最上層顯示（蓋過中央資訊區）、最細 1px 實線（non-scaling 不隨縮放變粗） */
 .zw-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 .zw-lines polygon, .zw-lines line { stroke: #B03030; stroke-width: 1; vector-effect: non-scaling-stroke; fill: none; }
