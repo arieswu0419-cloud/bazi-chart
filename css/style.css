@@ -1846,12 +1846,12 @@ h2.qsz-page-title { font-size: 22px; }
 .qsz-result-head { text-align: center; font-size: 15px; color: var(--gold-darker); letter-spacing: 3px; margin-bottom: 12px; }
 .qsz-result-head b { font-size: 20px; }
 
-.qsz-plate { display: flex; justify-content: center; padding: 6px; }
+.qsz-plate { display: flex; justify-content: center; padding: 5mm; }
 /* 白底單宮：3×3，九星左上/八神中上/天盤地盤右上(換行)/八門正中/宮位左下/格局中下。
    外框：橘色粗框（同庚辛金 #EAC100）＋外圈藍色粗框（同天蓬水 #004B97） */
 .qsz-grid { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
   grid-template-areas: "tl tc tr" ". mc ." "bl bc ."; background: #fff;
-  border: 5px solid #EAC100; box-shadow: 0 0 0 5px #004B97;
+  border: 3mm solid #EAC100; box-shadow: 0 0 0 3mm #004B97;
   border-radius: 6px; padding: 10px; width: min(86vw, 320px); aspect-ratio: 1; }
 .qsz-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .qsz-tl { grid-area: tl; } .qsz-tc { grid-area: tc; } .qsz-tr { grid-area: tr; }
@@ -1870,7 +1870,7 @@ h2.qsz-page-title { font-size: 22px; }
 /* 八門：加大五行色圓底、白字只顯示門名首字、字加大 2 號 */
 .qsz-men-circle { width: clamp(74px, 22vw, 98px); height: clamp(74px, 22vw, 98px); border-radius: 50%;
   display: flex; align-items: center; justify-content: center; color: #fff;
-  font-size: clamp(24px, 7vw, 34px); font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+  font-size: clamp(28px, 8vw, 38px); font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
 .qsz-men-circle.qsz-wx-wood { background: #548C00; } .qsz-men-circle.qsz-wx-fire { background: #EA0000; }
 .qsz-men-circle.qsz-wx-earth { background: #796400; } .qsz-men-circle.qsz-wx-metal { background: #EAC100; }
 .qsz-men-circle.qsz-wx-water { background: #004B97; } .qsz-men-circle.qsz-wx-none { background: #999; }
