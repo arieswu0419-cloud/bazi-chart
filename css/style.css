@@ -1716,7 +1716,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .zw-scope-btn { border: 1px solid var(--gold); background: #fff; color: var(--gold-darker); border-radius: 999px;
   padding: 5px 14px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
 .zw-scope-btn.active { background: var(--gold-dark); color: #fff; }
-.zw-scope-date { font-size: 13px; color: #555; display: flex; align-items: center; gap: 4px; }
+.zw-scope-date { font-size: 13px; color: #555; display: flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0; }
 .zw-scope-date input { padding: 3px 5px; }
 .zw-scope-info { text-align: center; font-size: 14px; font-weight: 700; color: #0B7285; margin-bottom: 6px; }
 /* 流盤疊加：該盤宮名（水鴨色）、流曜、流盤四化小標 */

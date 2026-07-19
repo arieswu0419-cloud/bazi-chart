@@ -496,7 +496,7 @@ function renderZiwei({ name, gender, y, mo, d, h, mi }) {
 // 依盤別重繪 12 宮：流盤（iztro horoscope）疊加「該盤宮名」「該盤四化小標」「流曜」，
 // 三方四正基準改為該盤命宮；本命盤維持原樣（基準＝命宮）
 let zwState = null;
-const ZW_SCOPE_PREFIX = { yearly: "年", monthly: "月", daily: "日", hourly: "時" };
+const ZW_SCOPE_PREFIX = { decadal: "限", yearly: "年", monthly: "月", daily: "日", hourly: "時" };
 function zwRenderChart(scope) {
   if (!zwState) return;
   const a = zwState.a;
@@ -533,7 +533,7 @@ function zwRenderChart(scope) {
       "</div></div>";
   });
   const scopeInfo = sc
-    ? '<div class="zw-scope-info">' + { yearly: "流年盤", monthly: "流月盤", daily: "流日盤", hourly: "流時盤" }[scope] + "　" + sc.heavenlyStem + sc.earthlyBranch + "　四化：" +
+    ? '<div class="zw-scope-info">' + { decadal: "大限盤", yearly: "流年盤", monthly: "流月盤", daily: "流日盤", hourly: "流時盤" }[scope] + "　" + sc.heavenlyStem + sc.earthlyBranch + "　四化：" +
       sc.mutagen.map((s, i) => s + ["祿", "權", "科", "忌"][i]).join("、") + "</div>"
     : "";
   document.getElementById("ziweiChart").innerHTML = scopeInfo + '<div class="zw-grid">' + cells + zwState.centerHtml +
