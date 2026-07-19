@@ -159,7 +159,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView", "ziweiView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -245,21 +245,24 @@ function getBirthTimeVal() {
   return document.getElementById("f-btime").value;
 }
 
-// 頁籤切換：八字報告／人格解碼報告／生命靈數／奇門遁甲
+// 頁籤切換：八字報告／人格解碼報告／生命靈數／奇門遁甲／紫微斗數
 function setActiveTab(tab) {
   document.getElementById("tabBazi").classList.toggle("active", tab === "bazi");
   document.getElementById("tabRenge").classList.toggle("active", tab === "renge");
   document.getElementById("tabLifenum").classList.toggle("active", tab === "lifenum");
   document.getElementById("tabQimen").classList.toggle("active", tab === "qimen");
+  document.getElementById("tabZiwei").classList.toggle("active", tab === "ziwei");
   document.getElementById("baziTabPanel").style.display = tab === "bazi" ? "" : "none";
   document.getElementById("rengeTabPanel").style.display = tab === "renge" ? "" : "none";
   document.getElementById("lifenumTabPanel").style.display = tab === "lifenum" ? "" : "none";
   document.getElementById("qimenTabPanel").style.display = tab === "qimen" ? "" : "none";
+  document.getElementById("ziweiTabPanel").style.display = tab === "ziwei" ? "" : "none";
 }
 document.getElementById("tabBazi").addEventListener("click", function () { setActiveTab("bazi"); });
 document.getElementById("tabRenge").addEventListener("click", function () { setActiveTab("renge"); });
 document.getElementById("tabLifenum").addEventListener("click", function () { setActiveTab("lifenum"); });
 document.getElementById("tabQimen").addEventListener("click", function () { setActiveTab("qimen"); });
+document.getElementById("tabZiwei").addEventListener("click", function () { setActiveTab("ziwei"); });
 
 document.getElementById("rengeSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();
@@ -333,16 +336,26 @@ function zwStarCol(s, cls) {
   return '<div class="zw-star-col ' + cls + '"><span class="zw-star-name">' + s.name + "</span>" +
     '<span class="zw-star-bright">' + bright + "</span>" + mut + "</div>";
 }
-function showZiweiView() {
-  hideAllFeatureViews();
-  document.getElementById("mainView").style.display = "none";
-  document.getElementById("ziweiView").style.display = "";
+// 三方四正紅線：以任一宮支為基準——三角＝本宮＋三合二宮（+4、+8），直線＝本宮→對宮（+6）。
+// 點選 12 地支宮位即連動重畫（預設命宮）。
+function zwDrawLines(branch) {
+  const svg = document.querySelector("#ziweiChart .zw-lines");
+  if (!svg || !ZW_BRANCH_GRID[branch]) return;
+  const cxy = (b) => { const [r, c] = ZW_BRANCH_GRID[b]; return [(c - 0.5) * 25, (r - 0.5) * 25]; };
+  const bi = ZW_ZHI.indexOf(branch);
+  const [ax, ay] = cxy(branch);
+  const [bx, by] = cxy(ZW_ZHI[(bi + 4) % 12]);
+  const [cx, cy] = cxy(ZW_ZHI[(bi + 8) % 12]);
+  const [ox, oy] = cxy(ZW_ZHI[(bi + 6) % 12]);
+  svg.innerHTML = '<polygon points="' + ax + "," + ay + " " + bx + "," + by + " " + cx + "," + cy + '" fill="none"/>' +
+    '<line x1="' + ax + '" y1="' + ay + '" x2="' + ox + '" y2="' + oy + '"/>';
+  document.querySelectorAll("#ziweiChart .zw-cell").forEach((c) => c.classList.toggle("zw-sel", c.dataset.branch === branch));
 }
-function hideZiweiView() {
-  document.getElementById("ziweiView").style.display = "none";
-  document.getElementById("mainView").style.display = "";
-}
-document.getElementById("ziweiBackBtn").addEventListener("click", hideZiweiView);
+// 點宮連動（事件代理，容器固定存在只綁一次）
+document.getElementById("ziweiChart").addEventListener("click", function (e) {
+  const cell = e.target.closest(".zw-cell");
+  if (cell) zwDrawLines(cell.dataset.branch);
+});
 
 function renderZiwei({ name, gender, y, mo, d, h, mi }) {
   const a = iztro.astro.bySolar(y + "-" + mo + "-" + d, zwTimeIndex(h), gender === "male" ? "男" : "女", true, "zh-TW");
@@ -424,15 +437,11 @@ function renderZiwei({ name, gender, y, mo, d, h, mi }) {
     '<div class="zw-foot">本內容僅供參考，命運掌握在自己手裡</div>' +
     "</div>";
 
-  // 三方四正紅線（命宮—財帛—官祿三角＋命宮—遷移直線）
-  const pos = {}; a.palaces.forEach((p) => { pos[p.name] = ZW_BRANCH_GRID[p.earthlyBranch]; });
-  const cxy = ([r, c]) => [(c - 0.5) * 25, (r - 0.5) * 25];
-  const [mx, my] = cxy(pos["命宮"]), [cx2, cy2] = cxy(pos["財帛"]), [gx, gy] = cxy(pos["官祿"]), [qx, qy] = cxy(pos["遷移"]);
-  const lines = '<svg class="zw-lines" viewBox="0 0 100 100" preserveAspectRatio="none">' +
-    '<polygon points="' + mx + "," + my + " " + cx2 + "," + cy2 + " " + gx + "," + gy + '" fill="none"/>' +
-    '<line x1="' + mx + '" y1="' + my + '" x2="' + qx + '" y2="' + qy + '"/></svg>';
-
-  document.getElementById("ziweiChart").innerHTML = '<div class="zw-grid">' + cells + center + lines + "</div>";
+  document.getElementById("ziweiChart").innerHTML = '<div class="zw-grid">' + cells + center +
+    '<svg class="zw-lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>';
+  // 預設以命宮畫三方四正（點任一地支宮位會連動重畫，見 zwDrawLines）
+  const ming = a.palaces.find((p) => p.name === "命宮");
+  zwDrawLines(ming.earthlyBranch);
 }
 
 document.getElementById("qimenDivineSubmitBtn").addEventListener("click", function () {
@@ -443,7 +452,7 @@ document.getElementById("qimenDivineSubmitBtn").addEventListener("click", functi
   const [h, mi] = t.split(":").map(Number);
   try {
     renderZiwei({ name, gender: document.getElementById("f-gender").value, y, mo, d, h, mi });
-    showZiweiView();
+    setActiveTab("ziwei");
   } catch (err) { showToast("排盤失敗：" + err.message, "error"); }
 });
 

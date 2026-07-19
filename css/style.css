@@ -1671,7 +1671,9 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 /* ===== 紫微斗數命盤（星僑式 4×4：12宮環繞＋中央資訊區） ===== */
 .zw-grid { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);
   border: 2px solid #1a1a6e; background: #fff; width: 100%; max-width: 1080px; margin: 0 auto; aspect-ratio: 4/3; }
-.zw-cell { position: relative; border: 1px solid #1a1a6e; padding: 3px 4px; overflow: hidden; font-size: 12px; }
+.zw-cell { position: relative; border: 1px solid #1a1a6e; padding: 3px 4px; overflow: hidden; font-size: 12px; cursor: pointer; }
+/* 點選中的宮位（三方四正基準宮） */
+.zw-cell.zw-sel { outline: 2px solid #B03030; outline-offset: -2px; }
 .zw-bg-ming { background: #FBDCDC; } .zw-bg-cai { background: #FFF6C6; }
 .zw-bg-guan { background: #DCD8F5; } .zw-bg-qian { background: #DDF3DC; }
 .zw-laiyin { position: absolute; left: 3px; top: 3px; background: #FFF200; border: 1px solid #333; font-size: 11px;
