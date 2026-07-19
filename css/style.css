@@ -1711,8 +1711,9 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .zw-pillars th { background: #F7F3E6; }
 .zw-foot { text-align: center; font-size: 11.5px; color: #666; margin-top: 3px; }
 .zw-studio { color: var(--gold-darker); font-weight: 700; }
-.zw-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-.zw-lines polygon, .zw-lines line { stroke: #B03030; stroke-width: 0.35; fill: none; }
+/* 三方四正線：最上層顯示（蓋過中央資訊區）、最細 1px 實線（non-scaling 不隨縮放變粗） */
+.zw-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+.zw-lines polygon, .zw-lines line { stroke: #B03030; stroke-width: 1; vector-effect: non-scaling-stroke; fill: none; }
 @media (max-width: 760px) {
   .zw-grid { aspect-ratio: auto; }
   .zw-cell { min-height: 150px; }

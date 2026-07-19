@@ -357,6 +357,30 @@ document.getElementById("ziweiChart").addEventListener("click", function (e) {
   if (cell) zwDrawLines(cell.dataset.branch);
 });
 
+// 匯出 PDF：整張命盤截圖，A4 直式自動縮放置中（品牌列下方的可用區內等比縮放、水平垂直置中）
+document.getElementById("exportZiweiPdfBtn").addEventListener("click", async function () {
+  const btn = this, orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "匯出中...";
+  try {
+    const grid = document.querySelector("#ziweiChart .zw-grid");
+    if (!grid) throw new Error("請先排盤");
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 10, contentTop = 26;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const bt = textToImage("Aries 紫微斗數", 20, "#212529");
+    pdf.addImage(bt.dataUrl, "PNG", margin + 16, 8 + (12 - bt.heightMM) / 2, bt.widthMM, bt.heightMM);
+    const canvas = await html2canvas(grid, { scale: 2, backgroundColor: "#ffffff" });
+    const maxW = pageWidth - margin * 2, maxH = pageHeight - contentTop - margin;
+    let w = maxW, h = canvas.height * w / canvas.width;
+    if (h > maxH) { h = maxH; w = canvas.width * h / canvas.height; }
+    pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", (pageWidth - w) / 2, contentTop + (maxH - h) / 2, w, h);
+    pdf.save("紫微斗數命盤.pdf");
+  } catch (err) { alert("匯出失敗：" + err.message); }
+  finally { btn.disabled = false; btn.textContent = orig; }
+});
+
 function renderZiwei({ name, gender, y, mo, d, h, mi }) {
   const a = iztro.astro.bySolar(y + "-" + mo + "-" + d, zwTimeIndex(h), gender === "male" ? "男" : "女", true, "zh-TW");
   // 農曆與節氣四柱（lunar-javascript；晚子時進位日柱與全站一致）
