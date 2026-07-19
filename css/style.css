@@ -1668,6 +1668,55 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   .gy-vocab-row { grid-template-columns: 90px 1fr; }
 }
 
+/* ===== 紫微斗數命盤（星僑式 4×4：12宮環繞＋中央資訊區） ===== */
+.zw-grid { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);
+  border: 2px solid #1a1a6e; background: #fff; width: 100%; max-width: 1080px; margin: 0 auto; aspect-ratio: 4/3; }
+.zw-cell { position: relative; border: 1px solid #1a1a6e; padding: 3px 4px; overflow: hidden; font-size: 12px; }
+.zw-bg-ming { background: #FBDCDC; } .zw-bg-cai { background: #FFF6C6; }
+.zw-bg-guan { background: #DCD8F5; } .zw-bg-qian { background: #DDF3DC; }
+.zw-laiyin { position: absolute; left: 3px; top: 3px; background: #FFF200; border: 1px solid #333; font-size: 11px;
+  font-weight: 700; padding: 1px 2px; line-height: 1.15; width: 15px; }
+.zw-stars { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 1px; min-height: 74px; }
+.zw-star-col { display: flex; flex-direction: column; align-items: center; width: 15px; }
+.zw-star-name { writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 1px; line-height: 1.05; }
+.zw-major .zw-star-name { color: #7B1FA2; font-weight: 700; }
+.zw-minor .zw-star-name { color: #1741C9; }
+.zw-adj .zw-star-name { color: #444; }
+.zw-star-bright { font-size: 11px; color: #C62828; }
+.zw-mut { font-size: 11px; font-weight: 700; border: 1px solid #111; padding: 0 1px; margin-top: 1px; background: #fff; }
+.zw-left12 { position: absolute; left: 4px; bottom: 40px; display: flex; gap: 2px; }
+.zw-v12 { writing-mode: vertical-rl; text-orientation: upright; font-size: 11px; color: #14509E; line-height: 1.1; }
+.zw-right12 { position: absolute; right: 4px; bottom: 40px; display: flex; gap: 2px; align-items: flex-end; }
+.zw-cs12 { writing-mode: vertical-rl; text-orientation: upright; font-size: 11px; color: #333; }
+.zw-ganzhi { writing-mode: vertical-rl; text-orientation: upright; font-size: 12.5px; font-weight: 700; color: #1a1a1a; }
+.zw-cell-bottom { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; }
+.zw-decadal { font-size: 12.5px; font-weight: 700; color: #14509E; }
+.zw-pname { font-size: 13px; font-weight: 700; color: #C62828; }
+.zw-shen { color: #1B7E2C; margin-left: 3px; }
+.zw-ages { font-size: 11px; color: #14509E; }
+.zw-center { position: relative; border: 1px solid #1a1a6e; background: #fff; padding: 6px 8px; overflow: auto; z-index: 2; }
+.zw-center-title { text-align: center; font-size: 16px; font-weight: 800; color: var(--gold-darker); margin-bottom: 4px; }
+.zw-center-cols { display: flex; gap: 8px; justify-content: space-between; }
+.zw-info-table table { border-collapse: collapse; font-size: 12px; }
+.zw-info-table th, .zw-info-table td { border: 1px solid #999; padding: 1px 5px; }
+.zw-info-table th { background: #F7F3E6; font-weight: 700; }
+.zw-birth { font-size: 12.5px; line-height: 1.8; text-align: right; }
+.zw-zodiac { font-weight: 700; color: #C62828; }
+.zw-name { font-weight: 700; }
+.zw-pillar-row { display: flex; gap: 10px; justify-content: center; margin-top: 6px; }
+.zw-pillars { border-collapse: collapse; font-size: 12px; text-align: center; }
+.zw-pillars th, .zw-pillars td { border: 1px solid #999; padding: 1px 6px; }
+.zw-pillars th { background: #F7F3E6; }
+.zw-foot { text-align: center; font-size: 11.5px; color: #666; margin-top: 3px; }
+.zw-studio { color: var(--gold-darker); font-weight: 700; }
+.zw-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.zw-lines polygon, .zw-lines line { stroke: #B03030; stroke-width: 0.35; fill: none; }
+@media (max-width: 760px) {
+  .zw-grid { aspect-ratio: auto; }
+  .zw-cell { min-height: 150px; }
+  .zw-stars { min-height: 56px; }
+}
+
 /* ===== 奇門催旺（催財佈局） ===== */
 .cuiwang-range { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
 .cuiwang-range-group { display: flex; align-items: center; gap: 4px; }

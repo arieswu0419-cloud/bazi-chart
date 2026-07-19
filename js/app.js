@@ -159,7 +159,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView", "ziweiView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -313,9 +313,138 @@ document.getElementById("qimenSubmitBtn").addEventListener("click", function () 
   setActiveTab("qimen");
 });
 
-// 紫微斗數報告：功能尚未開發，先放按鍵佔位
+// ================= 紫微斗數（排盤引擎＝js/iztro.min.js，vendored 自 iztro；版面比照星僑命盤）=================
+// 三張星僑參考盤（1976-04-19 20:20 女／2001-03-22 09:27 女／2005-04-06 08:20 女）校準：
+// 命主／身主／五行局／命宮干支／大限起訖／小限歲數／身宮／來因宮／生年四化／子斗流斗公式全部吻合；
+// 星曜亮度用字門派略異（iztro 廟旺得利平不陷 vs 星僑 廟旺得利平閑陷，「不」對映「閑」槽位）。
+const ZW_BRANCH_GRID = { 巳: [1, 1], 午: [1, 2], 未: [1, 3], 申: [1, 4], 辰: [2, 1], 酉: [2, 4], 卯: [3, 1], 戌: [3, 4], 寅: [4, 1], 丑: [4, 2], 子: [4, 3], 亥: [4, 4] };
+const ZW_PALACE_BG = { 命宮: "zw-bg-ming", 財帛: "zw-bg-cai", 官祿: "zw-bg-guan", 遷移: "zw-bg-qian" };
+const ZW_ZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+const ZW_BRIGHT_MAP = { 不: "閑" }; // 星僑用字
+function zwTimeIndex(h) { return h === 23 ? 12 : Math.floor((h + 1) / 2); } // iztro 時辰索引（0早子/12晚子）
+function zwTimeZhiIdx(h) { return h === 23 ? 0 : Math.floor((h + 1) / 2) % 12; }
+// 斗君：從流年支起正月逆數至生月，再從該宮起子時順數至生時（用三張星僑盤子斗/流斗共6值驗證）
+function zwDouJun(yearZhiIdx, lunarMonth, timeZhiIdx) {
+  return ((yearZhiIdx - (lunarMonth - 1) + timeZhiIdx) % 12 + 12) % 12;
+}
+function zwStarCol(s, cls) {
+  const bright = ZW_BRIGHT_MAP[s.brightness] || s.brightness || "";
+  const mut = s.mutagen ? '<span class="zw-mut">' + s.mutagen + "</span>" : "";
+  return '<div class="zw-star-col ' + cls + '"><span class="zw-star-name">' + s.name + "</span>" +
+    '<span class="zw-star-bright">' + bright + "</span>" + mut + "</div>";
+}
+function showZiweiView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("ziweiView").style.display = "";
+}
+function hideZiweiView() {
+  document.getElementById("ziweiView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+}
+document.getElementById("ziweiBackBtn").addEventListener("click", hideZiweiView);
+
+function renderZiwei({ name, gender, y, mo, d, h, mi }) {
+  const a = iztro.astro.bySolar(y + "-" + mo + "-" + d, zwTimeIndex(h), gender === "male" ? "男" : "女", true, "zh-TW");
+  // 農曆與節氣四柱（lunar-javascript；晚子時進位日柱與全站一致）
+  const solar = Solar.fromYmdHms(y, mo, d, h, mi, 0);
+  const lunar = solar.getLunar();
+  const ec = lunar.getEightChar(); ec.setSect(1);
+  const jieqiPillars = [ec.getTimeGan() + ec.getTimeZhi(), ec.getDayGan() + ec.getDayZhi(), ec.getMonthGan() + ec.getMonthZhi(), ec.getYearGan() + ec.getYearZhi()];
+  const bulunPillars = a.chineseDate.split(" ").reverse(); // iztro＝不論節氣（年月日時→時日月年）
+  const lunarMonth = Math.abs(lunar.getMonth());
+  const tIdx = zwTimeZhiIdx(h);
+  const nowLunar = Solar.fromDate(new Date()).getLunar();
+  const nowYearZhi = nowLunar.getYearZhi();
+  const ziDou = ZW_ZHI[zwDouJun(0, lunarMonth, tIdx)];
+  const liuDou = ZW_ZHI[zwDouJun(ZW_ZHI.indexOf(nowYearZhi), lunarMonth, tIdx)];
+  const xuSui = nowLunar.getYear() - lunar.getYear() + 1;
+  const yinYang = "甲丙戊庚壬".indexOf(a.chineseDate.charAt(0)) >= 0 ? "陽" : "陰";
+  // 生年四化（掃全盤星曜 mutagen）
+  const sihua = { 祿: "", 權: "", 科: "", 忌: "" };
+  a.palaces.forEach((p) => [].concat(p.majorStars, p.minorStars).forEach((s) => { if (s.mutagen) sihua[s.mutagen] = s.name; }));
+
+  // 12 宮格
+  let cells = "";
+  a.palaces.forEach((p) => {
+    const [r, c] = ZW_BRANCH_GRID[p.earthlyBranch];
+    const stars = p.adjectiveStars.map((s) => zwStarCol(s, "zw-adj")).join("") +
+      p.minorStars.map((s) => zwStarCol(s, "zw-minor")).join("") +
+      p.majorStars.map((s) => zwStarCol(s, "zw-major")).join("");
+    const bg = ZW_PALACE_BG[p.name] || "";
+    cells += '<div class="zw-cell ' + bg + '" data-branch="' + p.earthlyBranch + '" style="grid-row:' + r + ";grid-column:" + c + '">' +
+      (p.isOriginalPalace ? '<div class="zw-laiyin">來因</div>' : "") +
+      '<div class="zw-stars">' + stars + "</div>" +
+      '<div class="zw-left12">' +
+      '<span class="zw-v12">' + p.boshi12 + "</span>" +
+      '<span class="zw-v12">' + p.jiangqian12 + "</span>" +
+      '<span class="zw-v12">' + p.suiqian12 + "</span></div>" +
+      '<div class="zw-right12"><span class="zw-cs12">' + p.changsheng12 + "</span>" +
+      '<span class="zw-ganzhi">' + p.heavenlyStem + p.earthlyBranch + "</span></div>" +
+      '<div class="zw-cell-bottom">' +
+      '<div class="zw-decadal">' + p.decadal.range[0] + " - " + p.decadal.range[1] + "</div>" +
+      '<div class="zw-pname">' + p.name + (p.isBodyPalace ? '<span class="zw-shen">身宮</span>' : "") + "</div>" +
+      '<div class="zw-ages">' + p.ages.slice(0, 6).join(" ") + "</div>" +
+      "</div></div>";
+  });
+
+  // 中央資訊區（2×2）
+  const genderText = gender === "male" ? "男" : "女";
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const pillarTable = (label, ps) => '<table class="zw-pillars"><tr><th colspan="4">' + label + "</th></tr>" +
+    "<tr><td>時</td><td>日</td><td>月</td><td>年</td></tr>" +
+    "<tr>" + ps.map((x) => "<td>" + x.charAt(0) + "<br>" + x.charAt(1) + "</td>").join("") + "</tr></table>";
+  const center =
+    '<div class="zw-center" style="grid-row:2/span 2;grid-column:2/span 2">' +
+    '<div class="zw-center-title">【Aries】紫微斗數</div>' +
+    '<div class="zw-center-cols">' +
+    '<div class="zw-info-table"><table>' +
+    "<tr><th>流斗</th><td>" + liuDou + "（" + nowLunar.getYear() + "年）</td></tr>" +
+    "<tr><th>子斗</th><td>" + ziDou + "</td></tr>" +
+    "<tr><th>身主</th><td>" + a.body + "</td></tr>" +
+    "<tr><th>命主</th><td>" + a.soul + "</td></tr>" +
+    "<tr><th>命局</th><td>" + a.fiveElementsClass + "</td></tr>" +
+    "<tr><th>生年</th><td>" + bulunPillars[3] + "</td></tr>" +
+    "<tr><th>化祿</th><td>" + sihua.祿 + "</td></tr>" +
+    "<tr><th>化權</th><td>" + sihua.權 + "</td></tr>" +
+    "<tr><th>化科</th><td>" + sihua.科 + "</td></tr>" +
+    "<tr><th>化忌</th><td>" + sihua.忌 + "</td></tr>" +
+    "</table></div>" +
+    '<div class="zw-birth">' +
+    '<div class="zw-zodiac">肖' + a.zodiac + "　" + yinYang + genderText + "</div>" +
+    "<div>公元 " + y + "年" + mo + "月" + d + "日 " + pad2(h) + ":" + pad2(mi) + "</div>" +
+    "<div>民國 " + (y - 1911) + "年</div>" +
+    "<div>農曆 " + lunar.toString() + " " + a.time + "</div>" +
+    '<div class="zw-name">姓名：' + name + "</div>" +
+    "</div></div>" +
+    '<div class="zw-pillar-row">' + pillarTable("不論節氣", bulunPillars) + pillarTable("節氣四柱", jieqiPillars) + "</div>" +
+    '<div class="zw-foot">' + new Date().getFullYear() + "/" + (new Date().getMonth() + 1) + "/" + new Date().getDate() + " 列印　" +
+    (nowLunar.getYear() - 1911) + "年農曆虛" + xuSui + "歲</div>" +
+    '<div class="zw-foot zw-studio">Aries 命理工作室</div>' +
+    '<div class="zw-foot">本內容僅供參考，命運掌握在自己手裡</div>' +
+    "</div>";
+
+  // 三方四正紅線（命宮—財帛—官祿三角＋命宮—遷移直線）
+  const pos = {}; a.palaces.forEach((p) => { pos[p.name] = ZW_BRANCH_GRID[p.earthlyBranch]; });
+  const cxy = ([r, c]) => [(c - 0.5) * 25, (r - 0.5) * 25];
+  const [mx, my] = cxy(pos["命宮"]), [cx2, cy2] = cxy(pos["財帛"]), [gx, gy] = cxy(pos["官祿"]), [qx, qy] = cxy(pos["遷移"]);
+  const lines = '<svg class="zw-lines" viewBox="0 0 100 100" preserveAspectRatio="none">' +
+    '<polygon points="' + mx + "," + my + " " + cx2 + "," + cy2 + " " + gx + "," + gy + '" fill="none"/>' +
+    '<line x1="' + mx + '" y1="' + my + '" x2="' + qx + '" y2="' + qy + '"/></svg>';
+
+  document.getElementById("ziweiChart").innerHTML = '<div class="zw-grid">' + cells + center + lines + "</div>";
+}
+
 document.getElementById("qimenDivineSubmitBtn").addEventListener("click", function () {
-  showToast("紫微斗數報告功能開發中，敬請期待。", "info");
+  const name = document.getElementById("f-name").value.trim();
+  const y = +document.getElementById("f-byear").value, mo = +document.getElementById("f-bmonth").value, d = +document.getElementById("f-bday").value;
+  const t = document.getElementById("f-btime").value;
+  if (!name || !t) { showToast("請填寫姓名與出生時間。", "error"); return; }
+  const [h, mi] = t.split(":").map(Number);
+  try {
+    renderZiwei({ name, gender: document.getElementById("f-gender").value, y, mo, d, h, mi });
+    showZiweiView();
+  } catch (err) { showToast("排盤失敗：" + err.message, "error"); }
 });
 
 document.getElementById("baziForm").addEventListener("submit", function (e) {
