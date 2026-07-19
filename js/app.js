@@ -2405,9 +2405,12 @@ function renderQimenDunjia(data) {
     true,
     computeQimenDunjiaGongNumbers(data)
   );
-  document.getElementById("qimenDunjiaCompass").innerHTML = buildQimenCompassHtml(data, gridHtml, computeQimenDunjiaHexagrams(data));
+  const dunjiaHex = computeQimenDunjiaHexagrams(data);
+  document.getElementById("qimenDunjiaCompass").innerHTML = buildQimenCompassHtml(data, gridHtml, dunjiaHex);
   document.getElementById("qimenDunjiaExplain").style.display = "none";
   document.getElementById("qimenDunjiaExplain").innerHTML = "";
+  // 最下方：宮位對應 64 卦說明＋64 卦＋八門說明
+  renderQimenHexaTables("qimenDunjiaHexaTables", data, dunjiaHex);
 }
 
 // 點選任一宮位格子，下方顯示該宮八卦／八門／神盤／九星／天盤干／地盤干解說；用 document 事件代理，
@@ -2418,15 +2421,43 @@ document.addEventListener("click", function (e) {
   const cell = e.target.closest(".qimen-cell");
   if (!cell) return;
   const inDunjia = !!cell.closest("#qimenDunjiaCompass");
-  const data = inDunjia ? currentQimenDunjia : currentQimen;
+  const inHongpan = !!cell.closest("#qimenHongpanCompass");
+  const data = inHongpan ? currentQimenHongpan : (inDunjia ? currentQimenDunjia : currentQimen);
   if (!data) return;
   const gong = Number(cell.dataset.gong);
-  const panel = document.getElementById(inDunjia ? "qimenDunjiaExplain" : "qimenExplain");
+  const panel = document.getElementById(inHongpan ? "qimenHongpanExplain" : (inDunjia ? "qimenDunjiaExplain" : "qimenExplain"));
   document.querySelectorAll(".qimen-cell.qimen-cell-selected").forEach((el) => el.classList.remove("qimen-cell-selected"));
   cell.classList.add("qimen-cell-selected");
-  panel.innerHTML = buildQimenExplain(gong, data);
+  panel.innerHTML = buildQimenExplain(gong, data) + (inHongpan ? buildHongpanExplainExtra(gong, data) : "");
   panel.style.display = "block";
 });
+
+// 紅盤點宮解說的補充列：隱干／81 格局／64 卦（紅盤限定欄位；中宮無）
+function buildHongpanExplainExtra(gong, data) {
+  if (gong === 5 || !data.gongs[gong]) return "";
+  const c = data.gongs[gong];
+  let rows = "";
+  if (c.grayGans && c.grayGans.length) rows += "<tr><th>隱干</th><td>" + c.grayGans.join("、") + "</td></tr>";
+  const geju = typeof getGeju81 === "function" ? getGeju81(c.tianGan, c.diGan) : null;
+  if (geju) rows += "<tr><th>格局</th><td>" + c.tianGan + c.diGan + "　" + geju.name + (geju.desc ? "：" + geju.desc : "") + "</td></tr>";
+  const hex = data.hexagrams && data.hexagrams[gong];
+  if (hex) rows += "<tr><th>64卦</th><td>" + hex.name + "（" + hex.upper + "上" + hex.lower + "下）" +
+    (typeof HEXA64_DESC !== "undefined" && HEXA64_DESC[hex.name] ? "：" + HEXA64_DESC[hex.name] : "") + "</td></tr>";
+  const words = (c.cornerWords || []).map((w) => w.text).join("、");
+  if (words || c.jiXing) rows += "<tr><th>提示</th><td>" + [c.jiXing ? "六儀擊刑" : "", words].filter(Boolean).join("、") + "</td></tr>";
+  return rows ? '<table class="qimen-explain-table"><tbody>' + rows + "</tbody></table>" : "";
+}
+
+// 兩頁共用：底部「宮位對應 64 卦說明」＋「64 卦＋八門說明」兩張表
+function renderQimenHexaTables(containerId, data, hexByGong) {
+  const gi = {}, mm = {};
+  [1, 2, 3, 4, 6, 7, 8, 9].forEach((g) => {
+    const c = data.gongs[g];
+    gi[g] = { gua: c.gua, dir: c.dir };
+    mm[g] = c.men;
+  });
+  document.getElementById(containerId).innerHTML = buildHexaTablesHtml(hexByGong, mm, gi);
+}
 
 document.getElementById("exportQimenPdfBtn").addEventListener("click", async function () {
   const btn = this;
@@ -4119,6 +4150,8 @@ function renderQimenHongpan(data) {
   });
   document.getElementById("qimenHongpanExplain").style.display = "none";
   document.getElementById("qimenHongpanExplain").innerHTML = "";
+  // 最下方：宮位對應 64 卦說明＋64 卦＋八門說明（紅盤 64 卦由引擎 data.hexagrams 逐宮算好）
+  renderQimenHexaTables("qimenHongpanHexaTables", data, data.hexagrams);
 }
 
 function runQimenHongpan(year, month, day, hour, minute) {

@@ -1838,6 +1838,14 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   .gy-explain-role { font-size: 12px; }
 }
 
+/* ===== 奇門紅盤／藍盤共用：宮位 64 卦說明兩張表 ===== */
+.qhx-wrap { overflow-x: auto; border: 1px solid var(--gold); border-radius: var(--radius); }
+.qhx-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.qhx-table th, .qhx-table td { border: 1px solid #e0d9c0; padding: 6px 9px; text-align: left; vertical-align: top; line-height: 1.6; }
+.qhx-table th { background: #F7F3E6; color: var(--gold-darker); font-weight: 700; white-space: nowrap; text-align: center; }
+.qhx-table td:first-child { white-space: nowrap; font-weight: 700; color: #333; }
+.qhx-name { font-weight: 800; color: var(--gold-darker); white-space: nowrap; }
+
 /* ===== 奇門數字（號碼奇門單宮盤，仿書版圖） ===== */
 h2.qsz-page-title { font-size: 22px; }
 .qsz-input-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
