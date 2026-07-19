@@ -3780,24 +3780,69 @@ function runCuiwang() {
 }
 document.getElementById("cuiwangRunBtn").addEventListener("click", runCuiwang);
 
+// 匯出 PDF：逐「列」分頁——每頁重複品牌列＋表格標題＋表頭，列為原子單位絕不從中間切開；
+// 列高以現場表格實測（同寬度）換算 mm，湊滿一頁即換頁，每頁把「標題＋表頭＋該頁列」
+// 克隆到離屏容器整塊截圖置入
 document.getElementById("exportCuiwangPdfBtn").addEventListener("click", async function () {
   const btn = this, orig = btn.textContent;
   btn.disabled = true; btn.textContent = "匯出中...";
+  let holder = null;
   try {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "mm", "a4", true);
     const pageWidth = 210, pageHeight = 297, margin = 10;
+    const contentW = pageWidth - margin * 2;
+    const contentTop = 26; // 品牌列下緣
+    const table = document.querySelector("#cuiwangResult table");
+    if (!table) throw new Error("請先列出催旺日期與時辰");
+    const titleEl = document.querySelector("#cuiwangCard .cw-result-title");
+    const thead = table.querySelector("thead");
+    const rows = Array.from(table.querySelectorAll("tbody tr"));
+    const W = table.offsetWidth;
+    const mmPerPx = contentW / W;
+    const titleMM = titleEl.offsetHeight * mmPerPx;
+    const theadMM = thead.offsetHeight * mmPerPx;
+    // 每頁可放列高：頁高 − 上方品牌區 − 下邊界 − 標題 − 表頭 − 2mm 安全
+    const rowAvail = pageHeight - contentTop - margin - titleMM - theadMM - 2;
+    const chunks = [];
+    let cur = [], acc = 0;
+    rows.forEach((r) => {
+      const h = r.offsetHeight * mmPerPx;
+      if (cur.length && acc + h > rowAvail) { chunks.push(cur); cur = []; acc = 0; }
+      cur.push(r); acc += h;
+    });
+    if (cur.length) chunks.push(cur);
     const logoImg = document.querySelector(".brand img");
-    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 奇門催旺", 20, "#212529");
-    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
-    const sections = Array.from(document.querySelectorAll("#cuiwangCard > *:not(.card-head)"))
-      .filter((el) => getComputedStyle(el).display !== "none");
-    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+    for (let i = 0; i < chunks.length; i++) {
+      if (i > 0) pdf.addPage();
+      pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+      const bt = textToImage("Aries 奇門催旺", 20, "#212529");
+      pdf.addImage(bt.dataUrl, "PNG", margin + 16, 8 + (12 - bt.heightMM) / 2, bt.widthMM, bt.heightMM);
+      holder = document.createElement("div");
+      holder.style.cssText = "position:fixed;left:-99999px;top:0;width:" + W + "px;background:#fff;";
+      holder.appendChild(titleEl.cloneNode(true));
+      const wrap = document.createElement("div");
+      wrap.className = "cw-table-wrap";
+      const tbl = table.cloneNode(false);
+      tbl.appendChild(thead.cloneNode(true));
+      const tb = document.createElement("tbody");
+      chunks[i].forEach((r) => tb.appendChild(r.cloneNode(true)));
+      tbl.appendChild(tb);
+      wrap.appendChild(tbl);
+      holder.appendChild(wrap);
+      document.body.appendChild(holder);
+      const canvas = await html2canvas(holder, { scale: 1.5, backgroundColor: "#ffffff" });
+      holder.remove(); holder = null;
+      const hMM = canvas.height * contentW / canvas.width;
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", margin, contentTop, contentW, hMM);
+    }
     addPageNumbers(pdf, pageWidth, pageHeight);
     pdf.save("奇門催旺.pdf");
   } catch (err) { alert("匯出失敗：" + err.message); }
-  finally { btn.disabled = false; btn.textContent = orig; }
+  finally {
+    if (holder) holder.remove();
+    btn.disabled = false; btn.textContent = orig;
+  }
 });
 
 // ================= 奇門紅盤（獨立頁面，洋紅配色；四柱／八卦位置沿用，天地盤干/神/星/門的排盤 =================

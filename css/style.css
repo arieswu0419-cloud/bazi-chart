@@ -1687,6 +1687,8 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .cw-chong { color: #1a1a1a; font-weight: 700; font-size: 13px; text-align: center; }
 .cw-day-top { margin-left: auto; font-weight: 700; color: #2e9e4b; }
 .cw-day-top.cw-none-top { color: #999; }
+/* 結果表格標題：加大一號、加粗、置中（PDF 匯出每頁重複此標題＋表頭） */
+.cw-result-title { font-size: 20px; font-weight: 800; color: var(--gold-darker); text-align: center; margin: 0 0 10px; }
 .cw-table-wrap { overflow-x: auto; border: 1px solid var(--gold); border-radius: 0 0 var(--radius) var(--radius); }
 .cw-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .cw-table th, .cw-table td { border: 1px solid #e0d9c0; padding: 6px 8px; text-align: left; vertical-align: top; }
