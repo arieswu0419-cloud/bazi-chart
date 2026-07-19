@@ -1870,6 +1870,9 @@ h2.qsz-page-title { font-size: 22px; }
 .qsz-v { font-size: clamp(24px, 7vw, 36px); font-weight: 800; line-height: 1.05; }
 /* 九星/天盤干/地盤干/宮位：縮小 2 號 */
 .qsz-v.qsz-sm { font-size: clamp(22px, 6.5vw, 34px); }
+/* 九星（左上）與天/地盤干（右上）加 2 號（宮位左下維持）；八神（中上）加 2 號 */
+.qsz-tl .qsz-v.qsz-sm, .qsz-tr .qsz-v.qsz-sm { font-size: clamp(24px, 7vw, 36px); }
+.qsz-tc .qsz-v { font-size: clamp(26px, 7.5vw, 38px); }
 /* 九星：直式逐字換行 */
 .qsz-vertical { writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 3px; }
 .qsz-shen { color: #1a1a1a; }
@@ -1879,7 +1882,7 @@ h2.qsz-page-title { font-size: 22px; }
 /* 八門：加大五行色圓底、白字只顯示門名首字、字加大 2 號 */
 .qsz-men-circle { width: clamp(74px, 22vw, 98px); height: clamp(74px, 22vw, 98px); border-radius: 50%;
   display: flex; align-items: center; justify-content: center; color: #fff;
-  font-size: clamp(28px, 8vw, 38px); font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+  font-size: clamp(30px, 8.5vw, 40px); font-weight: 800; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
 .qsz-men-circle.qsz-wx-wood { background: #548C00; } .qsz-men-circle.qsz-wx-fire { background: #EA0000; }
 .qsz-men-circle.qsz-wx-earth { background: #796400; } .qsz-men-circle.qsz-wx-metal { background: #EAC100; }
 .qsz-men-circle.qsz-wx-water { background: #004B97; } .qsz-men-circle.qsz-wx-none { background: #999; }
