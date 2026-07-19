@@ -3856,20 +3856,23 @@ function buildQimenShuziHtml(res) {
   // 白底單宮：九星(左上,五行色,直式逐字,縮2號) 八神(中上,黑) 天盤干/地盤干(右上,五行色,換行,縮2號)
   // 八門(正中,加大五行圓底白字,只顯示門名首字,字加大2號) 宮位(左下,五行色,縮2號)
   const menShort = c.men.value.slice(-1) === "門" ? c.men.value.charAt(0) : c.men.value;
+  // 天地盤干格局（如「太白重鋒」）放盤面中下置中
+  const gejuName = res.geju ? res.geju.name : "";
   const plate = '<div class="qsz-plate"><div class="qsz-grid">' +
     '<div class="qsz-cell qsz-tl">' + val("xing", "qsz-sm qsz-vertical") + "</div>" +
     '<div class="qsz-cell qsz-tc"><span class="qsz-v qsz-shen">' + c.shen.value + "</span></div>" +
     '<div class="qsz-cell qsz-tr">' + val("tian", "qsz-sm") + val("di", "qsz-sm") + "</div>" +
     '<div class="qsz-cell qsz-mc"><span class="qsz-men-circle ' + qszWxClass(c.men.wx) + '">' + menShort + "</span></div>" +
     '<div class="qsz-cell qsz-bl">' + val("gong", "qsz-sm") + "</div>" +
+    '<div class="qsz-cell qsz-bc"><span class="qsz-geju-name">' + gejuName + "</span></div>" +
     "</div></div>";
 
-  // 逐符號說明
+  // 逐符號說明：只留 九星/八神/宮位/天盤干/地盤干/八門 六列（不顯示數字編號）
   const order = ["xing", "shen", "gong", "tian", "di", "men"];
   const rows = order.map((k) => {
     const x = c[k];
     const jx = x.jx ? '<span class="qsz-jx qsz-jx-' + (x.jx.indexOf("凶") >= 0 || x.jx === "空亡" ? "bad" : (x.jx.indexOf("吉") >= 0 ? "good" : "neu")) + '">' + x.jx + "</span>" : "";
-    return '<div class="qsz-explain-row"><span class="qsz-explain-type">' + x.meta.label + "（" + x.digit + "）</span>" +
+    return '<div class="qsz-explain-row"><span class="qsz-explain-type">' + x.meta.label + "</span>" +
       '<span class="qsz-explain-val">' + x.value + "</span>" + jx +
       '<span class="qsz-explain-mean">' + x.meta.mean + (x.kong ? "　※空亡：" + x.kong : "") + "</span></div>";
   }).join("");
@@ -3878,9 +3881,8 @@ function buildQimenShuziHtml(res) {
     ? '<div class="qsz-geju"><b>天地盤格局：' + c.tian.value + c.di.value + "　" + res.geju.name + "</b>　" + res.geju.desc + "</div>"
     : (c.tian.value !== "空亡" && c.di.value !== "空亡" ? "" : '<div class="qsz-geju">天／地盤干含空亡，暫不列格局。</div>');
 
-  return '<div class="qsz-result-head">末六碼：<b>' + res.six.split("").join(" ") + "</b></div>" +
-    plate +
-    '<div class="zibai-section-title" style="margin-top:16px">盤面六符號說明</div>' +
+  return plate +
+    '<div class="zibai-section-title" style="margin-top:16px">奇門數字盤說明</div>' +
     '<div class="qsz-explain">' + rows + "</div>" +
     geju +
     '<div class="zibai-disclaimer">※ 九星＝性格發展時機、八神＝想法觀念運勢、宮位＝定位環境平臺、天盤干＝外表行為、地盤干＝內在想法、八門＝自己心態行為；吉凶須合整體綜參。</div>';
@@ -3891,32 +3893,12 @@ function runQimenShuzi() {
   if (raw.length < 6) { document.getElementById("qimenShuziHint").textContent = "轉換後數字不足 6 位，請至少輸入 6 位數字或英文字。"; return; }
   const res = calcQimenShuzi(raw);
   if (!res) { document.getElementById("qimenShuziHint").textContent = "排盤失敗，請確認輸入。"; return; }
-  document.getElementById("qimenShuziHint").textContent = "已取末六碼 " + res.six + " 排盤。";
+  document.getElementById("qimenShuziHint").textContent = "";
   document.getElementById("qimenShuziResult").innerHTML = buildQimenShuziHtml(res);
   document.getElementById("qimenShuziCard").style.display = "block";
 }
 document.getElementById("qimenShuziRunBtn").addEventListener("click", runQimenShuzi);
 document.getElementById("qsz-input").addEventListener("keydown", function (e) { if (e.key === "Enter") runQimenShuzi(); });
-
-document.getElementById("exportQimenShuziPdfBtn").addEventListener("click", async function () {
-  const btn = this, orig = btn.textContent;
-  btn.disabled = true; btn.textContent = "匯出中...";
-  try {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p", "mm", "a4", true);
-    const pageWidth = 210, pageHeight = 297, margin = 10;
-    const logoImg = document.querySelector(".brand img");
-    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 奇門數字", 20, "#212529");
-    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
-    const sections = Array.from(document.querySelectorAll("#qimenShuziCard > *:not(.card-head)"))
-      .filter((el) => getComputedStyle(el).display !== "none");
-    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
-    addPageNumbers(pdf, pageWidth, pageHeight);
-    pdf.save("奇門數字.pdf");
-  } catch (err) { alert("匯出失敗：" + err.message); }
-  finally { btn.disabled = false; btn.textContent = orig; }
-});
 
 // ================= 奇門催旺（催財佈局；排盤重用藍盤 calculateQimenHeader，評分見 cuiwang-engine.js）=================
 function showCuiwangView() {
