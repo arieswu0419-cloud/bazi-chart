@@ -3748,7 +3748,7 @@ function renderCuiwang(res) {
       rows.push('<tr><td>' + day.date + "　" + h.shi + '<span class="cw-range">' + h.range + "</span></td>" +
         '<td class="cw-chong">' + day.chongZodiac + "</td>" +
         '<td class="cw-dir">' + b.dir + "</td>" +
-        '<td>' + b.ganName + "</td>" +
+        '<td class="cw-sanqi">' + b.ganName + "</td>" +
         '<td class="cw-score-cell"><span class="cw-score ' + cwScoreClass(b.score) + '">' + b.score + "</span></td>" +
         '<td class="cw-wupin">' + b.wupin + "</td></tr>");
     });

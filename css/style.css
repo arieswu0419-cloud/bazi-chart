@@ -1684,7 +1684,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   border-radius: var(--radius) var(--radius) 0 0; border: 1px solid var(--gold); border-bottom: none;
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .cw-day-head b { color: var(--gold-darker); font-size: 16px; }
-.cw-chong { color: #c0392b; font-size: 13px; }
+.cw-chong { color: #1a1a1a; font-weight: 700; font-size: 13px; text-align: center; }
 .cw-day-top { margin-left: auto; font-weight: 700; color: #2e9e4b; }
 .cw-day-top.cw-none-top { color: #999; }
 .cw-table-wrap { overflow-x: auto; border: 1px solid var(--gold); border-radius: 0 0 var(--radius) var(--radius); }
@@ -1692,9 +1692,12 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .cw-table th, .cw-table td { border: 1px solid #e0d9c0; padding: 6px 8px; text-align: left; vertical-align: top; }
 .cw-table th { background: #F7F3E6; color: var(--gold-darker); font-weight: 700; white-space: nowrap; }
 .cw-table tr.cw-none td { color: #bbb; background: #fafafa; }
-.cw-range { display: block; font-size: 11px; color: #aaa; }
+/* 時辰區間（19:00-20:59）：與年月日時辰同字級同色、加粗 */
+.cw-range { display: block; font-size: 13px; color: inherit; font-weight: 700; }
 .cw-ju { white-space: nowrap; color: var(--text-secondary); }
 .cw-dir { font-weight: 800; color: #333; font-size: 15px; white-space: nowrap; }
+/* 置中欄（特異性需高於 .cw-table td 的 text-align:left）：沖生肖/催旺方位/三奇/分數 */
+.cw-table td.cw-chong, .cw-table td.cw-dir, .cw-table td.cw-sanqi, .cw-table td.cw-score-cell { text-align: center; }
 .cw-geju b { color: #333; }
 .cw-detail { display: block; font-size: 11px; color: #999; }
 .cw-score-cell { text-align: center; }
