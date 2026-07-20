@@ -3041,11 +3041,35 @@ function buildZibaiMingGuaHtml(res, gua) {
   return h + "</div>";
 }
 
+// ---- 宅主命卦九宮格盤：命卦數入中順飛，方位排法與主盤一致（向首朝上）----
+function buildZibaiGuaPlateHtml(gua) {
+  const guaPan = zbFly(gua.num, true);
+  const angle = Math.round(Number(document.getElementById("zb-angle").value) || 0);
+  const fIdx = zbMountainIndex(angle);
+  const fi = ZB_COMPASS_CW.indexOf(ZB_MOUNTAINS[fIdx].dir);
+  const num = (pal) => '<span class="zbfx-num ' + zbWxClass(guaPan[pal]) + '">' + guaPan[pal] + "</span>";
+  let cellsHtml = '<div class="zibai-cell zibai-cell-center zbfx-plate-cell" style="grid-row:2;grid-column:2">' + num(5) + "</div>";
+  const labels = [];
+  for (let k = 0; k < 8; k++) {
+    const dir = ZB_COMPASS_CW[(fi + k) % 8];
+    const pos = ZB_SCREEN_CW[k];
+    cellsHtml += '<div class="zibai-cell zbfx-plate-cell" style="grid-row:' + pos.r + ";grid-column:" + pos.c + '">' +
+      num(ZB_DIR_TO_PALACE[dir]) + "</div>";
+    labels.push('<span class="zibai-dir ' + zbPosClass(pos.r, pos.c) + '">' + ZB_DIR_NAME[dir] + "</span>");
+  }
+  return '<div class="zibai-section"><div class="zibai-section-title">宅主命卦</div>' +
+    '<div class="zibai-plate">' +
+    '<div class="zibai-info">宅主命卦 ' + gua.num + " " + gua.gua + "卦　命卦星 " + gua.num + " 入中順飛（數字著五行色）</div>" +
+    '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
+    "</div></div>";
+}
+
 function renderZibai(res) {
   currentZibai = res;
   const guaHtml = currentZibaiGua ? buildZibaiMingGuaHtml(res, currentZibaiGua) : "";
+  const guaPlateHtml = currentZibaiGua ? buildZibaiGuaPlateHtml(currentZibaiGua) : "";
   document.getElementById("zibaiResult").innerHTML =
-    buildZibaiPlateHtml(res) + buildZibaiStarLegendHtml() + buildZibaiSummaryHtml(res) + guaHtml;
+    buildZibaiPlateHtml(res) + buildZibaiStarLegendHtml() + buildZibaiSummaryHtml(res) + guaHtml + guaPlateHtml;
   document.getElementById("zibaiCard").style.display = "block";
 }
 
@@ -3194,7 +3218,7 @@ function buildZibaiFeixingHtml(fx) {
   const info = fx.year + " 年 " + fx.month + " 月份飛星圖　（" + fx.yearBranch + "年 年飛星 " + fx.yearStar +
     " 入中・" + fx.monthBranch + "月 月飛星 " + fx.monthStar + " 入中" +
     (guaPan ? "・命卦 " + currentZibaiGua.num + " " + currentZibaiGua.gua + " 入中" : "") + "）";
-  return '<div class="zibai-plate">' +
+  const plateHtml = '<div class="zibai-plate">' +
     '<div class="zibai-info">' + info + "</div>" +
     '<div class="zibai-facing-top">' +
       '<span class="zibai-facing-name">' + facing.name + "</span>" +
@@ -3204,9 +3228,44 @@ function buildZibaiFeixingHtml(fx) {
     '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
     '<div class="zibai-sitting">' + tSvg + '<span class="zibai-sit-text">' + sitting.name + "山" + facing.name + "向</span></div>" +
     '<div class="zibai-note" style="text-align:center">每格 左＝流年飛星｜中＝流月飛星｜右＝宅主命卦飛星（數字著五行色；月份以節氣月對應，1 月屬前一年丑月）</div>' +
-    "</div>" +
+    "</div>";
+  // 使用者上傳平面圖時：平面圖為底、疊上同方位排列的九宮格＋飛星數字（年|月|命），與主盤並排放右側
+  const floorHtml = zbFloorPlanImg
+    ? '<div class="zbfx-floor">' +
+      '<div class="zbfx-floor-title">平面圖飛星（' + sitting.name + "山" + facing.name + "向）</div>" +
+      '<div class="zbfx-floor-box"><img src="' + zbFloorPlanImg + '" alt="平面圖">' +
+      '<div class="zbfx-floor-grid">' + buildZibaiFloorCells(fx, guaPan, fi) + "</div></div>" +
+      '<div class="zibai-note" style="text-align:center">每格 方位＋（流年｜流月' + (guaPan ? "｜命卦" : "") + "）飛星</div>" +
+      "</div>"
+    : "";
+  const mergeHtml = floorHtml
+    ? '<div class="zbfx-merge-row"><div class="zbfx-merge-left">' + plateHtml + '</div><div class="zbfx-merge-right">' + floorHtml + "</div></div>"
+    : plateHtml;
+  return mergeHtml +
     buildZibaiFeixingShengKeHtml(fx, guaPan, fi) +
     buildZibaiStarLegendHtml();
+}
+
+// 平面圖疊盤的 3×3 九宮格：方位與主盤同步（向首朝上中），每格＝方位名＋（年|月|命）飛星數字
+function buildZibaiFloorCells(fx, guaPan, fi) {
+  const nums = (pal) => {
+    let h = '<span class="zbfx-num ' + zbWxClass(fx.yearPan[pal]) + '">' + fx.yearPan[pal] + "</span>" +
+      '<span class="zbfx-sep">|</span>' +
+      '<span class="zbfx-num ' + zbWxClass(fx.monthPan[pal]) + '">' + fx.monthPan[pal] + "</span>";
+    if (guaPan) h += '<span class="zbfx-sep">|</span>' +
+      '<span class="zbfx-num ' + zbWxClass(guaPan[pal]) + '">' + guaPan[pal] + "</span>";
+    return h;
+  };
+  let cells = '<div class="zbfx-floor-cell" style="grid-row:2;grid-column:2">' +
+    '<span class="zbfx-floor-dir">中宮</span><span class="zbfx-floor-nums">' + nums(5) + "</span></div>";
+  for (let k = 0; k < 8; k++) {
+    const dir = ZB_COMPASS_CW[(fi + k) % 8];
+    const pos = ZB_SCREEN_CW[k];
+    cells += '<div class="zbfx-floor-cell" style="grid-row:' + pos.r + ";grid-column:" + pos.c + '">' +
+      '<span class="zbfx-floor-dir">' + ZB_DIR_NAME[dir] + "</span>" +
+      '<span class="zbfx-floor-nums">' + nums(ZB_DIR_TO_PALACE[dir]) + "</span></div>";
+  }
+  return cells;
 }
 
 function runZibaiFeixing() {
@@ -3235,14 +3294,39 @@ document.getElementById("zb-angle").addEventListener("change", function () { syn
 // 陽宅風水頁籤的命卦欄位變更 → 鏡像到流月頁籤並重排
 ["zb-oyear", "zb-omonth", "zb-oday", "zb-ogender"].forEach((id) =>
   document.getElementById(id).addEventListener("change", function () { syncZibaiMirrors(); runZibaiFeixing(); }));
-// 流月頁籤上的鏡像欄位變更 → 回寫陽宅風水頁籤、更新命卦、重排
+// 流月頁籤上的鏡像欄位變更 → 回寫陽宅風水頁籤、更新命卦、重排（面向下拉同步回填角度欄）
 ["zbfx-oyear", "zbfx-omonth", "zbfx-oday", "zbfx-ogender", "zbfx-angle"].forEach((id) =>
   document.getElementById(id).addEventListener("change", function () {
+    if (id === "zbfx-angle") document.getElementById("zbfx-angle-num").value = this.value;
     syncZibaiMirrors(true);
     updateZibaiHints();
     updateZibaiGuaHint();
     runZibaiFeixing();
   }));
+
+// 面向角度輸入（0–359°）→ 自動換算 24 山、同步面向下拉與座向、重排
+document.getElementById("zbfx-angle-num").addEventListener("change", function () {
+  let a = Math.round(Number(this.value) || 0);
+  a = ((a % 360) + 360) % 360;
+  this.value = a;
+  document.getElementById("zbfx-angle").value = String(zbMountainIndex(a) * 15);
+  syncZibaiMirrors(true);
+  updateZibaiHints();
+  runZibaiFeixing();
+});
+
+// 上傳平面圖：讀成 dataURL 存起來，排盤時把飛星九宮疊在圖上（放主盤右側）
+let zbFloorPlanImg = null;
+document.getElementById("zbfx-floor").addEventListener("change", function () {
+  const file = this.files && this.files[0];
+  if (!file) { zbFloorPlanImg = null; runZibaiFeixing(); return; }
+  const reader = new FileReader();
+  reader.onload = function () { zbFloorPlanImg = reader.result; runZibaiFeixing(); };
+  reader.readAsDataURL(file);
+});
+
+// 第三區塊的「排盤」鈕（與第一區塊排盤同功能）
+document.getElementById("zbfxRunBtn2").addEventListener("click", runZibaiFeixing);
 
 document.getElementById("exportZibaiFeixingPdfBtn").addEventListener("click", async function () {
   const btn = this;

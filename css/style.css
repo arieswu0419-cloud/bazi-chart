@@ -1838,6 +1838,23 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   .gy-explain-role { font-size: 12px; }
 }
 
+/* ===== 紫白流年流月：平面圖疊盤（主盤左、平面圖＋九宮飛星右） ===== */
+.zbfx-merge-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; justify-content: center; }
+.zbfx-merge-left, .zbfx-merge-right { flex: 1 1 340px; min-width: 300px; max-width: 560px; }
+.zbfx-floor-title { text-align: center; font-size: 15px; font-weight: 800; color: var(--gold-darker); margin: 6px 0 8px; }
+.zbfx-floor-box { position: relative; border: 2px solid var(--gold); border-radius: 6px; overflow: hidden; }
+.zbfx-floor-box img { width: 100%; display: block; }
+.zbfx-floor-grid { position: absolute; inset: 0; display: grid;
+  grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
+.zbfx-floor-cell { border: 1px dashed rgba(60, 40, 0, .55); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px; min-width: 0; }
+.zbfx-floor-dir { font-size: 12px; font-weight: 700; color: #1a1a1a; background: rgba(255,255,255,.82);
+  padding: 0 5px; border-radius: 4px; line-height: 1.5; }
+.zbfx-floor-nums { background: rgba(255,255,255,.85); border-radius: 6px; padding: 1px 6px;
+  font-weight: 800; font-size: 15px; white-space: nowrap; }
+.zbfx-angle-num-field input { width: 110px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius); }
+.zbfx-floor-field input { font-size: 13px; }
+
 /* ===== 奇門紅盤／藍盤共用：宮位 64 卦說明兩張表（標題白字；表格白底深灰字置中） ===== */
 #qimenDunjiaHexaTables .zibai-section-title, #qimenHongpanHexaTables .zibai-section-title { color: #fff; }
 .qhx-wrap { overflow-x: auto; border: 1px solid var(--gold); border-radius: var(--radius); background: #fff; }
