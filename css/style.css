@@ -1838,8 +1838,20 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
   .gy-explain-role { font-size: 12px; }
 }
 
-/* ===== 紫白流年流月：平面圖疊盤（主盤左、平面圖＋九宮飛星右） ===== */
-.zbfx-merge-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; justify-content: center; }
+/* ===== 紫白流年流月：陽宅面向欄位列（角度/面向/座向/上傳/排盤 底部對齊、控件同高） ===== */
+.zbfx-face-row { align-items: flex-end; flex-wrap: wrap; }
+.zbfx-face-row .field { margin-bottom: 0; }
+.zbfx-face-row .field label { min-height: 0; }
+.zbfx-face-row .field input, .zbfx-face-row .field select { height: 44px; box-sizing: border-box; }
+.zbfx-face-row .zibai-mountain-out { height: 44px; box-sizing: border-box; display: flex; align-items: center;
+  justify-content: center; white-space: nowrap; padding: 0 12px; }
+.zbfx-face-row .zibai-mountain-field { flex: 0 0 auto; }
+.zbfx-face-row .zbfx-angle-num-field { flex: 0 0 130px; }
+.zbfx-face-row .zibai-run-field .btn { height: 44px; }
+
+/* ===== 紫白流年流月：平面圖疊盤（主盤左、平面圖＋九宮飛星右，垂直置中對齊） ===== */
+.zbfx-merge-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; justify-content: center; }
+.zbfx-merge-left, .zbfx-merge-right { text-align: center; }
 .zbfx-merge-left, .zbfx-merge-right { flex: 1 1 340px; min-width: 300px; max-width: 560px; }
 .zbfx-floor-title { text-align: center; font-size: 15px; font-weight: 800; color: var(--gold-darker); margin: 6px 0 8px; }
 .zbfx-floor-box { position: relative; border: 2px solid var(--gold); border-radius: 6px; overflow: hidden; }

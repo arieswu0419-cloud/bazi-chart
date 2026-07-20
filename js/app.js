@@ -3289,8 +3289,13 @@ function runZibaiFeixing() {
 document.getElementById("zibaiFeixingRunBtn").addEventListener("click", runZibaiFeixing);
 ["zbfx-year", "zbfx-month"].forEach((id) =>
   document.getElementById(id).addEventListener("change", runZibaiFeixing));
-// 陽宅面向變更 → 流年流月盤方位同步重排（兩盤方位一致，鏡像到流月頁籤欄位）
-document.getElementById("zb-angle").addEventListener("change", function () { syncZibaiMirrors(); runZibaiFeixing(); });
+// 陽宅面向變更 → 流年流月盤方位同步重排（兩盤方位一致，鏡像到流月頁籤欄位；
+// 角度輸入欄一併回填，避免鏡像後「角度 vs 下拉/座向」顯示不一致）
+document.getElementById("zb-angle").addEventListener("change", function () {
+  syncZibaiMirrors();
+  document.getElementById("zbfx-angle-num").value = document.getElementById("zbfx-angle").value;
+  runZibaiFeixing();
+});
 // 陽宅風水頁籤的命卦欄位變更 → 鏡像到流月頁籤並重排
 ["zb-oyear", "zb-omonth", "zb-oday", "zb-ogender"].forEach((id) =>
   document.getElementById(id).addEventListener("change", function () { syncZibaiMirrors(); runZibaiFeixing(); }));
