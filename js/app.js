@@ -3041,34 +3041,23 @@ function buildZibaiMingGuaHtml(res, gua) {
   return h + "</div>";
 }
 
-// ---- 宅主命卦九宮格盤：命卦數入中順飛，方位排法與主盤一致（向首朝上）。
-// 版面比照主盤：info 置頂（與左側「X運宅」info 平齊）＋向首山名/角度/↑箭頭＋九宮格 ----
+// ---- 宅主命卦盤：教材「命卦-X.pdf」式 24 山遊年羅盤（重用八宅 buildBazhaiRingSvg，
+// redBlack 配色＝四吉紅底/四凶黑底白字），圓盤依房屋座向自動旋轉（向首朝上，與主盤一致）。
+// 版面比照主盤：info 置頂（與左側「X運宅」info 平齊）＋向首山名/角度/↑箭頭＋羅盤 ----
 function buildZibaiGuaPlateHtml(gua) {
-  const guaPan = zbFly(gua.num, true);
   const angle = Math.round(Number(document.getElementById("zb-angle").value) || 0);
   const fIdx = zbMountainIndex(angle);
   const facing = ZB_MOUNTAINS[fIdx];
-  const fi = ZB_COMPASS_CW.indexOf(facing.dir);
-  const num = (pal) => '<span class="zbfx-num ' + zbWxClass(guaPan[pal]) + '">' + guaPan[pal] + "</span>";
-  let cellsHtml = '<div class="zibai-cell zibai-cell-center zbfx-plate-cell" style="grid-row:2;grid-column:2">' + num(5) + "</div>";
-  const labels = [];
-  for (let k = 0; k < 8; k++) {
-    const dir = ZB_COMPASS_CW[(fi + k) % 8];
-    const pos = ZB_SCREEN_CW[k];
-    cellsHtml += '<div class="zibai-cell zbfx-plate-cell" style="grid-row:' + pos.r + ";grid-column:" + pos.c + '">' +
-      num(ZB_DIR_TO_PALACE[dir]) + "</div>";
-    labels.push('<span class="zibai-dir ' + zbPosClass(pos.r, pos.c) + '">' + ZB_DIR_NAME[dir] + "</span>");
-  }
   const arrowSvg = '<svg class="zibai-arrow-svg" viewBox="0 0 24 44" width="24" height="44" aria-hidden="true">' +
     '<line x1="12" y1="43" x2="12" y2="9"/><polyline points="4,20 12,5 20,20" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   return '<div class="zibai-plate">' +
-    '<div class="zibai-info">宅主命卦 ' + gua.num + " " + gua.gua + "卦　命卦星 " + gua.num + " 入中順飛（數字著五行色）</div>" +
+    '<div class="zibai-info">宅主命卦</div>' +
     '<div class="zibai-facing-top">' +
       '<span class="zibai-facing-name">' + facing.name + "</span>" +
       '<span class="zibai-facing-deg">' + zbDegText(fIdx) + "</span>" +
       arrowSvg +
     "</div>" +
-    '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
+    buildBazhaiRingSvg(gua, angle, true) +
     "</div>";
 }
 
@@ -3451,7 +3440,9 @@ function bzRingText(cx, cy, r, angDeg, text, size, color, bold) {
     ' text-anchor="middle" dominant-baseline="central">' + text + "</text>";
 }
 
-function buildBazhaiRingSvg(gua, angle) {
+// redBlack＝true 時改「教材命卦-X.pdf 羅盤」配色：四吉（生氣/延年/天醫/伏位）紅底白字、
+// 四凶（絕命/五鬼/六煞/禍害）黑底白字（紫白頁宅主命卦盤用；八宅頁維持原綠底配色）
+function buildBazhaiRingSvg(gua, angle, redBlack) {
   const games = zbGameStars(gua.num);
   const byGua = {};
   games.forEach((s) => { byGua[s.gua] = s; });
@@ -3462,17 +3453,21 @@ function buildBazhaiRingSvg(gua, angle) {
   const C = 210, R_STAR2 = 205, R_STAR1 = 162, R_MT2 = 162, R_MT1 = 122, R_DIR2 = 122, R_DIR1 = 78, R_CTR = 78;
 
   let s = "";
-  // 外環：24 山游年星（吉綠底），中環：24 山名
+  // 外環：24 山游年星（吉綠底；redBlack＝吉紅底/凶黑底白字），中環：24 山名
   for (let i = 0; i < 24; i++) {
     const mt = ZB_MOUNTAINS[i];
     const star = byGua[ZB_NAJIA_GUA[mt.name]];
     const a1 = i * 15 - 7.5 - fa, a2 = i * 15 + 7.5 - fa, mid = i * 15 - fa;
     const isSit = i === sIdx, isFace = i === fIdx;
+    const starFill = redBlack
+      ? (star.tone === "good" ? "#C8161D" : "#1a1a1a")
+      : (star.tone === "good" ? "#E2F0DC" : "#fff");
+    const starTextColor = redBlack ? "#fff" : BZ_TONE_COLOR[star.tone];
     s += '<path d="' + bzRingSector(C, C, R_STAR1, R_STAR2, a1, a2) + '" fill="' +
-      (star.tone === "good" ? "#E2F0DC" : "#fff") + '" stroke="#8a7943" stroke-width="1"/>';
+      starFill + '" stroke="#8a7943" stroke-width="1"/>';
     s += '<path d="' + bzRingSector(C, C, R_MT1, R_MT2, a1, a2) + '" fill="' +
       (isSit ? "#FDECEC" : (isFace ? "#FFF7DE" : "#fff")) + '" stroke="#8a7943" stroke-width="1"/>';
-    s += bzRingText(C, C, (R_STAR1 + R_STAR2) / 2, mid, star.star, 13, BZ_TONE_COLOR[star.tone], true);
+    s += bzRingText(C, C, (R_STAR1 + R_STAR2) / 2, mid, star.star, 13, starTextColor, true);
     s += bzRingText(C, C, (R_MT1 + R_MT2) / 2, mid, mt.name, 15, isSit ? "#d13b3b" : "#333", true);
   }
   // 內環：八卦名數＋方位
