@@ -3068,8 +3068,13 @@ function renderZibai(res) {
   currentZibai = res;
   const guaHtml = currentZibaiGua ? buildZibaiMingGuaHtml(res, currentZibaiGua) : "";
   const guaPlateHtml = currentZibaiGua ? buildZibaiGuaPlateHtml(currentZibaiGua) : "";
+  // 宅主命卦九宮格放主盤（X運宅）右側，左右並排、垂直置中對齊（重用流月頁 merge-row 版面）
+  const mainHtml = guaPlateHtml
+    ? '<div class="zbfx-merge-row"><div class="zbfx-merge-left">' + buildZibaiPlateHtml(res) +
+      '</div><div class="zbfx-merge-right">' + guaPlateHtml + "</div></div>"
+    : buildZibaiPlateHtml(res);
   document.getElementById("zibaiResult").innerHTML =
-    buildZibaiPlateHtml(res) + buildZibaiStarLegendHtml() + buildZibaiSummaryHtml(res) + guaHtml + guaPlateHtml;
+    mainHtml + buildZibaiStarLegendHtml() + buildZibaiSummaryHtml(res) + guaHtml;
   document.getElementById("zibaiCard").style.display = "block";
 }
 
