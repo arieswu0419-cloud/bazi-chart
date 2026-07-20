@@ -1911,7 +1911,9 @@ function qimenExplainDimRows(label, char, dict) {
 
 // 點選九宮格顯示的解說表格：八卦／八門／神盤／九星／天盤干／地盤干；data 由呼叫端傳入
 // （奇門命盤報告頁籤用 currentQimen，獨立的奇門遁甲頁面用 currentQimenDunjia，兩邊各自的盤不能混用）
-function buildQimenExplain(gong, data) {
+// showScope＝true（奇門藍盤／紅盤，有內外盤數字圈）時，加一列「內盤（白底・主近主速）／
+// 外盤（灰底・主遠主慢）」；中宮不分內外盤，不顯示。
+function buildQimenExplain(gong, data, showScope) {
   let gua, men, shen, xing, tianGan, diGan, title;
   if (gong === 5) {
     gua = "坤";
@@ -1928,6 +1930,13 @@ function buildQimenExplain(gong, data) {
   }
   let html = '<div class="qimen-explain-title">' + title + " 解說</div>";
   html += '<table class="qimen-explain-table"><tbody>';
+  if (showScope && gong !== 5) {
+    const outer = qimenDunjiaIsOuterGong(gong, data.juInfo.isYang);
+    const scopeText = outer
+      ? '<b class="qw-menpo">外盤</b>（灰底圓）—主遠、主慢：應期較遠、事緩、力弱，宜長線佈局。'
+      : '<b class="qw-jiudun">內盤</b>（白底圓）—主近、主速：應期較近、事快、力顯，宜即時把握。';
+    html += "<tr><th>內外盤</th><td>" + (data.juInfo.isYang ? "陽遁" : "陰遁") + "・" + scopeText + "</td></tr>";
+  }
   html += qimenExplainRow("八卦", gua, QIMEN_EXPLAIN.gua);
   html += qimenExplainDimRows("八門", men, QIMEN_EXPLAIN.men);
   html += qimenExplainDimRows("神盤", shen, QIMEN_EXPLAIN.shen);
@@ -2028,7 +2037,7 @@ function buildQimenGridHtml(data, bottomLabelFn, centerLabel, cornerWordsFn, day
       '<div class="qimen-men-circle" style="background:' + menColor + '">' + (c.men || "") + "</div>" +
       "</div>" +
       (numberFn
-        ? '<div class="qimen-gong-number' + (qimenDunjiaIsInnerGong(g, data.juInfo.isYang) ? " qimen-gong-number-inner" : "") + '">' + numberFn(g) + "</div>"
+        ? '<div class="qimen-gong-number' + (qimenDunjiaIsOuterGong(g, data.juInfo.isYang) ? " qimen-gong-number-outer" : "") + '">' + numberFn(g) + "</div>"
         : "") +
       // 奇門紅盤限定：宮位右中的灰色天干（門的本門宮天盤干，引擎算好；可能兩字＝含中宮寄干）
       (c.grayGans ? '<div class="qimen-gray-gan">' + c.grayGans.map((x) => "<span>" + x + "</span>").join("") + "</div>" : "") +
@@ -2226,7 +2235,7 @@ function qimenDunjiaCornerWords(data) {
 // 4. 把算好的中宮數放中宮，再沿「洛書飛泊」順序（中5→乾6→兌7→艮8→離9→坎1→坤2→震3→巽4）
 //    陽遁順飛（+1）／陰遁逆飛（−1）依序填入九宮，就得到每個宮位的 1~9 數字。
 // 驗證：官網奇門時盤 2000-06-22、2000-04-16、2013-06-22、2000-12-05 等多筆，含 6 種三合組×陰陽遁
-//   起星組合與逐時辰飛佈，九宮數字全部對上。內外盤灰底圓／白底樣式另見 qimenDunjiaIsInnerGong。
+//   起星組合與逐時辰飛佈，九宮數字全部對上。內外盤灰底圓／白底樣式另見 qimenDunjiaIsOuterGong。
 const ZHI_INDEX_ZB = { 子: 0, 丑: 1, 寅: 2, 卯: 3, 辰: 4, 巳: 5, 午: 6, 未: 7, 申: 8, 酉: 9, 戌: 10, 亥: 11 };
 const ZIBAI_C0_YANG = { 子: 1, 午: 1, 卯: 1, 酉: 1, 寅: 7, 申: 7, 巳: 7, 亥: 7, 辰: 4, 戌: 4, 丑: 4, 未: 4 };
 const ZIBAI_C0_YIN = { 子: 9, 午: 9, 卯: 9, 酉: 9, 寅: 3, 申: 3, 巳: 3, 亥: 3, 辰: 6, 戌: 6, 丑: 6, 未: 6 };
@@ -2247,16 +2256,16 @@ function computeQimenDunjiaGongNumbers(data) {
   return (g) => numbers[g];
 }
 
-// 奇門遁甲獨立頁面：九宮數字的內盤／外盤樣式。使用者提供的規則——離坤兌乾（9,2,7,6）跟坎艮震巽
-// （1,8,3,4）這兩組宮位，陽遁／陰遁時的內外盤屬性剛好互換：
-//   陽遁：離坤兌乾＝內盤（灰底圓）、坎艮震巽＝外盤（白底）
-//   陰遁：離坤兌乾＝外盤（白底）、坎艮震巽＝內盤（灰底圓）
-// 陽遁／陰遁的判斷（data.juInfo.isYang）已經是用精確到分鐘的節氣時刻算出來的（lunar-javascript
-// 的 getPrevJieQi 本身就是照實際時刻找節氣，不是只看日期），不用另外處理分鐘精度。中宮不分內外盤。
-const QIMEN_DUNJIA_YANG_INNER_GONGS = [9, 2, 7, 6];
-const QIMEN_DUNJIA_YIN_INNER_GONGS = [1, 8, 3, 4];
-function qimenDunjiaIsInnerGong(g, isYang) {
-  return (isYang ? QIMEN_DUNJIA_YANG_INNER_GONGS : QIMEN_DUNJIA_YIN_INNER_GONGS).includes(g);
+// 奇門遁甲／紅盤：九宮數字的內盤／外盤樣式（內盤＝白底圓・主近主速；外盤＝灰底圓・主遠主慢）。
+// 規則——離坤兌乾（9,2,7,6）與坎艮震巽（1,8,3,4）兩組，陽遁／陰遁時內外盤剛好互換：
+//   陽遁（冬至~夏至）：內盤＝坎艮震巽（白底）、外盤＝離坤兌乾（灰底）
+//   陰遁（夏至~冬至）：內盤＝離坤兌乾（白底）、外盤＝坎艮震巽（灰底）
+// 陽遁／陰遁的判斷（data.juInfo.isYang）已用精確到分鐘的節氣時刻算出。中宮不分內外盤。
+// 下列陣列＝各遁的「外盤（灰底）」宮位；qimenDunjiaIsOuterGong 回傳 true＝該宮為外盤灰底。
+const QIMEN_DUNJIA_YANG_OUTER_GONGS = [9, 2, 7, 6]; // 陽遁外盤＝離坤兌乾
+const QIMEN_DUNJIA_YIN_OUTER_GONGS = [1, 8, 3, 4];  // 陰遁外盤＝坎艮震巽
+function qimenDunjiaIsOuterGong(g, isYang) {
+  return (isYang ? QIMEN_DUNJIA_YANG_OUTER_GONGS : QIMEN_DUNJIA_YIN_OUTER_GONGS).includes(g);
 }
 
 // 奇門遁甲外環 64 卦：橘色羅盤 8 個卦位各顯示一個易經六十四卦（比照參考站，命盤頁不顯示）。
@@ -2428,7 +2437,7 @@ document.addEventListener("click", function (e) {
   const panel = document.getElementById(inHongpan ? "qimenHongpanExplain" : (inDunjia ? "qimenDunjiaExplain" : "qimenExplain"));
   document.querySelectorAll(".qimen-cell.qimen-cell-selected").forEach((el) => el.classList.remove("qimen-cell-selected"));
   cell.classList.add("qimen-cell-selected");
-  panel.innerHTML = buildQimenExplain(gong, data) + (inHongpan ? buildHongpanExplainExtra(gong, data) : "");
+  panel.innerHTML = buildQimenExplain(gong, data, inDunjia || inHongpan) + (inHongpan ? buildHongpanExplainExtra(gong, data) : "");
   panel.style.display = "block";
 });
 
