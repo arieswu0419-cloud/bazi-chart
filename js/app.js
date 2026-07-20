@@ -1932,10 +1932,12 @@ function buildQimenExplain(gong, data, showScope) {
   html += '<table class="qimen-explain-table"><tbody>';
   if (showScope && gong !== 5) {
     const outer = qimenDunjiaIsOuterGong(gong, data.juInfo.isYang);
-    const scopeText = outer
-      ? '<b class="qw-menpo">外盤</b>（灰底圓）—主遠、主慢：應期較遠、事緩、力弱，宜長線佈局。'
-      : '<b class="qw-jiudun">內盤</b>（白底圓）—主近、主速：應期較近、事快、力顯，宜即時把握。';
-    html += "<tr><th>內外盤</th><td>" + (data.juInfo.isYang ? "陽遁" : "陰遁") + "・" + scopeText + "</td></tr>";
+    const scope = outer
+      ? { name: "外盤", cls: "qw-menpo", text: "主遠、主慢：應期較遠、事緩、力弱，宜長線佈局。" }
+      : { name: "內盤", cls: "qw-jiudun", text: "主近、主速：應期較近、事快、力顯，宜即時把握。" };
+    html += '<tr><td class="qe-label">內外盤</td>' +
+      '<td class="qe-char"><b class="' + scope.cls + '">' + scope.name + "</b></td>" +
+      '<td class="qe-text">' + (data.juInfo.isYang ? "陽遁" : "陰遁") + "，" + scope.text + "</td></tr>";
   }
   html += qimenExplainRow("八卦", gua, QIMEN_EXPLAIN.gua);
   html += qimenExplainDimRows("八門", men, QIMEN_EXPLAIN.men);
