@@ -3041,12 +3041,14 @@ function buildZibaiMingGuaHtml(res, gua) {
   return h + "</div>";
 }
 
-// ---- 宅主命卦九宮格盤：命卦數入中順飛，方位排法與主盤一致（向首朝上）----
+// ---- 宅主命卦九宮格盤：命卦數入中順飛，方位排法與主盤一致（向首朝上）。
+// 版面比照主盤：info 置頂（與左側「X運宅」info 平齊）＋向首山名/角度/↑箭頭＋九宮格 ----
 function buildZibaiGuaPlateHtml(gua) {
   const guaPan = zbFly(gua.num, true);
   const angle = Math.round(Number(document.getElementById("zb-angle").value) || 0);
   const fIdx = zbMountainIndex(angle);
-  const fi = ZB_COMPASS_CW.indexOf(ZB_MOUNTAINS[fIdx].dir);
+  const facing = ZB_MOUNTAINS[fIdx];
+  const fi = ZB_COMPASS_CW.indexOf(facing.dir);
   const num = (pal) => '<span class="zbfx-num ' + zbWxClass(guaPan[pal]) + '">' + guaPan[pal] + "</span>";
   let cellsHtml = '<div class="zibai-cell zibai-cell-center zbfx-plate-cell" style="grid-row:2;grid-column:2">' + num(5) + "</div>";
   const labels = [];
@@ -3057,20 +3059,26 @@ function buildZibaiGuaPlateHtml(gua) {
       num(ZB_DIR_TO_PALACE[dir]) + "</div>";
     labels.push('<span class="zibai-dir ' + zbPosClass(pos.r, pos.c) + '">' + ZB_DIR_NAME[dir] + "</span>");
   }
-  return '<div class="zibai-section"><div class="zibai-section-title">宅主命卦</div>' +
-    '<div class="zibai-plate">' +
+  const arrowSvg = '<svg class="zibai-arrow-svg" viewBox="0 0 24 44" width="24" height="44" aria-hidden="true">' +
+    '<line x1="12" y1="43" x2="12" y2="9"/><polyline points="4,20 12,5 20,20" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  return '<div class="zibai-plate">' +
     '<div class="zibai-info">宅主命卦 ' + gua.num + " " + gua.gua + "卦　命卦星 " + gua.num + " 入中順飛（數字著五行色）</div>" +
+    '<div class="zibai-facing-top">' +
+      '<span class="zibai-facing-name">' + facing.name + "</span>" +
+      '<span class="zibai-facing-deg">' + zbDegText(fIdx) + "</span>" +
+      arrowSvg +
+    "</div>" +
     '<div class="zibai-grid">' + cellsHtml + labels.join("") + "</div>" +
-    "</div></div>";
+    "</div>";
 }
 
 function renderZibai(res) {
   currentZibai = res;
   const guaHtml = currentZibaiGua ? buildZibaiMingGuaHtml(res, currentZibaiGua) : "";
   const guaPlateHtml = currentZibaiGua ? buildZibaiGuaPlateHtml(currentZibaiGua) : "";
-  // 宅主命卦九宮格放主盤（X運宅）右側，左右並排、垂直置中對齊（重用流月頁 merge-row 版面）
+  // 宅主命卦九宮格放主盤（X運宅）右側，左右並排；頂部對齊讓兩盤 info 文字平齊
   const mainHtml = guaPlateHtml
-    ? '<div class="zbfx-merge-row"><div class="zbfx-merge-left">' + buildZibaiPlateHtml(res) +
+    ? '<div class="zbfx-merge-row zb-house-merge"><div class="zbfx-merge-left">' + buildZibaiPlateHtml(res) +
       '</div><div class="zbfx-merge-right">' + guaPlateHtml + "</div></div>"
     : buildZibaiPlateHtml(res);
   document.getElementById("zibaiResult").innerHTML =

@@ -1852,6 +1852,8 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 /* ===== 紫白流年流月：平面圖疊盤（主盤左、平面圖＋九宮飛星右，垂直置中對齊） ===== */
 .zbfx-merge-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; justify-content: center; }
 .zbfx-merge-left, .zbfx-merge-right { text-align: center; }
+/* 陽宅紫白風水盤：主盤×宅主命卦盤改頂部對齊（兩盤 info 文字平齊） */
+.zbfx-merge-row.zb-house-merge { align-items: flex-start; }
 .zbfx-merge-left, .zbfx-merge-right { flex: 1 1 340px; min-width: 300px; max-width: 560px; }
 .zbfx-floor-title { text-align: center; font-size: 15px; font-weight: 800; color: var(--gold-darker); margin: 6px 0 8px; }
 .zbfx-floor-box { position: relative; border: 2px solid var(--gold); border-radius: 6px; overflow: hidden; }
