@@ -3641,26 +3641,30 @@ function xmToneTag(t) {
   const [txt, cls] = m[t] || ["—", ""];
   return '<span class="xm-tone ' + cls + '">' + txt + "</span>";
 }
+// 填生日年/月/日/時辰下拉（個人與公司負責人共用；只填一次）
+function fillBirthSelects(yrId, moId, dayId, timeId) {
+  const yrSel = document.getElementById(yrId);
+  if (yrSel.options.length) return;
+  const nowY = new Date().getFullYear();
+  let yH = '<option value="">—</option>';
+  for (let y = nowY; y >= 1920; y--) yH += '<option value="' + y + '">' + y + "</option>";
+  yrSel.innerHTML = yH;
+  let mH = '<option value="">—</option>', dH = '<option value="">—</option>';
+  for (let m = 1; m <= 12; m++) mH += '<option value="' + m + '">' + m + "</option>";
+  for (let d = 1; d <= 31; d++) dH += '<option value="' + d + '">' + d + "</option>";
+  document.getElementById(moId).innerHTML = mH;
+  document.getElementById(dayId).innerHTML = dH;
+  const shi = ["不知道時辰", "子(23-01)", "丑(01-03)", "寅(03-05)", "卯(05-07)", "辰(07-09)", "巳(09-11)", "午(11-13)", "未(13-15)", "申(15-17)", "酉(17-19)", "戌(19-21)", "亥(21-23)"];
+  document.getElementById(timeId).innerHTML = shi.map((s, i) => '<option value="' + (i === 0 ? "" : i - 1) + '">' + s + "</option>").join("");
+}
 function showXingmingView() {
   hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("xingmingView").style.display = "";
   setActiveNav("姓名學");
-  // 選填生日年月日＋時辰下拉（只填一次）
-  const yrSel = document.getElementById("xm-byear");
-  if (!yrSel.options.length) {
-    const nowY = new Date().getFullYear();
-    let yH = '<option value="">—</option>';
-    for (let y = nowY; y >= 1920; y--) yH += '<option value="' + y + '">' + y + "</option>";
-    yrSel.innerHTML = yH;
-    let mH = '<option value="">—</option>', dH = '<option value="">—</option>';
-    for (let m = 1; m <= 12; m++) mH += '<option value="' + m + '">' + m + "</option>";
-    for (let d = 1; d <= 31; d++) dH += '<option value="' + d + '">' + d + "</option>";
-    document.getElementById("xm-bmonth").innerHTML = mH;
-    document.getElementById("xm-bday").innerHTML = dH;
-    const shi = ["不知道時辰", "子(23-01)", "丑(01-03)", "寅(03-05)", "卯(05-07)", "辰(07-09)", "巳(09-11)", "午(11-13)", "未(13-15)", "申(15-17)", "酉(17-19)", "戌(19-21)", "亥(21-23)"];
-    document.getElementById("xm-btime").innerHTML = shi.map((s, i) => '<option value="' + (i === 0 ? "" : i - 1) + '">' + s + "</option>").join("");
-  }
+  fillBirthSelects("xm-byear", "xm-bmonth", "xm-bday", "xm-btime");
+  fillBirthSelects("xm-co-byear", "xm-co-bmonth", "xm-co-bday", "xm-co-btime");
+  fillCompanyIndustrySelect();
 }
 function hideXingmingView() {
   document.getElementById("xingmingView").style.display = "none";
@@ -3819,6 +3823,81 @@ function xmGenerateNames(surname, opts) {
   results.sort((a, b) => b.score - a.score ||
     (b.chars.filter((c) => c.xiHit).length - a.chars.filter((c) => c.xiHit).length));
   return results.slice(0, opts.limit || 24);
+}
+
+// ===== 公司姓名學（總格數理・商業吉數・行業五行；五格剖象不適用公司）=====
+// 名（總格五行）對業（行業五行）之生剋：比和／名生業＝吉，業生名＝半吉，相剋＝凶。
+function xmWxRelation(nameWx, bizWx) {
+  if (nameWx === bizWx) return { tone: "good", text: "比和（" + nameWx + "＝" + bizWx + "）——同氣相求、根基穩固" };
+  if (XM_WX_SHENG[nameWx] === bizWx) return { tone: "good", text: "名生業（" + nameWx + "生" + bizWx + "）——公司名全力挹注事業" };
+  if (XM_WX_SHENG[bizWx] === nameWx) return { tone: "mixed", text: "業生名（" + bizWx + "生" + nameWx + "）——事業回饋公司、較為被動" };
+  if (XM_WX_KE[nameWx] === bizWx) return { tone: "bad", text: "名剋業（" + nameWx + "剋" + bizWx + "）——公司名耗剋本業、宜調整" };
+  return { tone: "bad", text: "業剋名（" + bizWx + "剋" + nameWx + "）——本業受制、經營費力" };
+}
+function calcCompanyName(company) {
+  const chars = Array.from(String(company).trim()).filter((c) => c.trim() !== "");
+  if (!chars.length) return { error: "請輸入公司字號" };
+  const breakdown = [];
+  for (let i = 0; i < chars.length; i++) {
+    const k = xmStrokes(chars[i]);
+    if (k == null) return { error: "「" + chars[i] + "」查無筆劃，請確認為常用中文字（字號請勿含「有限公司」等後綴）" };
+    breakdown.push({ ch: chars[i], k });
+  }
+  const total = breakdown.reduce((a, b) => a + b.k, 0);
+  const red = xmReduce81(total);
+  const info = XM_SHU81[red] || ["mixed", ""];
+  return {
+    breakdown, total, red,
+    tone: info[0], meaning: info[1],
+    wx: xmNumWx(total),
+    isBiz: XM_BIZ_LUCKY.indexOf(red) !== -1,
+    bizNote: XM_BIZ_NOTE[red] || null
+  };
+}
+function buildCompanyHtml(company, res, ownerBazi, industryWx, industryLabel) {
+  const wcls = { 木: 3, 火: 9, 土: 2, 金: 7, 水: 1 };
+  const wxChip = (wx) => '<span class="' + zbWxClass(wcls[wx]) + '" style="font-weight:700">' + wx + "</span>";
+  const charLine = res.breakdown.map((b) => b.ch + "（" + b.k + "）").join("　");
+  let h = '<div class="xm-head"><b>' + company + "</b>　字號筆劃：" + charLine + "（康熙筆劃，共 " + res.total + " 劃）</div>";
+  // 總格數理
+  h += '<div class="zibai-section-title">總格數理</div>';
+  h += '<div class="xm-bazi">';
+  h += '<div class="xm-bazi-line">總格：<b>' + res.total + "</b>" + (res.total !== res.red ? "（靈動數 " + res.red + "）" : "") +
+    "　五行 " + wxChip(res.wx) + "　" + xmToneTag(res.tone) +
+    (res.isBiz ? ' <span class="xm-tone xm-good">商業吉數</span>' : "") + "</div>";
+  h += '<div class="xm-bazi-line">數理含義：' + res.meaning + "</div>";
+  if (res.bizNote) h += '<div class="xm-bazi-line xm-good-txt">招財興業：' + res.bizNote + "</div>";
+  h += "</div>";
+  // 負責人八字喜用
+  if (ownerBazi) {
+    const fav = xmWuxingFavor(ownerBazi, ownerBazi.hasHour);
+    const hit = fav.primaryFav.indexOf(res.wx) !== -1;
+    const clash = fav.primaryAvoid.indexOf(res.wx) !== -1;
+    h += '<div class="zibai-section-title" style="margin-top:16px">配合負責人八字</div>';
+    h += '<div class="xm-bazi">';
+    h += '<div class="xm-bazi-line">負責人：國曆 <b>' + ownerBazi.solarText + "</b>　生肖 <b>" + ownerBazi.shengxiao +
+      "</b>　日主 <b>" + ownerBazi.dayGan + "（" + fav.D + "）</b>" +
+      (ownerBazi.hasHour ? "" : '　<span class="xm-note-inline">未填時辰，時柱不計</span>') + "</div>";
+    h += '<div class="xm-bazi-line">八字喜用五行：<span class="xm-good-txt">' + fav.primaryFav.map(wxChip).join("、") +
+      '</span>　忌神：<span class="xm-bad-txt">' + fav.primaryAvoid.map(wxChip).join("、") + "</span></div>";
+    h += '<div class="xm-bazi-line">公司名總格五行為 ' + wxChip(res.wx) + "，" +
+      (hit ? '<b class="xm-good-txt">正合負責人喜用，助運旺業。</b>' :
+        clash ? '<b class="xm-bad-txt">落於負責人忌神，宜斟酌調整字號。</b>' :
+          "與喜用忌神無涉，屬中性。") + "</div>";
+    h += "</div>";
+  }
+  // 行業五行
+  if (industryWx) {
+    const rel = xmWxRelation(res.wx, industryWx);
+    h += '<div class="zibai-section-title" style="margin-top:16px">配合行業五行</div>';
+    h += '<div class="xm-bazi">';
+    h += '<div class="xm-bazi-line">行業：<b>' + industryLabel + "</b>（五行 " + wxChip(industryWx) + "）　公司名總格五行 " + wxChip(res.wx) + "</div>";
+    h += '<div class="xm-bazi-line">' + xmToneTag(rel.tone) + "　" + rel.text + "</div>";
+    h += "</div>";
+  }
+  h += '<div class="zibai-disclaimer">※ 公司行號以「總格」全名總筆劃之 81 數理為主（五格剖象之姓/名結構不適用公司）；' +
+    "字號請勿含「有限公司／股份有限公司／企業社」等後綴。商業吉數、行業五行為通用版整理，宜合負責人八字喜忌綜斷，僅供參考。</div>";
+  return h;
 }
 
 function buildXingmingHtml(r, gender, bazi) {
@@ -4016,6 +4095,51 @@ function runXingmingGen() {
 }
 document.getElementById("xingmingGenBtn").addEventListener("click", runXingmingGen);
 document.getElementById("xingmingGenMoreBtn").addEventListener("click", runXingmingGen);
+
+// ===== 公司姓名學 UI =====
+function fillCompanyIndustrySelect() {
+  const sel = document.getElementById("xm-co-industry");
+  if (sel.options.length) return;
+  let h = '<option value="">—（選填）—</option>';
+  XM_INDUSTRY.forEach((it, i) => { h += '<option value="' + i + '">' + it.label + "（" + it.wx + "）</option>"; });
+  sel.innerHTML = h;
+}
+function runXingmingCompany() {
+  const company = document.getElementById("xm-co-name").value.trim();
+  const hint = document.getElementById("xingmingCompanyHint");
+  const card = document.getElementById("xingmingCompanyResultCard");
+  const out = document.getElementById("xingmingCompanyResult");
+  if (!company) { hint.textContent = "請輸入公司字號。"; card.style.display = "none"; return; }
+  if (Array.from(company).length > 8) { hint.textContent = "公司字號請控制在 8 字內（勿含「有限公司」等後綴）。"; return; }
+  const res = calcCompanyName(company);
+  if (res.error) { hint.textContent = res.error; return; }
+  hint.textContent = "";
+  // 負責人生日（選填）
+  const by = document.getElementById("xm-co-byear").value;
+  const bm = document.getElementById("xm-co-bmonth").value;
+  const bd = document.getElementById("xm-co-bday").value;
+  const bt = document.getElementById("xm-co-btime").value;
+  let ownerBazi = null;
+  if (by && bm && bd) {
+    const hasHour = bt !== "";
+    const hour = hasHour ? parseInt(bt, 10) * 2 : 12;
+    try {
+      ownerBazi = calculateBazi({
+        year: parseInt(by, 10), month: parseInt(bm, 10), day: parseInt(bd, 10),
+        hour, minute: 0, gender: document.getElementById("xm-co-gender").value, name: company
+      });
+      ownerBazi.hasHour = hasHour;
+    } catch (e) { ownerBazi = null; }
+  }
+  // 行業（選填）
+  const indIdx = document.getElementById("xm-co-industry").value;
+  let industryWx = null, industryLabel = null;
+  if (indIdx !== "") { industryWx = XM_INDUSTRY[indIdx].wx; industryLabel = XM_INDUSTRY[indIdx].label; }
+  out.innerHTML = buildCompanyHtml(company, res, ownerBazi, industryWx, industryLabel);
+  card.style.display = "block";
+}
+document.getElementById("xingmingCompanyBtn").addEventListener("click", runXingmingCompany);
+document.getElementById("xm-co-name").addEventListener("keydown", function (e) { if (e.key === "Enter") runXingmingCompany(); });
 
 document.getElementById("exportXingmingPdfBtn").addEventListener("click", async function () {
   const btn = this, orig = btn.textContent;

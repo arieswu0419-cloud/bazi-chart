@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=262">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=262">
+<link rel="stylesheet" href="css/style.css?v=263">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=263">
 </head>
 <body>
 
@@ -1299,6 +1299,37 @@
       </div>
       <div id="xingmingGenResult"></div>
     </div>
+
+    <div class="card" id="xingmingCompanyCard">
+      <h2 class="zibai-title" style="font-size:19px">公司姓名學（總格數理・商業吉數）</h2>
+      <div class="form-block">
+        <div class="form-date-row">
+          <div class="field" style="flex:2 1 220px">
+            <label for="xm-co-name">公司字號</label>
+            <input type="text" id="xm-co-name" maxlength="8" placeholder="例：鴻海（勿含「有限公司」等後綴）">
+          </div>
+          <div class="field">
+            <label for="xm-co-industry">行業別（選填）</label>
+            <select id="xm-co-industry"></select>
+          </div>
+          <div class="field zibai-run-field" data-html2canvas-ignore="true">
+            <label>&nbsp;</label>
+            <button type="button" class="btn" id="xingmingCompanyBtn">鑑定</button>
+          </div>
+        </div>
+        <div class="form-date-row">
+          <div class="field"><label for="xm-co-byear">負責人出生西元年（選填）</label><select id="xm-co-byear"></select></div>
+          <div class="field"><label for="xm-co-bmonth">月</label><select id="xm-co-bmonth"></select></div>
+          <div class="field"><label for="xm-co-bday">日</label><select id="xm-co-bday"></select></div>
+          <div class="field"><label for="xm-co-btime">時辰</label><select id="xm-co-btime"></select></div>
+          <div class="field"><label for="xm-co-gender">性別</label><select id="xm-co-gender"><option value="male">男</option><option value="female">女</option></select></div>
+        </div>
+        <div class="zibai-hint" id="xingmingCompanyHint">輸入公司字號按「鑑定」，以總格全名總筆劃之 81 數理判吉凶與商業吉數。加填負責人生日可對照八字喜用五行，選行業別可評行業五行生剋。</div>
+      </div>
+      <div id="xingmingCompanyResultCard" style="display:none">
+        <div id="xingmingCompanyResult"></div>
+      </div>
+    </div>
     </div>
 
     <div id="qimenHongpanView" class="qimen-hongpan" style="display:none">
@@ -1389,35 +1420,35 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=262"></script>
-<script src="js/auth.js?v=262"></script>
+<script src="js/firebase-config.js?v=263"></script>
+<script src="js/auth.js?v=263"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=262"></script>
-<script src="js/dayun-strategy-content.js?v=262"></script>
-<script src="js/shensha-content.js?v=262"></script>
-<script src="js/renge-content.js?v=262"></script>
-<script src="js/renge-engine.js?v=262"></script>
-<script src="js/lifenum-engine.js?v=262"></script>
-<script src="js/mingpian-engine.js?v=262"></script>
-<script src="js/name-strokes-data.js?v=262"></script>
-<script src="js/lunar-convert.js?v=262"></script>
-<script src="js/shuzi-engine.js?v=262"></script>
-<script src="js/jigong-engine.js?v=262"></script>
-<script src="js/guanyin-data.js?v=262"></script>
+<script src="js/bazi-engine.js?v=263"></script>
+<script src="js/dayun-strategy-content.js?v=263"></script>
+<script src="js/shensha-content.js?v=263"></script>
+<script src="js/renge-content.js?v=263"></script>
+<script src="js/renge-engine.js?v=263"></script>
+<script src="js/lifenum-engine.js?v=263"></script>
+<script src="js/mingpian-engine.js?v=263"></script>
+<script src="js/name-strokes-data.js?v=263"></script>
+<script src="js/lunar-convert.js?v=263"></script>
+<script src="js/shuzi-engine.js?v=263"></script>
+<script src="js/jigong-engine.js?v=263"></script>
+<script src="js/guanyin-data.js?v=263"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=262"></script>
-<script src="js/qimen-engine.js?v=262"></script>
-<script src="js/iztro.min.js?v=262"></script>
-<script src="js/cuiwang-engine.js?v=262"></script>
-<script src="js/qimen-shuzi-engine.js?v=262"></script>
-<script src="js/qimen-hexa-content.js?v=262"></script>
-<script src="js/qimen-hongpan-engine.js?v=262"></script>
-<script src="js/qimen-sansheng-engine.js?v=262"></script>
-<script src="js/fengshui-zibai-engine.js?v=262"></script>
-<script src="js/name-kangxi-strokes.js?v=262"></script>
-<script src="js/name-xingming-content.js?v=262"></script>
+<script src="js/jigong-bugua.js?v=263"></script>
+<script src="js/qimen-engine.js?v=263"></script>
+<script src="js/iztro.min.js?v=263"></script>
+<script src="js/cuiwang-engine.js?v=263"></script>
+<script src="js/qimen-shuzi-engine.js?v=263"></script>
+<script src="js/qimen-hexa-content.js?v=263"></script>
+<script src="js/qimen-hongpan-engine.js?v=263"></script>
+<script src="js/qimen-sansheng-engine.js?v=263"></script>
+<script src="js/fengshui-zibai-engine.js?v=263"></script>
+<script src="js/name-kangxi-strokes.js?v=263"></script>
+<script src="js/name-xingming-content.js?v=263"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=262"></script>
+<script src="js/app.js?v=263"></script>
 </body>
 </html>
