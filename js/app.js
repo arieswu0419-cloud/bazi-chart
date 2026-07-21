@@ -3749,6 +3749,78 @@ function xmShengxiaoEval(shengxiao, givenChars) {
   return { z, shengxiao, perChar, xiCount, jiCount, tone };
 }
 
+// ===== 選字產生器 =====
+// 依姓氏（固定）＋八字喜用五行（選填）＋生肖喜／忌字根（選填）＋吉數五格，推薦候選名字用字。
+// 五格吉凶沿用 calcXingming（康熙筆劃）；字義五行取自 XM_NAME_POOL；生肖字根取自 XM_ZODIAC。
+function xmScoreTones(t) {
+  const v = (x) => x === "good" ? 2 : (x === "mixed" ? 0.5 : -5);
+  // 人格／總格加權
+  return v(t.人格) * 1.5 + v(t.總格) * 1.3 + v(t.地格) + v(t.外格);
+}
+function xmGridTonesFor(surname, given) {
+  const r = calcXingming(surname, given);
+  if (r.error) return null;
+  const tone = {};
+  ["天格", "人格", "地格", "外格", "總格"].forEach((k) => {
+    tone[k] = (XM_SHU81[xmReduce81(r.grids[k])] || ["mixed"])[0];
+  });
+  return { grids: r.grids, tone, sancai: r.sancaiTone };
+}
+function xmShuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+// opts: { len:1|2, favSet:[五行]|null（null＝不限）, shengxiao:string|null, limit }
+function xmGenerateNames(surname, opts) {
+  const sx = opts.shengxiao ? XM_ZODIAC[opts.shengxiao] : null;
+  const seen = {}, cands = [];
+  Object.keys(XM_NAME_POOL).forEach((wx) => {
+    if (opts.favSet && opts.favSet.indexOf(wx) === -1) return;
+    Array.from(XM_NAME_POOL[wx]).forEach((ch) => {
+      if (seen[ch]) return;
+      const k = (typeof KANGXI_STROKES !== "undefined") ? KANGXI_STROKES[ch] : null;
+      if (k == null) return;
+      let xiHit = null;
+      if (sx) {
+        const roots = xmCharRoots(ch);
+        if (roots.some((rt) => sx.ji.some((e) => e[0] === rt))) return; // 排除忌字根
+        const x = roots.map((rt) => sx.xi.find((e) => e[0] === rt)).find(Boolean);
+        if (x) xiHit = x[0];
+      }
+      seen[ch] = 1;
+      cands.push({ ch, wx, k, xiHit });
+    });
+  });
+  const pool = xmShuffle(cands);
+  const good = (t) => t === "good", notBad = (t) => t !== "bad";
+  const keep = (tn) => good(tn.人格) && notBad(tn.地格) && notBad(tn.外格) && notBad(tn.總格);
+  const results = [];
+  if (opts.len === 1) {
+    pool.forEach((c) => {
+      const g = xmGridTonesFor(surname, c.ch);
+      if (!g || !keep(g.tone)) return;
+      results.push({ chars: [c], grids: g.grids, tone: g.tone, sancai: g.sancai,
+        score: xmScoreTones(g.tone) + (c.xiHit ? 1 : 0) + (g.sancai === "good" ? 1 : 0) });
+    });
+  } else {
+    const cap = pool.slice(0, 88); // 控制組合數（≤約7700組）
+    for (let i = 0; i < cap.length; i++) {
+      for (let j = 0; j < cap.length; j++) {
+        if (i === j) continue;
+        const c1 = cap[i], c2 = cap[j];
+        const g = xmGridTonesFor(surname, c1.ch + c2.ch);
+        if (!g || !keep(g.tone)) continue;
+        results.push({ chars: [c1, c2], grids: g.grids, tone: g.tone, sancai: g.sancai,
+          score: xmScoreTones(g.tone) + (c1.xiHit ? 1 : 0) + (c2.xiHit ? 1 : 0) + (g.sancai === "good" ? 2 : 0) });
+      }
+    }
+  }
+  results.sort((a, b) => b.score - a.score ||
+    (b.chars.filter((c) => c.xiHit).length - a.chars.filter((c) => c.xiHit).length));
+  return results.slice(0, opts.limit || 24);
+}
+
 function buildXingmingHtml(r, gender, bazi) {
   const gridOrder = ["天格", "人格", "地格", "外格", "總格"];
   const gridRole = { 天格: "祖運・先天（1~15歲）", 人格: "主運・命運中心（一生・35~55歲最顯）", 地格: "前運・少壯（15~35歲）", 外格: "副運・社交外緣", 總格: "後運・中晚年（36歲後）" };
@@ -3877,6 +3949,73 @@ function runXingming() {
 document.getElementById("xingmingRunBtn").addEventListener("click", runXingming);
 ["xm-surname", "xm-given"].forEach((id) =>
   document.getElementById(id).addEventListener("keydown", function (e) { if (e.key === "Enter") runXingming(); }));
+
+// ===== 選字產生器 UI =====
+function xmGenToneMini(tone) {
+  const map = { good: "xm-good", mixed: "xm-mixed", bad: "xm-bad" };
+  return ["人格", "地格", "外格", "總格"].map((k) =>
+    '<span class="xm-gen-dot ' + map[tone[k]] + '">' + k[0] + "</span>").join("");
+}
+function runXingmingGen() {
+  const surname = document.getElementById("xm-surname").value.trim();
+  const hint = document.getElementById("xingmingGenHint");
+  const out = document.getElementById("xingmingGenResult");
+  if (!surname) { hint.textContent = "請先在上方輸入姓氏。"; out.innerHTML = ""; return; }
+  if (surname.length > 2) { hint.textContent = "姓氏限 1～2 字。"; out.innerHTML = ""; return; }
+  if (Array.from(surname).some((c) => xmStrokes(c) == null)) { hint.textContent = "姓氏查無筆劃，請確認為常用中文字。"; out.innerHTML = ""; return; }
+  const len = parseInt(document.getElementById("xm-gen-len").value, 10);
+  const mode = document.getElementById("xm-gen-mode").value; // auto=依八字喜用 / all=不限五行
+  const by = document.getElementById("xm-byear").value;
+  const bm = document.getElementById("xm-bmonth").value;
+  const bd = document.getElementById("xm-bday").value;
+  const bt = document.getElementById("xm-btime").value;
+  let favSet = null, shengxiao = null, note = "";
+  if (by && bm && bd) {
+    const hasHour = bt !== "";
+    const hour = hasHour ? parseInt(bt, 10) * 2 : 12;
+    try {
+      const bazi = calculateBazi({
+        year: parseInt(by, 10), month: parseInt(bm, 10), day: parseInt(bd, 10),
+        hour, minute: 0, gender: document.getElementById("xm-gender").value, name: surname
+      });
+      shengxiao = bazi.shengxiao;
+      if (mode === "auto") {
+        favSet = xmWuxingFavor(bazi, hasHour).primaryFav;
+        note = "喜用五行：" + favSet.join("、") + "　生肖喜字根：" + shengxiao + "（已排除忌字根）";
+      } else {
+        note = "不限五行；生肖喜字根：" + shengxiao + "（已排除忌字根）";
+      }
+    } catch (e) { shengxiao = null; }
+  } else if (mode === "auto") {
+    hint.textContent = "「依八字喜用」需在上方填出生年月日；或將五行依據改為『不限五行』。"; out.innerHTML = ""; return;
+  } else {
+    note = "未填生日，僅依吉數五格排字（不篩五行、不判生肖）。";
+  }
+  const results = xmGenerateNames(surname, { len, favSet: mode === "auto" ? favSet : null, shengxiao, limit: 24 });
+  hint.textContent = note;
+  if (!results.length) {
+    out.innerHTML = '<div class="xm-gen-empty">此姓氏在目前字庫與條件下暫無吉數組合，可改字數、改為『不限五行』或調整生日再試。</div>';
+    return;
+  }
+  const wcls = { 木: 3, 火: 9, 土: 2, 金: 7, 水: 1 };
+  const wxChip = (wx) => '<span class="' + zbWxClass(wcls[wx]) + '">' + wx + "</span>";
+  let h = '<div class="xm-gen-grid">';
+  results.forEach((it) => {
+    const givenTxt = it.chars.map((c) => c.ch).join("");
+    const meta = it.chars.map((c) =>
+      c.ch + "（" + c.k + "劃・" + wxChip(c.wx) + (c.xiHit ? '<span class="xm-gen-xi">喜' + c.xiHit + "</span>" : "") + "）").join(" ");
+    h += '<div class="xm-gen-item">' +
+      '<div class="xm-gen-name"><span class="xm-gen-surname">' + surname + "</span>" + givenTxt + "</div>" +
+      '<div class="xm-gen-meta">' + meta + "</div>" +
+      '<div class="xm-gen-tones">' + xmGenToneMini(it.tone) +
+      '<span class="xm-gen-sancai">三才' + (it.sancai === "good" ? "吉" : it.sancai === "bad" ? "凶" : "半") + "</span></div>" +
+      "</div>";
+  });
+  h += "</div>";
+  out.innerHTML = h;
+}
+document.getElementById("xingmingGenBtn").addEventListener("click", runXingmingGen);
+document.getElementById("xingmingGenMoreBtn").addEventListener("click", runXingmingGen);
 
 document.getElementById("exportXingmingPdfBtn").addEventListener("click", async function () {
   const btn = this, orig = btn.textContent;

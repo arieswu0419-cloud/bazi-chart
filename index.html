@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=261">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=261">
+<link rel="stylesheet" href="css/style.css?v=262">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=262">
 </head>
 <body>
 
@@ -1273,6 +1273,32 @@
       </div>
       <div id="xingmingResult"></div>
     </div>
+
+    <div class="card" id="xingmingGenCard">
+      <h2 class="zibai-title" style="font-size:19px">選字產生器</h2>
+      <div class="form-block">
+        <div class="form-date-row">
+          <div class="field">
+            <label for="xm-gen-len">名字字數</label>
+            <select id="xm-gen-len"><option value="2">兩個字</option><option value="1">一個字</option></select>
+          </div>
+          <div class="field">
+            <label for="xm-gen-mode">五行依據</label>
+            <select id="xm-gen-mode"><option value="auto">依八字喜用（需填生日）</option><option value="all">不限五行</option></select>
+          </div>
+          <div class="field zibai-run-field" data-html2canvas-ignore="true">
+            <label>&nbsp;</label>
+            <button type="button" class="btn" id="xingmingGenBtn">產生用字</button>
+          </div>
+          <div class="field zibai-run-field" data-html2canvas-ignore="true">
+            <label>&nbsp;</label>
+            <button type="button" class="btn secondary" id="xingmingGenMoreBtn">換一批</button>
+          </div>
+        </div>
+        <div class="zibai-hint" id="xingmingGenHint">依上方姓氏（＋生日八字喜用五行、生肖喜字根）與吉數五格，推薦好字；已排除生肖忌字根。字義五行與生肖字根為通用版整理，供參考。</div>
+      </div>
+      <div id="xingmingGenResult"></div>
+    </div>
     </div>
 
     <div id="qimenHongpanView" class="qimen-hongpan" style="display:none">
@@ -1363,35 +1389,35 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=261"></script>
-<script src="js/auth.js?v=261"></script>
+<script src="js/firebase-config.js?v=262"></script>
+<script src="js/auth.js?v=262"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=261"></script>
-<script src="js/dayun-strategy-content.js?v=261"></script>
-<script src="js/shensha-content.js?v=261"></script>
-<script src="js/renge-content.js?v=261"></script>
-<script src="js/renge-engine.js?v=261"></script>
-<script src="js/lifenum-engine.js?v=261"></script>
-<script src="js/mingpian-engine.js?v=261"></script>
-<script src="js/name-strokes-data.js?v=261"></script>
-<script src="js/lunar-convert.js?v=261"></script>
-<script src="js/shuzi-engine.js?v=261"></script>
-<script src="js/jigong-engine.js?v=261"></script>
-<script src="js/guanyin-data.js?v=261"></script>
+<script src="js/bazi-engine.js?v=262"></script>
+<script src="js/dayun-strategy-content.js?v=262"></script>
+<script src="js/shensha-content.js?v=262"></script>
+<script src="js/renge-content.js?v=262"></script>
+<script src="js/renge-engine.js?v=262"></script>
+<script src="js/lifenum-engine.js?v=262"></script>
+<script src="js/mingpian-engine.js?v=262"></script>
+<script src="js/name-strokes-data.js?v=262"></script>
+<script src="js/lunar-convert.js?v=262"></script>
+<script src="js/shuzi-engine.js?v=262"></script>
+<script src="js/jigong-engine.js?v=262"></script>
+<script src="js/guanyin-data.js?v=262"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=261"></script>
-<script src="js/qimen-engine.js?v=261"></script>
-<script src="js/iztro.min.js?v=261"></script>
-<script src="js/cuiwang-engine.js?v=261"></script>
-<script src="js/qimen-shuzi-engine.js?v=261"></script>
-<script src="js/qimen-hexa-content.js?v=261"></script>
-<script src="js/qimen-hongpan-engine.js?v=261"></script>
-<script src="js/qimen-sansheng-engine.js?v=261"></script>
-<script src="js/fengshui-zibai-engine.js?v=261"></script>
-<script src="js/name-kangxi-strokes.js?v=261"></script>
-<script src="js/name-xingming-content.js?v=261"></script>
+<script src="js/jigong-bugua.js?v=262"></script>
+<script src="js/qimen-engine.js?v=262"></script>
+<script src="js/iztro.min.js?v=262"></script>
+<script src="js/cuiwang-engine.js?v=262"></script>
+<script src="js/qimen-shuzi-engine.js?v=262"></script>
+<script src="js/qimen-hexa-content.js?v=262"></script>
+<script src="js/qimen-hongpan-engine.js?v=262"></script>
+<script src="js/qimen-sansheng-engine.js?v=262"></script>
+<script src="js/fengshui-zibai-engine.js?v=262"></script>
+<script src="js/name-kangxi-strokes.js?v=262"></script>
+<script src="js/name-xingming-content.js?v=262"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=261"></script>
+<script src="js/app.js?v=262"></script>
 </body>
 </html>
