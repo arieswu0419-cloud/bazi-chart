@@ -1897,6 +1897,21 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .xm-good { background: #2e9e4b; } .xm-mixed { background: #d08a00; } .xm-bad { background: #c0392b; }
 .xm-sancai { font-size: 14px; line-height: 1.9; background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; }
 .xm-sancai b { color: var(--gold-darker); letter-spacing: 2px; }
+/* 八字五行喜忌配名 / 生肖姓名法 */
+.xm-good-txt { color: #2e9e4b; font-weight: 700; }
+.xm-bad-txt { color: #c0392b; font-weight: 700; }
+.xm-note-inline { color: #c0392b; font-size: 12px; }
+.xm-bazi { font-size: 14px; line-height: 1.9; background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; margin-top: 6px; }
+.xm-bazi-line { margin: 3px 0; }
+.xm-bazi .xm-table-wrap { margin: 6px 0; background: #fff; }
+.xm-bazi-tip { margin-top: 8px; color: #555; font-size: 13px; }
+.xm-sx-note { font-size: 13.5px; color: #555; background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 8px 12px; margin: 6px 0 10px; }
+.xm-sx-roots { display: flex; gap: 12px; flex-wrap: wrap; }
+.xm-sx-col { flex: 1 1 260px; border: 1px solid var(--gold); border-radius: var(--radius); overflow: hidden; }
+.xm-sx-h { padding: 5px 10px; font-weight: 800; color: #fff; }
+.xm-sx-item { padding: 5px 10px; font-size: 13px; border-top: 1px solid #eee5cc; line-height: 1.6; }
+.xm-sx-item b { display: inline-block; min-width: 22px; color: var(--gold-darker); font-size: 15px; }
+.xm-sx-summary { margin-top: 8px; font-size: 14px; }
 
 /* ===== 奇門數字（號碼奇門單宮盤，仿書版圖） ===== */
 h2.qsz-page-title { font-size: 22px; }

@@ -3695,7 +3695,61 @@ function calcXingming(surname, given) {
   };
 }
 
-function buildXingmingHtml(r, gender) {
+// 八字五行喜忌（兩法並陳）：借用 bazi-engine 的 calculateBazi 取四柱→統計五行本氣分數。
+// 扶抑法：同黨（印＋比劫）≥55% 為身強，喜「剋洩耗」（食傷／財／官殺）、忌印比；身弱反之；
+//   45~55% 為中和。缺補法：補全缺／最弱之五行，忌最旺者。名字五格則以主喜用（扶抑為主，
+//   中和取缺補）逐格對照。
+function xmWuxingFavor(bazi, hasHour) {
+  const D = WUXING_OF_GAN[bazi.dayGan];
+  const usePillars = hasHour ? bazi.pillars : bazi.pillars.filter((p) => p.label !== "時柱");
+  const cnt = { 木: 0, 火: 0, 土: 0, 金: 0, 水: 0 };
+  usePillars.forEach((p) => { cnt[p.gan.wuxing] += 1; cnt[p.hideGans[0].wuxing] += 1; });
+  const totalC = Object.values(cnt).reduce((a, b) => a + b, 0);
+  const pct = {};
+  Object.keys(cnt).forEach((k) => { pct[k] = Math.round((cnt[k] / totalC) * 1000) / 10; });
+  const genBy = {}, ctrlBy = {};
+  Object.keys(GENERATES).forEach((k) => { genBy[GENERATES[k]] = k; }); // 生我＝印
+  Object.keys(CONTROLS).forEach((k) => { ctrlBy[CONTROLS[k]] = k; }); // 剋我＝官殺
+  const yin = genBy[D], bijie = D, shishang = GENERATES[D], cai = CONTROLS[D], guansha = ctrlBy[D];
+  const tongPct = Math.round((pct[bijie] + pct[yin]) * 10) / 10;
+  const body = tongPct >= 55 ? "強" : (tongPct <= 45 ? "弱" : "中和");
+  let fuFav, fuAvoid;
+  if (body === "強") { fuFav = [shishang, cai, guansha]; fuAvoid = [bijie, yin]; }
+  else if (body === "弱") { fuFav = [yin, bijie]; fuAvoid = [shishang, cai, guansha]; }
+  else { fuFav = []; fuAvoid = []; }
+  const entries = Object.keys(pct).map((k) => [k, pct[k]]);
+  const minV = Math.min.apply(null, entries.map((e) => e[1]));
+  const maxV = Math.max.apply(null, entries.map((e) => e[1]));
+  const missing = entries.filter((e) => e[1] === 0).map((e) => e[0]);
+  const buFav = missing.length ? missing : entries.filter((e) => e[1] === minV).map((e) => e[0]);
+  const buAvoid = entries.filter((e) => e[1] === maxV).map((e) => e[0]);
+  const primaryFav = fuFav.length ? fuFav : buFav;
+  const primaryAvoid = fuAvoid.length ? fuAvoid : buAvoid;
+  return { D, pct, roles: { yin, bijie, shishang, cai, guansha }, tongPct, body, hasHour,
+    fuFav, fuAvoid, buFav, buAvoid, primaryFav, primaryAvoid };
+}
+
+// 生肖姓名法：逐「名」字偵測字根（XM_ROOT_CHARS），對照該生肖 XM_ZODIAC 的喜／忌字根。
+// 姓氏為承襲不計吉凶，只評名字。
+function xmShengxiaoEval(shengxiao, givenChars) {
+  const z = XM_ZODIAC[shengxiao];
+  if (!z) return null;
+  const perChar = givenChars.map((ch) => {
+    const roots = xmCharRoots(ch);
+    const xi = [], ji = [];
+    roots.forEach((rt) => {
+      const gx = z.xi.find((e) => e[0] === rt); if (gx) xi.push(gx);
+      const gj = z.ji.find((e) => e[0] === rt); if (gj) ji.push(gj);
+    });
+    return { ch, roots, xi, ji };
+  });
+  const xiCount = perChar.reduce((a, c) => a + c.xi.length, 0);
+  const jiCount = perChar.reduce((a, c) => a + c.ji.length, 0);
+  const tone = jiCount > xiCount ? "bad" : (xiCount > jiCount ? "good" : "mixed");
+  return { z, shengxiao, perChar, xiCount, jiCount, tone };
+}
+
+function buildXingmingHtml(r, gender, bazi) {
   const gridOrder = ["天格", "人格", "地格", "外格", "總格"];
   const gridRole = { 天格: "祖運・先天（1~15歲）", 人格: "主運・命運中心（一生・35~55歲最顯）", 地格: "前運・少壯（15~35歲）", 外格: "副運・社交外緣", 總格: "後運・中晚年（36歲後）" };
   // 姓名逐字筆劃
@@ -3723,8 +3777,71 @@ function buildXingmingHtml(r, gender) {
     "；" + (r.sancaiTone === "good" ? "三才相生順暢，基礎穩固、運途順遂。" :
       r.sancaiTone === "bad" ? "三才相剋，多阻逆、宜以人格為主善加調和。" :
         "三才生剋參半，吉凶互見、成敗在人為。") + "</div>";
+  // ===== 八字五行喜忌配名（需出生年月日）=====
+  if (bazi) {
+    const wcls = { 木: 3, 火: 9, 土: 2, 金: 7, 水: 1 };
+    const wxChip = (wx) => '<span class="' + zbWxClass(wcls[wx]) + '" style="font-weight:700">' + wx + "</span>";
+    const fav = xmWuxingFavor(bazi, bazi.hasHour);
+    h += '<div class="zibai-section-title" style="margin-top:18px">八字五行喜忌配名</div>';
+    h += '<div class="xm-bazi">';
+    h += '<div class="xm-bazi-line">國曆：<b>' + bazi.solarText + "</b>　生肖：<b>" + bazi.shengxiao +
+      "</b>　日主：<b>" + bazi.dayGan + "（" + fav.D + "）</b>" +
+      (bazi.hasHour ? "" : '　<span class="xm-note-inline">未填時辰，時柱不計入</span>') + "</div>";
+    h += '<div class="xm-bazi-line">五行分佈：' +
+      ["木", "火", "土", "金", "水"].map((w) => wxChip(w) + " " + fav.pct[w] + "%").join("　") + "</div>";
+    h += '<div class="xm-bazi-line">日主強弱：<b>' +
+      (fav.body === "強" ? "身強" : fav.body === "弱" ? "身弱" : "中和") +
+      "（同黨印比 " + fav.tongPct + "%）</b></div>";
+    h += '<div class="xm-bazi-line">扶抑取用：' +
+      (fav.fuFav.length
+        ? '<span class="xm-good-txt">喜用 ' + fav.fuFav.map(wxChip).join("、") + '</span>　<span class="xm-bad-txt">忌神 ' + fav.fuAvoid.map(wxChip).join("、") + "</span>"
+        : "日主中和、五行均衡，喜忌不顯，宜微調補弱洩旺。") + "</div>";
+    h += '<div class="xm-bazi-line">缺補取用：<span class="xm-good-txt">喜用 ' + fav.buFav.map(wxChip).join("、") +
+      '</span>　<span class="xm-bad-txt">忌神 ' + fav.buAvoid.map(wxChip).join("、") + "</span></div>";
+    h += '<div class="xm-bazi-line">五格契合（以主喜用對照筆劃五行）：</div>';
+    h += '<div class="xm-table-wrap"><table class="xm-table"><thead><tr><th>五格</th><th>筆劃五行</th><th>喜忌</th></tr></thead><tbody>';
+    ["人格", "地格", "外格", "總格"].forEach((name) => {
+      const wx = xmNumWx(r.grids[name]);
+      const tag = fav.primaryFav.indexOf(wx) !== -1 ? xmToneTag("good")
+        : (fav.primaryAvoid.indexOf(wx) !== -1 ? xmToneTag("bad") : xmToneTag("mixed"));
+      h += "<tr><td>" + name + "</td><td>" + wxChip(wx) + "</td><td>" + tag + "</td></tr>";
+    });
+    h += "</tbody></table></div>";
+    h += '<div class="xm-bazi-tip">建議：名字宜多用五行屬 <b>' + fav.primaryFav.join("、") +
+      "</b> 之字（就三才五格派而言即人格／總格筆劃五行落於喜用），少用屬 <b>" + fav.primaryAvoid.join("、") + "</b> 者。</div>";
+    h += "</div>";
+
+    // ===== 生肖姓名法 =====
+    const sx = xmShengxiaoEval(bazi.shengxiao, r.G);
+    if (sx) {
+      h += '<div class="zibai-section-title" style="margin-top:18px">生肖姓名法（生肖' + sx.shengxiao + "）</div>";
+      h += '<div class="xm-sx-note">' + sx.z.note + "</div>";
+      h += '<div class="xm-sx-roots"><div class="xm-sx-col"><div class="xm-sx-h xm-good">喜用字根</div>' +
+        sx.z.xi.map((e) => '<div class="xm-sx-item"><b>' + e[0] + "</b>　" + e[1] + "</div>").join("") + "</div>";
+      h += '<div class="xm-sx-col"><div class="xm-sx-h xm-bad">忌用字根</div>' +
+        sx.z.ji.map((e) => '<div class="xm-sx-item"><b>' + e[0] + "</b>　" + e[1] + "</div>").join("") + "</div></div>";
+      h += '<div class="xm-bazi-line" style="margin-top:10px">名字字根偵測（姓氏承襲不計，只評名字）：</div>';
+      h += '<div class="xm-table-wrap"><table class="xm-table"><thead><tr><th>名字</th><th>偵測字根</th><th>喜／忌</th></tr></thead><tbody>';
+      sx.perChar.forEach((c) => {
+        let cell;
+        if (c.xi.length || c.ji.length) {
+          cell = c.xi.map((e) => '<span class="xm-tone xm-good">喜·' + e[0] + "</span>").join(" ") +
+            (c.xi.length && c.ji.length ? " " : "") +
+            c.ji.map((e) => '<span class="xm-tone xm-bad">忌·' + e[0] + "</span>").join(" ");
+        } else {
+          cell = '<span class="xm-tone xm-mixed">中性</span>';
+        }
+        h += "<tr><td><b>" + c.ch + "</b></td><td>" + (c.roots.length ? c.roots.join("、") : "—") + "</td><td>" + cell + "</td></tr>";
+      });
+      h += "</tbody></table></div>";
+      h += '<div class="xm-sx-summary">綜合：名字共偵測到 <b class="xm-good-txt">喜用 ' + sx.xiCount +
+        ' 處</b>、<b class="xm-bad-txt">忌用 ' + sx.jiCount + " 處</b>　" + xmToneTag(sx.tone) + "</div>";
+    }
+  }
+
   h += '<div class="zibai-disclaimer">※ 姓名學以「人格」為命運中心、參「總格・地格・外格」與「三才配置」綜合，天格為姓不論吉凶；' +
-    "筆劃採康熙字典姓名學筆劃（部首以原形計，如氵作水4畫、艹作艸6畫）。吉凶僅供參考，宜合八字喜忌綜斷。</div>";
+    "筆劃採康熙字典姓名學筆劃（部首以原形計，如氵作水4畫、艹作艸6畫）。八字喜忌採扶抑／缺補兩法並陳，生肖字根為通用版整理，" +
+    "字根偵測以常見用字對照、未收錄者以中性計。吉凶僅供參考，宜合八字喜忌綜斷。</div>";
   return h;
 }
 
@@ -3737,7 +3854,24 @@ function runXingming() {
   const r = calcXingming(surname, given);
   if (r.error) { hint.textContent = r.error; return; }
   hint.textContent = "";
-  document.getElementById("xingmingResult").innerHTML = buildXingmingHtml(r, document.getElementById("xm-gender").value);
+  // 出生年月日（選填）：三者齊備才排八字、生肖喜忌；時辰選填（未填則時柱不計五行）。
+  const by = document.getElementById("xm-byear").value;
+  const bm = document.getElementById("xm-bmonth").value;
+  const bd = document.getElementById("xm-bday").value;
+  const bt = document.getElementById("xm-btime").value; // "" 或 0~11（子~亥）
+  let bazi = null;
+  if (by && bm && bd) {
+    const hasHour = bt !== "";
+    const hour = hasHour ? parseInt(bt, 10) * 2 : 12; // 時辰→代表時（未填以正午取四柱，時柱不計）
+    try {
+      bazi = calculateBazi({
+        year: parseInt(by, 10), month: parseInt(bm, 10), day: parseInt(bd, 10),
+        hour, minute: 0, gender: document.getElementById("xm-gender").value, name: surname + given
+      });
+      bazi.hasHour = hasHour;
+    } catch (e) { bazi = null; }
+  }
+  document.getElementById("xingmingResult").innerHTML = buildXingmingHtml(r, document.getElementById("xm-gender").value, bazi);
   document.getElementById("xingmingCard").style.display = "block";
 }
 document.getElementById("xingmingRunBtn").addEventListener("click", runXingming);
