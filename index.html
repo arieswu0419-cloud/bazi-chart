@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=258">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=258">
+<link rel="stylesheet" href="css/style.css?v=259">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=259">
 </head>
 <body>
 
@@ -38,6 +38,7 @@
       <button type="button" class="main-nav-link" data-feature="名片風水" data-perm="mingpian">名片風水</button>
       <button type="button" class="main-nav-link" data-feature="紫白風水" data-perm="zibai">紫白風水</button>
       <button type="button" class="main-nav-link" data-feature="八宅風水" data-perm="bazhai">八宅風水</button>
+      <button type="button" class="main-nav-link" data-feature="姓名學" data-perm="xingming">姓名學</button>
     </nav>
   </div>
 </header>
@@ -1231,6 +1232,49 @@
     </div>
     </div>
 
+    <div id="xingmingView" style="display:none">
+    <div class="card" id="xingmingFormCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="xingmingBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="zibai-title">姓名學（五格剖象・康熙筆劃）</h2>
+      <div class="form-block">
+        <div class="form-date-row xm-name-row">
+          <div class="field xm-surname-field">
+            <label for="xm-surname">姓氏</label>
+            <input type="text" id="xm-surname" maxlength="2" placeholder="例：王／司馬">
+          </div>
+          <div class="field xm-given-field">
+            <label for="xm-given">名字</label>
+            <input type="text" id="xm-given" maxlength="2" placeholder="例：小明／怡">
+          </div>
+          <div class="field xm-gender-field">
+            <label for="xm-gender">性別</label>
+            <select id="xm-gender"><option value="male">男</option><option value="female">女</option></select>
+          </div>
+          <div class="field zibai-run-field" data-html2canvas-ignore="true">
+            <label>&nbsp;</label>
+            <button type="button" class="btn" id="xingmingRunBtn">鑑定</button>
+          </div>
+        </div>
+        <div class="form-date-row xm-birth-row">
+          <div class="field"><label for="xm-byear">出生西元年（選填）</label><select id="xm-byear"></select></div>
+          <div class="field"><label for="xm-bmonth">月</label><select id="xm-bmonth"></select></div>
+          <div class="field"><label for="xm-bday">日</label><select id="xm-bday"></select></div>
+          <div class="field"><label for="xm-btime">時辰</label><select id="xm-btime"></select></div>
+        </div>
+        <div class="zibai-hint" id="xingmingHint">輸入姓氏與名字（可 1～2 字），按「鑑定」排五格。筆劃採康熙字典姓名學筆劃。</div>
+      </div>
+    </div>
+
+    <div class="card" id="xingmingCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end">
+        <button class="btn secondary" id="exportXingmingPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+      <div id="xingmingResult"></div>
+    </div>
+    </div>
+
     <div id="qimenHongpanView" class="qimen-hongpan" style="display:none">
     <div class="card" id="qimenHongpanFormCard">
       <div class="card-head">
@@ -1319,33 +1363,35 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=258"></script>
-<script src="js/auth.js?v=258"></script>
+<script src="js/firebase-config.js?v=259"></script>
+<script src="js/auth.js?v=259"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=258"></script>
-<script src="js/dayun-strategy-content.js?v=258"></script>
-<script src="js/shensha-content.js?v=258"></script>
-<script src="js/renge-content.js?v=258"></script>
-<script src="js/renge-engine.js?v=258"></script>
-<script src="js/lifenum-engine.js?v=258"></script>
-<script src="js/mingpian-engine.js?v=258"></script>
-<script src="js/name-strokes-data.js?v=258"></script>
-<script src="js/lunar-convert.js?v=258"></script>
-<script src="js/shuzi-engine.js?v=258"></script>
-<script src="js/jigong-engine.js?v=258"></script>
-<script src="js/guanyin-data.js?v=258"></script>
+<script src="js/bazi-engine.js?v=259"></script>
+<script src="js/dayun-strategy-content.js?v=259"></script>
+<script src="js/shensha-content.js?v=259"></script>
+<script src="js/renge-content.js?v=259"></script>
+<script src="js/renge-engine.js?v=259"></script>
+<script src="js/lifenum-engine.js?v=259"></script>
+<script src="js/mingpian-engine.js?v=259"></script>
+<script src="js/name-strokes-data.js?v=259"></script>
+<script src="js/lunar-convert.js?v=259"></script>
+<script src="js/shuzi-engine.js?v=259"></script>
+<script src="js/jigong-engine.js?v=259"></script>
+<script src="js/guanyin-data.js?v=259"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=258"></script>
-<script src="js/qimen-engine.js?v=258"></script>
-<script src="js/iztro.min.js?v=258"></script>
-<script src="js/cuiwang-engine.js?v=258"></script>
-<script src="js/qimen-shuzi-engine.js?v=258"></script>
-<script src="js/qimen-hexa-content.js?v=258"></script>
-<script src="js/qimen-hongpan-engine.js?v=258"></script>
-<script src="js/qimen-sansheng-engine.js?v=258"></script>
-<script src="js/fengshui-zibai-engine.js?v=258"></script>
+<script src="js/jigong-bugua.js?v=259"></script>
+<script src="js/qimen-engine.js?v=259"></script>
+<script src="js/iztro.min.js?v=259"></script>
+<script src="js/cuiwang-engine.js?v=259"></script>
+<script src="js/qimen-shuzi-engine.js?v=259"></script>
+<script src="js/qimen-hexa-content.js?v=259"></script>
+<script src="js/qimen-hongpan-engine.js?v=259"></script>
+<script src="js/qimen-sansheng-engine.js?v=259"></script>
+<script src="js/fengshui-zibai-engine.js?v=259"></script>
+<script src="js/name-kangxi-strokes.js?v=259"></script>
+<script src="js/name-xingming-content.js?v=259"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=258"></script>
+<script src="js/app.js?v=259"></script>
 </body>
 </html>

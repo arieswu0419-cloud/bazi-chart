@@ -40,7 +40,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -58,7 +58,8 @@ function effectivePermissions(data) {
     bazhai: !!raw.bazhai,
     cuiwang: !!raw.cuiwang,
     qimenshuzi: !!raw.qimenshuzi,
-    ziwei: !!raw.ziwei
+    ziwei: !!raw.ziwei,
+    xingming: !!raw.xingming
   };
 }
 
@@ -102,7 +103,7 @@ requireApprovedUser(function (user, data) {
 
   // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
   // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
-  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水", cuiwang: "奇門催旺", qimenshuzi: "奇門數字" };
+  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水", cuiwang: "奇門催旺", qimenshuzi: "奇門數字", xingming: "姓名學" };
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
@@ -150,6 +151,10 @@ requireApprovedUser(function (user, data) {
         showZibaiView();
         return;
       }
+      if (key === "xingming") {
+        showXingmingView();
+        return;
+      }
       if (key === "bazhai") {
         showBazhaiView();
         return;
@@ -164,7 +169,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView", "xingmingView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -3619,6 +3624,144 @@ document.getElementById("exportBazhaiPdfBtn").addEventListener("click", async fu
     btn.disabled = false;
     btn.textContent = originalLabel;
   }
+});
+
+// ================= 姓名學（五格剖象法・熊崎氏；筆劃＝康熙字典姓名學筆劃 name-kangxi-strokes.js）=================
+// 五格：天格＝單姓姓+1／複姓兩姓相加；人格＝姓末+名首；地格＝單名名+1／雙名兩名相加；總格＝全名相加；
+// 外格＝單姓單名2／單姓複名名末+1／複姓單名姓首+1／複姓複名姓首+名末。三才＝天人地格尾數五行。
+// 81 數理吉凶詩訣見 name-xingming-content.js（XM_SHU81），三才生剋見 xmSancaiTone。
+function xmStrokes(ch) {
+  if (typeof KANGXI_STROKES !== "undefined" && KANGXI_STROKES[ch] != null) return KANGXI_STROKES[ch];
+  if (typeof SHUZI_NAME_STROKES !== "undefined" && SHUZI_NAME_STROKES[ch] != null) return SHUZI_NAME_STROKES[ch];
+  return null;
+}
+function xmReduce81(n) { let r = n; while (r > 81) r -= 80; return r; }
+function xmToneTag(t) {
+  const m = { good: ["吉", "xm-good"], mixed: ["半吉", "xm-mixed"], bad: ["凶", "xm-bad"] };
+  const [txt, cls] = m[t] || ["—", ""];
+  return '<span class="xm-tone ' + cls + '">' + txt + "</span>";
+}
+function showXingmingView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("xingmingView").style.display = "";
+  setActiveNav("姓名學");
+  // 選填生日年月日＋時辰下拉（只填一次）
+  const yrSel = document.getElementById("xm-byear");
+  if (!yrSel.options.length) {
+    const nowY = new Date().getFullYear();
+    let yH = '<option value="">—</option>';
+    for (let y = nowY; y >= 1920; y--) yH += '<option value="' + y + '">' + y + "</option>";
+    yrSel.innerHTML = yH;
+    let mH = '<option value="">—</option>', dH = '<option value="">—</option>';
+    for (let m = 1; m <= 12; m++) mH += '<option value="' + m + '">' + m + "</option>";
+    for (let d = 1; d <= 31; d++) dH += '<option value="' + d + '">' + d + "</option>";
+    document.getElementById("xm-bmonth").innerHTML = mH;
+    document.getElementById("xm-bday").innerHTML = dH;
+    const shi = ["不知道時辰", "子(23-01)", "丑(01-03)", "寅(03-05)", "卯(05-07)", "辰(07-09)", "巳(09-11)", "午(11-13)", "未(13-15)", "申(15-17)", "酉(17-19)", "戌(19-21)", "亥(21-23)"];
+    document.getElementById("xm-btime").innerHTML = shi.map((s, i) => '<option value="' + (i === 0 ? "" : i - 1) + '">' + s + "</option>").join("");
+  }
+}
+function hideXingmingView() {
+  document.getElementById("xingmingView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("xingmingBackBtn").addEventListener("click", hideXingmingView);
+
+// 計算五格＋三才＋81數
+function calcXingming(surname, given) {
+  const S = surname.split(""), G = given.split("");
+  const sk = S.map(xmStrokes), gk = G.map(xmStrokes);
+  if (sk.includes(null) || gk.includes(null)) {
+    const miss = S.concat(G).filter((c) => xmStrokes(c) == null);
+    return { error: "查無筆劃：" + miss.join("、") + "（請確認為常用中文字）" };
+  }
+  const tian = S.length === 1 ? sk[0] + 1 : sk[0] + sk[1];
+  const ren = sk[sk.length - 1] + gk[0];
+  const di = G.length === 1 ? gk[0] + 1 : gk[0] + gk[1];
+  const zong = sk.concat(gk).reduce((a, b) => a + b, 0);
+  let wai;
+  if (S.length === 1 && G.length === 1) wai = 2;
+  else if (S.length === 1) wai = gk[gk.length - 1] + 1;
+  else if (G.length === 1) wai = sk[0] + 1;
+  else wai = sk[0] + gk[gk.length - 1];
+  const grids = { 天格: tian, 人格: ren, 地格: di, 外格: wai, 總格: zong };
+  const sancaiWx = [xmNumWx(tian), xmNumWx(ren), xmNumWx(di)];
+  const sancaiTone = xmSancaiTone(sancaiWx[0], sancaiWx[1], sancaiWx[2]);
+  return {
+    S, G, sk, gk, grids, sancaiWx, sancaiTone,
+    charStrokes: S.map((c, i) => [c, sk[i]]).concat(G.map((c, i) => [c, gk[i]]))
+  };
+}
+
+function buildXingmingHtml(r, gender) {
+  const gridOrder = ["天格", "人格", "地格", "外格", "總格"];
+  const gridRole = { 天格: "祖運・先天（1~15歲）", 人格: "主運・命運中心（一生・35~55歲最顯）", 地格: "前運・少壯（15~35歲）", 外格: "副運・社交外緣", 總格: "後運・中晚年（36歲後）" };
+  // 姓名逐字筆劃
+  const charLine = r.charStrokes.map(([c, k]) => c + "（" + k + "）").join("　");
+  let h = '<div class="xm-head"><b>' + r.S.join("") + r.G.join("") + "</b>　" + (gender === "male" ? "男" : "女") +
+    "　姓名筆劃：" + charLine + "（康熙姓名學筆劃）</div>";
+  // 五格表
+  h += '<div class="zibai-section-title">五格剖象</div>';
+  h += '<div class="xm-table-wrap"><table class="xm-table"><thead><tr><th>五格</th><th>筆劃</th><th>五行</th><th>吉凶</th><th>含義</th><th>對應運程</th></tr></thead><tbody>';
+  gridOrder.forEach((name) => {
+    const n = r.grids[name], red = xmReduce81(n), info = XM_SHU81[red] || ["mixed", ""];
+    const wx = xmNumWx(n);
+    h += "<tr" + (name === "人格" ? ' class="xm-row-main"' : "") + "><td>" + name + "</td>" +
+      "<td><b>" + n + "</b>" + (n !== red ? "（" + red + "）" : "") + "</td>" +
+      '<td class="' + zbWxClass({ 木: 3, 火: 9, 土: 2, 金: 7, 水: 1 }[wx]) + '">' + wx + "</td>" +
+      "<td>" + xmToneTag(info[0]) + "</td>" +
+      "<td>" + info[1] + "</td>" +
+      '<td class="xm-role">' + gridRole[name] + "</td></tr>";
+  });
+  h += "</tbody></table></div>";
+  // 三才配置
+  h += '<div class="zibai-section-title" style="margin-top:16px">三才配置（天・人・地）</div>';
+  h += '<div class="xm-sancai">三才：<b>' + r.sancaiWx.join("・") + "</b>　" + xmToneTag(r.sancaiTone) +
+    "　（天格" + r.sancaiWx[0] + "→人格" + r.sancaiWx[1] + "→地格" + r.sancaiWx[2] +
+    "；" + (r.sancaiTone === "good" ? "三才相生順暢，基礎穩固、運途順遂。" :
+      r.sancaiTone === "bad" ? "三才相剋，多阻逆、宜以人格為主善加調和。" :
+        "三才生剋參半，吉凶互見、成敗在人為。") + "</div>";
+  h += '<div class="zibai-disclaimer">※ 姓名學以「人格」為命運中心、參「總格・地格・外格」與「三才配置」綜合，天格為姓不論吉凶；' +
+    "筆劃採康熙字典姓名學筆劃（部首以原形計，如氵作水4畫、艹作艸6畫）。吉凶僅供參考，宜合八字喜忌綜斷。</div>";
+  return h;
+}
+
+function runXingming() {
+  const surname = document.getElementById("xm-surname").value.trim();
+  const given = document.getElementById("xm-given").value.trim();
+  const hint = document.getElementById("xingmingHint");
+  if (!surname || !given) { hint.textContent = "請輸入姓氏與名字。"; return; }
+  if (surname.length > 2 || given.length > 2) { hint.textContent = "姓氏與名字各限 1～2 字。"; return; }
+  const r = calcXingming(surname, given);
+  if (r.error) { hint.textContent = r.error; return; }
+  hint.textContent = "";
+  document.getElementById("xingmingResult").innerHTML = buildXingmingHtml(r, document.getElementById("xm-gender").value);
+  document.getElementById("xingmingCard").style.display = "block";
+}
+document.getElementById("xingmingRunBtn").addEventListener("click", runXingming);
+["xm-surname", "xm-given"].forEach((id) =>
+  document.getElementById(id).addEventListener("keydown", function (e) { if (e.key === "Enter") runXingming(); }));
+
+document.getElementById("exportXingmingPdfBtn").addEventListener("click", async function () {
+  const btn = this, orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "匯出中...";
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 10;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 姓名學", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    const sections = Array.from(document.querySelectorAll("#xingmingCard > *:not(.card-head)"))
+      .filter((el) => getComputedStyle(el).display !== "none");
+    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save("姓名學.pdf");
+  } catch (err) { alert("匯出失敗：" + err.message); }
+  finally { btn.disabled = false; btn.textContent = orig; }
 });
 
 // ================= 觀音棋卦（開門見山卦擺棋＋速查表；資料見 js/guanyin-data.js）=================

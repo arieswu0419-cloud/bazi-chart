@@ -1879,6 +1879,25 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .qhx-table td:first-child { white-space: nowrap; font-weight: 700; }
 .qhx-name { font-weight: 800; white-space: nowrap; }
 
+/* ===== 姓名學（五格剖象） ===== */
+.xm-name-row .field input, .xm-name-row .field select { width: 100%; height: 44px; box-sizing: border-box; padding: 0 10px; font-size: 16px; }
+.xm-surname-field, .xm-given-field { flex: 0 0 130px; }
+.xm-birth-row { margin-top: 10px; }
+.xm-head { font-size: 15px; color: #333; margin-bottom: 12px; line-height: 1.8; }
+.xm-head b { font-size: 20px; color: var(--gold-darker); letter-spacing: 3px; }
+.xm-table-wrap { overflow-x: auto; border: 1px solid var(--gold); border-radius: var(--radius); }
+.xm-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.xm-table th, .xm-table td { border: 1px solid #e0d9c0; padding: 7px 9px; text-align: center; vertical-align: middle; line-height: 1.6; }
+.xm-table th { background: #F7F3E6; color: var(--gold-darker); font-weight: 700; white-space: nowrap; }
+.xm-table td:nth-child(5), .xm-table td:last-child { text-align: left; }
+.xm-row-main { background: #FBF3D6; }
+.xm-row-main td:first-child { font-weight: 800; color: #b8860b; }
+.xm-role { font-size: 12px; color: #777; }
+.xm-tone { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: 5px; font-weight: 800; font-size: 12.5px; color: #fff; }
+.xm-good { background: #2e9e4b; } .xm-mixed { background: #d08a00; } .xm-bad { background: #c0392b; }
+.xm-sancai { font-size: 14px; line-height: 1.9; background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; }
+.xm-sancai b { color: var(--gold-darker); letter-spacing: 2px; }
+
 /* ===== 奇門數字（號碼奇門單宮盤，仿書版圖） ===== */
 h2.qsz-page-title { font-size: 22px; }
 .qsz-input-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0; }
