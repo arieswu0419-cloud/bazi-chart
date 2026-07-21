@@ -261,18 +261,23 @@ function shuziLunarBirthdayToDigits(gYear, gMonth, gDay) {
   return { lunar, rocYear, digits: String(rocYear) + monthStr + dayStr };
 }
 
-// 姓名筆劃：逐字查 js/name-strokes-data.js 的教育部《國語辭典簡編本》筆畫索引字典
-// （https://dict.concised.moe.edu.tw/searchS.jsp，逐一畫數擷取官方收錄字表），把筆劃數字
-// 串接成數字字串，之後跟純數字／車牌一樣走八星滑動配對（PDF只提到「姓名→筆劃」是輸入來源之一，
-// 沒有另外的專屬演算法）
+// 姓名筆劃：與「姓名學」頁採相同的筆劃計算方式（app.js 的 xmStrokes）——優先查
+// 康熙字典姓名學筆劃（js/name-kangxi-strokes.js, KANGXI_STROKES，共20537字），查無時
+// 退回教育部《國語辭典簡編本》筆畫（js/name-strokes-data.js, SHUZI_NAME_STROKES）。把筆劃
+// 數字串接成數字字串，之後跟純數字／車牌一樣走八星滑動配對。
+function shuziNameStrokes(ch) {
+  if (typeof KANGXI_STROKES !== "undefined" && KANGXI_STROKES[ch] != null) return KANGXI_STROKES[ch];
+  if (typeof SHUZI_NAME_STROKES !== "undefined" && SHUZI_NAME_STROKES[ch] != null) return SHUZI_NAME_STROKES[ch];
+  return null;
+}
 function shuziNameToDigits(name) {
   const chars = Array.from(String(name).trim()).filter((c) => c.trim() !== "");
   if (!chars.length) return { error: "請輸入姓名" };
   const breakdown = [];
   for (let i = 0; i < chars.length; i++) {
     const ch = chars[i];
-    const strokes = SHUZI_NAME_STROKES[ch];
-    if (strokes === undefined) {
+    const strokes = shuziNameStrokes(ch);
+    if (strokes == null) {
       return { error: "「" + ch + "」查無筆劃資料，請確認是否為正確的繁體字" };
     }
     breakdown.push({ char: ch, strokes });
