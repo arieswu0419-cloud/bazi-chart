@@ -4326,11 +4326,6 @@ function showZeriView() {
   zeriSyncPicker();
   renderZeri();
 }
-function hideZeriView() {
-  document.getElementById("zeriView").style.display = "none";
-  document.getElementById("mainView").style.display = "";
-  setActiveNav(null);
-}
 function zeriShift(days) {
   const dt = new Date(zeriDate.y, zeriDate.m - 1, zeriDate.d);
   dt.setDate(dt.getDate() + days);
@@ -4405,7 +4400,6 @@ function renderZeri() {
     "</b> 等色系服飾，增添今日能量。</div>";
   document.getElementById("zeriResult").innerHTML = h;
 }
-document.getElementById("zeriBackBtn").addEventListener("click", hideZeriView);
 document.getElementById("zeriGoBtn").addEventListener("click", function () {
   zeriDate = {
     y: parseInt(document.getElementById("zeri-year").value, 10),
