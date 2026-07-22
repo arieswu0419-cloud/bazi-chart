@@ -170,13 +170,16 @@ requireApprovedUser(function (user, data) {
   if (!perms.qimen) document.getElementById("qimenSubmitBtn").style.display = "none";
   if (!perms.ziwei) document.getElementById("qimenDivineSubmitBtn").style.display = "none";
 
-  // 首頁預設開啟第一個有權限的報告頁籤（並顯示命理諮詢子頁籤列）；全無報告權限則顯示提示。
+  // 命理諮詢：預先設定第一個有權限的報告頁籤（面板在隱藏的 mainView 內），供之後點「命理諮詢」時使用；
+  // 全無報告權限則顯示提示。登入後的預設首頁改為「擇日」（免費），見下方 showZeriView()。
   const firstReport = REPORT_ORDER.find((t) => perms[t]);
   if (!firstReport) {
     document.getElementById("permissionNote").style.display = "";
   } else {
-    showMingliTab(firstReport);
+    setActiveTab(firstReport);
   }
+  // 登入後預設首頁＝擇日（免費功能）
+  showZeriView();
 
   // 導覽列上的獨立功能按鍵。data-free＝免費功能（擇日），不檢查權限；其餘（數字易經）檢查權限。
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
@@ -4288,6 +4291,14 @@ document.getElementById("xingmingCoGenMoreBtn").addEventListener("click", runXin
 // ===================== 擇日・電子農民曆（免費功能，不需權限）=====================
 // 資料全部取自 lunar-javascript（宜忌/沖煞/吉神凶煞/彭祖百忌/二十八宿/時辰吉凶等），
 // 輸出一律以 s2t()（js/almanac-s2t.js）轉台灣繁體——該表涵蓋 lunar 全詞庫字集，農民曆輸出零漏字。
+// 依「日柱地支五行」建議今日穿衣開運色（使用者指定色系）。
+const ZERI_WUXING_COLOR = {
+  金: "白色、銀色、金黃色",
+  水: "黑色、深灰色、深藍色",
+  木: "青綠色、青藍色",
+  火: "紅色、紫色、橘色",
+  土: "土黃色、咖啡色、大地色"
+};
 let zeriDate = null;
 function zeriEnsureSelects() {
   const y = document.getElementById("zeri-year");
@@ -4373,6 +4384,25 @@ function renderZeri() {
   const pj = l.getPrevJieQi(true), nj = l.getNextJieQi(true), jToday = l.getJieQi();
   h += '<div class="zeri-jieqi">節氣：' + (jToday ? "<b>今日交" + T(jToday) + "</b>　" : "") +
     "上一節氣 " + T(pj.getName()) + "（" + pj.getSolar().toYmd() + "）　下一節氣 " + T(nj.getName()) + "（" + nj.getSolar().toYmd() + "）</div>";
+
+  // 當日八字四柱＋日柱地支五行→今日穿衣開運色。時柱固定以正午（午時）計，確保年月日柱＝該曆日
+  // （與上方農民曆日干支一致，不受晚子時 23:00 進位影響）。
+  const bazi = calculateBazi({ year: y, month: m, day: d, hour: 12, minute: 0, gender: "male", name: "擇日" });
+  const cols = [
+    { k: "時柱", p: bazi.pillars[0] }, { k: "日柱", p: bazi.pillars[1] },
+    { k: "月柱", p: bazi.pillars[2] }, { k: "年柱", p: bazi.pillars[3] }
+  ];
+  h += '<div class="zibai-section-title" style="margin-top:14px">當日八字四柱</div>';
+  h += '<div class="xm-table-wrap"><table class="xm-table zeri-bazi"><thead><tr>' +
+    cols.map((c) => "<th>" + c.k + "</th>").join("") + "</tr></thead><tbody>";
+  h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.gan.cls + '">' + c.p.gan.char + "</span></td>").join("") + "</tr>";
+  h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.zhi.cls + '">' + c.p.zhi.char + "</span></td>").join("") + "</tr>";
+  h += "</tbody></table></div>";
+  const dz = bazi.pillars[1].zhi;
+  const color = ZERI_WUXING_COLOR[dz.wuxing] || "";
+  h += '<div class="zeri-color">👕 <b>今日開運穿衣色</b>：日柱地支「<span class="' + dz.cls + '">' + dz.char +
+    '</span>」五行屬「<span class="' + dz.cls + '">' + dz.wuxing + '</span>」，宜穿 <b class="' + dz.cls + '">' + color +
+    "</b> 等色系服飾，增添今日能量。</div>";
   document.getElementById("zeriResult").innerHTML = h;
 }
 document.getElementById("zeriBackBtn").addEventListener("click", hideZeriView);

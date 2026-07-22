@@ -1960,6 +1960,10 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .zeri-yiji-b { padding: 10px 12px; font-size: 14px; line-height: 1.9; }
 .zeri-pengzu { background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); padding: 8px 12px; font-size: 13.5px; color: #444; margin: 8px 0; }
 .zeri-jieqi { margin-top: 10px; font-size: 13.5px; color: #555; }
+.zeri-bazi td { padding: 8px; }
+.zeri-bazi .bz-char { font-size: 26px; font-weight: 700; letter-spacing: 1px; }
+.zeri-color { margin-top: 12px; padding: 12px 14px; background: #F7F3E6; border: 1px solid var(--gold); border-radius: var(--radius); font-size: 15px; line-height: 1.9; }
+.zeri-color b { font-size: 16px; }
 
 /* ===== 奇門數字（號碼奇門單宮盤，仿書版圖） ===== */
 h2.qsz-page-title { font-size: 22px; }
