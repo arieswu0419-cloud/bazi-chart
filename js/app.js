@@ -4401,6 +4401,8 @@ document.getElementById("zeriGoBtn").addEventListener("click", function () {
   };
   renderZeri();
 });
+// 命理諮詢已非首頁：其頁面左上「返回」鍵回到首頁（擇日）。
+document.getElementById("mingliBackBtn").addEventListener("click", showZeriView);
 
 document.getElementById("exportXingmingPdfBtn").addEventListener("click", async function () {
   const btn = this, orig = btn.textContent;
