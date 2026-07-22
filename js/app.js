@@ -31,8 +31,34 @@ const NAV_GROUPS = {
   xingmingGroup: { label: "姓名學", members: [
     { perm: "xingming", label: "個人姓名學", show: function () { showXingmingView(); } },
     { perm: "xingming", label: "公司姓名學", show: function () { showXingmingCompanyView(); } }
+  ] },
+  // 命理諮詢群組：原本在首頁內的五個報告頁籤（八字/人格/生命靈數/奇門命盤/紫微）移到上方子頁籤列。
+  // 這五個報告共用同一份出生資料表單、內容仍在 mainView；hideUnpermitted＝沒權限的報告頁籤不顯示
+  //（沿用原本「無權限即隱藏該頁籤」的行為，與其他群組「顯示全部、點擊才提示」不同）。
+  mingliGroup: { label: "命理諮詢", hideUnpermitted: true, members: [
+    { perm: "bazi", label: "八字命卷報告", show: function () { showMingliTab("bazi"); } },
+    { perm: "renge", label: "人格解碼報告", show: function () { showMingliTab("renge"); } },
+    { perm: "lifenum", label: "生命靈數報告", show: function () { showMingliTab("lifenum"); } },
+    { perm: "qimen", label: "奇門命盤報告", show: function () { showMingliTab("qimen"); } },
+    { perm: "ziwei", label: "紫微斗數報告", show: function () { showMingliTab("ziwei"); } }
   ] }
 };
+const MINGLI_LABEL = { bazi: "八字命卷報告", renge: "人格解碼報告", lifenum: "生命靈數報告", qimen: "奇門命盤報告", ziwei: "紫微斗數報告" };
+const REPORT_ORDER = ["bazi", "renge", "lifenum", "qimen", "ziwei"];
+let currentReportTab = "bazi";
+// 命理諮詢：切換到某報告頁籤（顯示 mainView、切面板、反白命理諮詢群組與子頁籤）。
+function showMingliTab(tab) {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "";
+  setActiveTab(tab);
+  setActiveNav(MINGLI_LABEL[tab]);
+}
+// 只更新子頁籤列的反白（表單送出鈕產生報告後、面板切換時用，不重建整條列）。
+function refreshSubNavActive(activeLabel) {
+  document.querySelectorAll("#subNavInner .sub-nav-link").forEach((b) => {
+    b.classList.toggle("active", b.textContent === activeLabel);
+  });
+}
 function findNavGroupByLabel(label) {
   for (const gk in NAV_GROUPS) {
     const m = NAV_GROUPS[gk].members.find((x) => x.label === label);
@@ -47,6 +73,7 @@ function renderSubNav(groupKey, activeLabel) {
   const grp = NAV_GROUPS[groupKey];
   inner.innerHTML = "";
   grp.members.forEach((m) => {
+    if (grp.hideUnpermitted && (!currentPerms || !currentPerms[m.perm])) return; // 無權限的報告頁籤不顯示
     const b = document.createElement("button");
     b.type = "button";
     b.className = "sub-nav-link" + (m.label === activeLabel ? " active" : "");
@@ -57,7 +84,7 @@ function renderSubNav(groupKey, activeLabel) {
     });
     inner.appendChild(b);
   });
-  wrap.style.display = "";
+  wrap.style.display = inner.children.length ? "" : "none";
 }
 
 // 上方綠色導覽列的「目前所在頁面」反白狀態：離開「命理諮詢」進到子頁面時，該按鍵（或其所屬群組按鍵）反白；
@@ -66,9 +93,10 @@ function setActiveNav(feature) {
   document.querySelectorAll(".main-nav-link").forEach((el) => el.classList.remove("active"));
   const subNav = document.getElementById("subNav");
   if (!feature) {
-    const homeLink = document.querySelector(".main-nav-link:not([data-feature]):not([data-group])");
-    if (homeLink) homeLink.classList.add("active");
-    if (subNav) subNav.style.display = "none";
+    // 回命理諮詢（首頁）：反白命理諮詢群組按鍵，並顯示報告子頁籤列（反白目前所在報告）。
+    const gbtn = document.querySelector('.main-nav-link[data-group="mingliGroup"]');
+    if (gbtn) gbtn.classList.add("active");
+    renderSubNav("mingliGroup", MINGLI_LABEL[currentReportTab]);
     return;
   }
   const grp = findNavGroupByLabel(feature);
@@ -135,32 +163,19 @@ requireApprovedUser(function (user, data) {
   const perms = effectivePermissions(data);
   currentPerms = perms;
 
-  if (!perms.bazi) {
-    document.getElementById("baziSubmitBtn").style.display = "none";
-    document.getElementById("tabBazi").style.display = "none";
-  }
-  if (!perms.renge) {
-    document.getElementById("rengeSubmitBtn").style.display = "none";
-    document.getElementById("tabRenge").style.display = "none";
-  }
-  if (!perms.lifenum) {
-    document.getElementById("lifenumSubmitBtn").style.display = "none";
-    document.getElementById("tabLifenum").style.display = "none";
-  }
-  if (!perms.qimen) {
-    document.getElementById("qimenSubmitBtn").style.display = "none";
-    document.getElementById("tabQimen").style.display = "none";
-  }
-  if (!perms.ziwei) {
-    document.getElementById("qimenDivineSubmitBtn").style.display = "none";
-    document.getElementById("tabZiwei").style.display = "none";
-  }
+  // 報告頁籤已移到上方子頁籤列（見 mingliGroup / renderSubNav 依權限顯示）；表單送出鈕仍依權限隱藏。
+  if (!perms.bazi) document.getElementById("baziSubmitBtn").style.display = "none";
+  if (!perms.renge) document.getElementById("rengeSubmitBtn").style.display = "none";
+  if (!perms.lifenum) document.getElementById("lifenumSubmitBtn").style.display = "none";
+  if (!perms.qimen) document.getElementById("qimenSubmitBtn").style.display = "none";
+  if (!perms.ziwei) document.getElementById("qimenDivineSubmitBtn").style.display = "none";
 
-  if (!perms.bazi && !perms.renge && !perms.lifenum && !perms.qimen && !perms.ziwei) {
+  // 首頁預設開啟第一個有權限的報告頁籤（並顯示命理諮詢子頁籤列）；全無報告權限則顯示提示。
+  const firstReport = REPORT_ORDER.find((t) => perms[t]);
+  if (!firstReport) {
     document.getElementById("permissionNote").style.display = "";
-  } else if (!perms.bazi) {
-    // 預設頁籤是八字報告，如果這個人沒有八字權限，切到他有權限的第一個頁籤，避免打開就是空白頁
-    setActiveTab(perms.renge ? "renge" : (perms.lifenum ? "lifenum" : (perms.qimen ? "qimen" : "ziwei")));
+  } else {
+    showMingliTab(firstReport);
   }
 
   // 導覽列上的獨立功能按鍵（數字易經／姓名學）：檢查權限後直接切換到該畫面。
@@ -171,10 +186,18 @@ requireApprovedUser(function (user, data) {
       if (key === "fengshui") { showShuziView(); return; }
     });
   });
-  // 群組按鍵（奇門遁甲／象棋卜卦／堪輿風水）：開啟該群組第一個有權限的子頁籤（權限連動）。
+  // 群組按鍵（命理諮詢／奇門遁甲／象棋卜卦／堪輿風水）：開啟該群組第一個有權限的子頁籤（權限連動）。
+  // 命理諮詢＝首頁，點了回到目前所在的報告頁籤（若仍有權限），否則第一個有權限的報告。
   document.querySelectorAll(".main-nav-link[data-group]").forEach((btn) => {
-    const grp = NAV_GROUPS[btn.dataset.group];
+    const gk = btn.dataset.group;
+    const grp = NAV_GROUPS[gk];
     btn.addEventListener("click", function () {
+      if (gk === "mingliGroup") {
+        const t = perms[currentReportTab] ? currentReportTab : REPORT_ORDER.find((x) => perms[x]);
+        if (!t) { showToast("此功能您未發放權限", "error"); return; }
+        showMingliTab(t);
+        return;
+      }
       const first = grp && grp.members.find((m) => perms[m.perm]);
       if (!first) { showToast("此功能您未發放權限", "error"); return; }
       first.show();
@@ -274,23 +297,16 @@ function getBirthTimeVal() {
 }
 
 // 頁籤切換：八字報告／人格解碼報告／生命靈數／奇門遁甲／紫微斗數
+// 報告頁籤切換：只切換面板顯示＋記住目前報告＋更新上方子頁籤列反白（頁籤鈕已移到 mingliGroup 子頁籤列）。
 function setActiveTab(tab) {
-  document.getElementById("tabBazi").classList.toggle("active", tab === "bazi");
-  document.getElementById("tabRenge").classList.toggle("active", tab === "renge");
-  document.getElementById("tabLifenum").classList.toggle("active", tab === "lifenum");
-  document.getElementById("tabQimen").classList.toggle("active", tab === "qimen");
-  document.getElementById("tabZiwei").classList.toggle("active", tab === "ziwei");
+  currentReportTab = tab;
   document.getElementById("baziTabPanel").style.display = tab === "bazi" ? "" : "none";
   document.getElementById("rengeTabPanel").style.display = tab === "renge" ? "" : "none";
   document.getElementById("lifenumTabPanel").style.display = tab === "lifenum" ? "" : "none";
   document.getElementById("qimenTabPanel").style.display = tab === "qimen" ? "" : "none";
   document.getElementById("ziweiTabPanel").style.display = tab === "ziwei" ? "" : "none";
+  refreshSubNavActive(MINGLI_LABEL[tab]);
 }
-document.getElementById("tabBazi").addEventListener("click", function () { setActiveTab("bazi"); });
-document.getElementById("tabRenge").addEventListener("click", function () { setActiveTab("renge"); });
-document.getElementById("tabLifenum").addEventListener("click", function () { setActiveTab("lifenum"); });
-document.getElementById("tabQimen").addEventListener("click", function () { setActiveTab("qimen"); });
-document.getElementById("tabZiwei").addEventListener("click", function () { setActiveTab("ziwei"); });
 
 document.getElementById("rengeSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();
