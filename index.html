@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=263">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=263">
+<link rel="stylesheet" href="css/style.css?v=264">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=264">
 </head>
 <body>
 
@@ -27,21 +27,18 @@
     </div>
     <nav class="main-nav" id="mainNav">
       <a href="index.html" class="main-nav-link active">命理諮詢</a>
-      <button type="button" class="main-nav-link" data-feature="奇門藍盤" data-perm="qimenDunjia">奇門藍盤</button>
-      <button type="button" class="main-nav-link" data-feature="奇門紅盤" data-perm="qimenHongpan">奇門紅盤</button>
-      <button type="button" class="main-nav-link" data-feature="奇門數字" data-perm="qimenshuzi">奇門數字</button>
-      <button type="button" class="main-nav-link" data-feature="奇門催旺" data-perm="cuiwang">奇門催旺</button>
-      <button type="button" class="main-nav-link" data-feature="奇門三勝宮" data-perm="qimenSansheng">奇門三勝宮</button>
-      <button type="button" class="main-nav-link" data-feature="觀音棋卦" data-perm="guanyin">觀音棋卦</button>
-      <button type="button" class="main-nav-link" data-feature="濟公棋卦" data-perm="jigong">濟公棋卦</button>
+      <button type="button" class="main-nav-link" data-group="qimenGroup">奇門遁甲</button>
+      <button type="button" class="main-nav-link" data-group="chessGroup">象棋卜卦</button>
       <button type="button" class="main-nav-link" data-feature="數字易經" data-perm="fengshui">數字易經</button>
-      <button type="button" class="main-nav-link" data-feature="名片風水" data-perm="mingpian">名片風水</button>
-      <button type="button" class="main-nav-link" data-feature="紫白風水" data-perm="zibai">紫白風水</button>
-      <button type="button" class="main-nav-link" data-feature="八宅風水" data-perm="bazhai">八宅風水</button>
+      <button type="button" class="main-nav-link" data-group="kanyuGroup">堪輿風水</button>
       <button type="button" class="main-nav-link" data-feature="姓名學" data-perm="xingming">姓名學</button>
     </nav>
   </div>
 </header>
+
+<div class="sub-nav-wrap" id="subNav" style="display:none">
+  <div class="container"><div class="sub-nav" id="subNavInner"></div></div>
+</div>
 
 <main class="app">
   <div class="container">
@@ -1420,35 +1417,35 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=263"></script>
-<script src="js/auth.js?v=263"></script>
+<script src="js/firebase-config.js?v=264"></script>
+<script src="js/auth.js?v=264"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=263"></script>
-<script src="js/dayun-strategy-content.js?v=263"></script>
-<script src="js/shensha-content.js?v=263"></script>
-<script src="js/renge-content.js?v=263"></script>
-<script src="js/renge-engine.js?v=263"></script>
-<script src="js/lifenum-engine.js?v=263"></script>
-<script src="js/mingpian-engine.js?v=263"></script>
-<script src="js/name-strokes-data.js?v=263"></script>
-<script src="js/lunar-convert.js?v=263"></script>
-<script src="js/shuzi-engine.js?v=263"></script>
-<script src="js/jigong-engine.js?v=263"></script>
-<script src="js/guanyin-data.js?v=263"></script>
+<script src="js/bazi-engine.js?v=264"></script>
+<script src="js/dayun-strategy-content.js?v=264"></script>
+<script src="js/shensha-content.js?v=264"></script>
+<script src="js/renge-content.js?v=264"></script>
+<script src="js/renge-engine.js?v=264"></script>
+<script src="js/lifenum-engine.js?v=264"></script>
+<script src="js/mingpian-engine.js?v=264"></script>
+<script src="js/name-strokes-data.js?v=264"></script>
+<script src="js/lunar-convert.js?v=264"></script>
+<script src="js/shuzi-engine.js?v=264"></script>
+<script src="js/jigong-engine.js?v=264"></script>
+<script src="js/guanyin-data.js?v=264"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=263"></script>
-<script src="js/qimen-engine.js?v=263"></script>
-<script src="js/iztro.min.js?v=263"></script>
-<script src="js/cuiwang-engine.js?v=263"></script>
-<script src="js/qimen-shuzi-engine.js?v=263"></script>
-<script src="js/qimen-hexa-content.js?v=263"></script>
-<script src="js/qimen-hongpan-engine.js?v=263"></script>
-<script src="js/qimen-sansheng-engine.js?v=263"></script>
-<script src="js/fengshui-zibai-engine.js?v=263"></script>
-<script src="js/name-kangxi-strokes.js?v=263"></script>
-<script src="js/name-xingming-content.js?v=263"></script>
+<script src="js/jigong-bugua.js?v=264"></script>
+<script src="js/qimen-engine.js?v=264"></script>
+<script src="js/iztro.min.js?v=264"></script>
+<script src="js/cuiwang-engine.js?v=264"></script>
+<script src="js/qimen-shuzi-engine.js?v=264"></script>
+<script src="js/qimen-hexa-content.js?v=264"></script>
+<script src="js/qimen-hongpan-engine.js?v=264"></script>
+<script src="js/qimen-sansheng-engine.js?v=264"></script>
+<script src="js/fengshui-zibai-engine.js?v=264"></script>
+<script src="js/name-kangxi-strokes.js?v=264"></script>
+<script src="js/name-xingming-content.js?v=264"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=263"></script>
+<script src="js/app.js?v=264"></script>
 </body>
 </html>

@@ -7,17 +7,74 @@ let currentLifenum = null;
 let currentQimen = null;
 let currentQimenDunjia = null;
 
-// 上方綠色導覽列的「目前所在頁面」反白狀態：離開「命理諮詢」進到名片風水/數字易經/濟公棋卦等子頁面時，
-// 該子頁面的按鍵要換成反白（跟命理諮詢原本的樣式一樣，見 .main-nav-link.active），命理諮詢本身要跟著
-// 退回一般樣式；傳 null 代表回到命理諮詢（首頁）。
+// 導覽群組：奇門遁甲／象棋卜卦／堪輿風水三個群組，各自把原本獨立的功能收成群組下的「獨立頁籤」。
+// 每個成員仍沿用自己的權限鍵（perm），點群組按鍵開啟第一個有權限的頁籤，點子頁籤各自檢查權限（連動）。
+// 數字易經／姓名學維持為導覽列上的獨立按鍵（不歸群組）。
+const NAV_GROUPS = {
+  qimenGroup: { label: "奇門遁甲", members: [
+    { perm: "qimenDunjia", label: "奇門藍盤", show: function () { showQimenDunjiaView(); } },
+    { perm: "qimenHongpan", label: "奇門紅盤", show: function () { showQimenHongpanView(); } },
+    { perm: "qimenshuzi", label: "奇門數字", show: function () { showQimenShuziView(); } },
+    { perm: "cuiwang", label: "奇門催旺", show: function () { showCuiwangView(); } },
+    { perm: "qimenSansheng", label: "奇門三勝宮", show: function () { showQimenSanshengView(); } }
+  ] },
+  chessGroup: { label: "象棋卜卦", members: [
+    { perm: "guanyin", label: "觀音棋卦", show: function () { showGuanyinView(); } },
+    { perm: "jigong", label: "濟公棋卦", show: function () { showJigongView(); } }
+  ] },
+  kanyuGroup: { label: "堪輿風水", members: [
+    { perm: "mingpian", label: "名片風水", show: function () { showMingpianView(); } },
+    { perm: "zibai", label: "紫白風水", show: function () { showZibaiView(); } },
+    { perm: "bazhai", label: "八宅風水", show: function () { showBazhaiView(); } }
+  ] }
+};
+function findNavGroupByLabel(label) {
+  for (const gk in NAV_GROUPS) {
+    const m = NAV_GROUPS[gk].members.find((x) => x.label === label);
+    if (m) return { groupKey: gk, group: NAV_GROUPS[gk], member: m };
+  }
+  return null;
+}
+// 建立群組子頁籤列：列出該群組所有成員，反白目前頁籤；點子頁籤先檢查權限再切換（權限連動）。
+function renderSubNav(groupKey, activeLabel) {
+  const wrap = document.getElementById("subNav");
+  const inner = document.getElementById("subNavInner");
+  const grp = NAV_GROUPS[groupKey];
+  inner.innerHTML = "";
+  grp.members.forEach((m) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "sub-nav-link" + (m.label === activeLabel ? " active" : "");
+    b.textContent = m.label;
+    b.addEventListener("click", function () {
+      if (!currentPerms || !currentPerms[m.perm]) { showToast("此功能您未發放權限", "error"); return; }
+      m.show();
+    });
+    inner.appendChild(b);
+  });
+  wrap.style.display = "";
+}
+
+// 上方綠色導覽列的「目前所在頁面」反白狀態：離開「命理諮詢」進到子頁面時，該按鍵（或其所屬群組按鍵）反白；
+// 群組成員頁面另外顯示群組子頁籤列。傳 null 代表回到命理諮詢（首頁），並收起子頁籤列。
 function setActiveNav(feature) {
   document.querySelectorAll(".main-nav-link").forEach((el) => el.classList.remove("active"));
-  if (feature) {
+  const subNav = document.getElementById("subNav");
+  if (!feature) {
+    const homeLink = document.querySelector(".main-nav-link:not([data-feature]):not([data-group])");
+    if (homeLink) homeLink.classList.add("active");
+    if (subNav) subNav.style.display = "none";
+    return;
+  }
+  const grp = findNavGroupByLabel(feature);
+  if (grp) {
+    const gbtn = document.querySelector('.main-nav-link[data-group="' + grp.groupKey + '"]');
+    if (gbtn) gbtn.classList.add("active");
+    renderSubNav(grp.groupKey, feature);
+  } else {
     const btn = document.querySelector('.main-nav-link[data-feature="' + feature + '"]');
     if (btn) btn.classList.add("active");
-  } else {
-    const homeLink = document.querySelector(".main-nav-link:not([data-feature])");
-    if (homeLink) homeLink.classList.add("active");
+    if (subNav) subNav.style.display = "none";
   }
 }
 
@@ -101,65 +158,22 @@ requireApprovedUser(function (user, data) {
     setActiveTab(perms.renge ? "renge" : (perms.lifenum ? "lifenum" : (perms.qimen ? "qimen" : "ziwei")));
   }
 
-  // 上方綠色區塊的新功能導覽按鍵：名片風水／數字易經已經開發完成，直接切換到該畫面；
-  // 其餘還在開發中的功能維持提示（權限欄位名稱仍沿用舊的 fengshui，只改畫面上顯示的名稱）
-  const navPermKeys = { qimenDunjia: "奇門藍盤", qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦", fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水", cuiwang: "奇門催旺", qimenshuzi: "奇門數字", xingming: "姓名學" };
+  // 導覽列上的獨立功能按鍵（數字易經／姓名學）：檢查權限後直接切換到該畫面。
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
-      if (!perms[key]) {
-        showToast("此功能您未發放權限", "error");
-        return;
-      }
-      if (key === "mingpian") {
-        showMingpianView();
-        return;
-      }
-      if (key === "fengshui") {
-        showShuziView();
-        return;
-      }
-      if (key === "jigong") {
-        showJigongView();
-        return;
-      }
-      if (key === "guanyin") {
-        showGuanyinView();
-        return;
-      }
-      if (key === "qimenDunjia") {
-        showQimenDunjiaView();
-        return;
-      }
-      if (key === "qimenHongpan") {
-        showQimenHongpanView();
-        return;
-      }
-      if (key === "cuiwang") {
-        showCuiwangView();
-        return;
-      }
-      if (key === "qimenshuzi") {
-        showQimenShuziView();
-        return;
-      }
-      if (key === "qimenSansheng") {
-        showQimenSanshengView();
-        return;
-      }
-      if (key === "zibai") {
-        showZibaiView();
-        return;
-      }
-      if (key === "xingming") {
-        showXingmingView();
-        return;
-      }
-      if (key === "bazhai") {
-        showBazhaiView();
-        return;
-      }
-      showToast(navPermKeys[key] + "功能開發中，敬請期待。", "info");
+      if (!perms[key]) { showToast("此功能您未發放權限", "error"); return; }
+      if (key === "fengshui") { showShuziView(); return; }
+      if (key === "xingming") { showXingmingView(); return; }
+    });
+  });
+  // 群組按鍵（奇門遁甲／象棋卜卦／堪輿風水）：開啟該群組第一個有權限的子頁籤（權限連動）。
+  document.querySelectorAll(".main-nav-link[data-group]").forEach((btn) => {
+    const grp = NAV_GROUPS[btn.dataset.group];
+    btn.addEventListener("click", function () {
+      const first = grp && grp.members.find((m) => perms[m.perm]);
+      if (!first) { showToast("此功能您未發放權限", "error"); return; }
+      first.show();
     });
   });
 

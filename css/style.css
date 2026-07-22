@@ -96,6 +96,23 @@ a { color: var(--gold-darker); }
 }
 .main-nav-link:hover { background: rgba(255, 255, 255, 0.4); }
 .main-nav-link.active { background: #fff; color: var(--gold-darker); }
+/* 群組子頁籤列（奇門遁甲／象棋卜卦／堪輿風水 各自的獨立頁籤）：綠色標題列下方的次級頁籤帶 */
+.sub-nav-wrap { background: #F7F3E6; border-bottom: 1px solid var(--gold); }
+.sub-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 8px 0; }
+.sub-nav-link {
+  background: #fff;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  padding: 5px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-darker);
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.4;
+}
+.sub-nav-link:hover { background: #F7F3E6; }
+.sub-nav-link.active { background: var(--logo-green); color: #fff; border-color: var(--logo-green); }
 .brand {
   display: flex;
   align-items: center;
