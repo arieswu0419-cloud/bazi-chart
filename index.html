@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=266">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=266">
+<link rel="stylesheet" href="css/style.css?v=267">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=267">
 </head>
 <body>
 
@@ -32,6 +32,7 @@
       <button type="button" class="main-nav-link" data-feature="數字易經" data-perm="fengshui">數字易經</button>
       <button type="button" class="main-nav-link" data-group="kanyuGroup">堪輿風水</button>
       <button type="button" class="main-nav-link" data-group="xingmingGroup">姓名學</button>
+      <button type="button" class="main-nav-link" data-feature="擇日" data-free="1">擇日</button>
     </nav>
   </div>
 </header>
@@ -1352,6 +1353,30 @@
     </div>
     </div>
 
+    <div id="zeriView" style="display:none">
+    <div class="card" id="zeriCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="zeriBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
+      <h2 class="zibai-title">擇日・電子農民曆</h2>
+      <div class="form-block" data-html2canvas-ignore="true">
+        <div class="form-date-row">
+          <div class="field"><label for="zeri-year">西元年</label><select id="zeri-year"></select></div>
+          <div class="field"><label for="zeri-month">月</label><select id="zeri-month"></select></div>
+          <div class="field"><label for="zeri-day">日</label><select id="zeri-day"></select></div>
+          <div class="field zibai-run-field"><label>&nbsp;</label><button type="button" class="btn" id="zeriGoBtn">查詢</button></div>
+        </div>
+        <div class="zeri-navrow">
+          <button type="button" class="btn secondary" id="zeriPrevBtn">← 前一天</button>
+          <button type="button" class="btn secondary" id="zeriTodayBtn">回今天</button>
+          <button type="button" class="btn secondary" id="zeriNextBtn">後一天 →</button>
+        </div>
+        <div class="zibai-hint">免費工具，資料以傳統農民曆通則列示（宜忌、沖煞、吉神凶煞、時辰吉凶、彭祖百忌等），僅供參考。</div>
+      </div>
+      <div id="zeriResult"></div>
+    </div>
+    </div>
+
     <div id="qimenHongpanView" class="qimen-hongpan" style="display:none">
     <div class="card" id="qimenHongpanFormCard">
       <div class="card-head">
@@ -1440,35 +1465,36 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=266"></script>
-<script src="js/auth.js?v=266"></script>
+<script src="js/firebase-config.js?v=267"></script>
+<script src="js/auth.js?v=267"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=266"></script>
-<script src="js/dayun-strategy-content.js?v=266"></script>
-<script src="js/shensha-content.js?v=266"></script>
-<script src="js/renge-content.js?v=266"></script>
-<script src="js/renge-engine.js?v=266"></script>
-<script src="js/lifenum-engine.js?v=266"></script>
-<script src="js/mingpian-engine.js?v=266"></script>
-<script src="js/name-strokes-data.js?v=266"></script>
-<script src="js/lunar-convert.js?v=266"></script>
-<script src="js/shuzi-engine.js?v=266"></script>
-<script src="js/jigong-engine.js?v=266"></script>
-<script src="js/guanyin-data.js?v=266"></script>
+<script src="js/bazi-engine.js?v=267"></script>
+<script src="js/dayun-strategy-content.js?v=267"></script>
+<script src="js/shensha-content.js?v=267"></script>
+<script src="js/renge-content.js?v=267"></script>
+<script src="js/renge-engine.js?v=267"></script>
+<script src="js/lifenum-engine.js?v=267"></script>
+<script src="js/mingpian-engine.js?v=267"></script>
+<script src="js/name-strokes-data.js?v=267"></script>
+<script src="js/lunar-convert.js?v=267"></script>
+<script src="js/shuzi-engine.js?v=267"></script>
+<script src="js/jigong-engine.js?v=267"></script>
+<script src="js/guanyin-data.js?v=267"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=266"></script>
-<script src="js/qimen-engine.js?v=266"></script>
-<script src="js/iztro.min.js?v=266"></script>
-<script src="js/cuiwang-engine.js?v=266"></script>
-<script src="js/qimen-shuzi-engine.js?v=266"></script>
-<script src="js/qimen-hexa-content.js?v=266"></script>
-<script src="js/qimen-hongpan-engine.js?v=266"></script>
-<script src="js/qimen-sansheng-engine.js?v=266"></script>
-<script src="js/fengshui-zibai-engine.js?v=266"></script>
-<script src="js/name-kangxi-strokes.js?v=266"></script>
-<script src="js/name-xingming-content.js?v=266"></script>
+<script src="js/jigong-bugua.js?v=267"></script>
+<script src="js/qimen-engine.js?v=267"></script>
+<script src="js/iztro.min.js?v=267"></script>
+<script src="js/cuiwang-engine.js?v=267"></script>
+<script src="js/qimen-shuzi-engine.js?v=267"></script>
+<script src="js/qimen-hexa-content.js?v=267"></script>
+<script src="js/qimen-hongpan-engine.js?v=267"></script>
+<script src="js/qimen-sansheng-engine.js?v=267"></script>
+<script src="js/fengshui-zibai-engine.js?v=267"></script>
+<script src="js/name-kangxi-strokes.js?v=267"></script>
+<script src="js/name-xingming-content.js?v=267"></script>
+<script src="js/almanac-s2t.js?v=267"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=266"></script>
+<script src="js/app.js?v=267"></script>
 </body>
 </html>

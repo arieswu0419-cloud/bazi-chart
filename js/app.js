@@ -178,10 +178,14 @@ requireApprovedUser(function (user, data) {
     showMingliTab(firstReport);
   }
 
-  // 導覽列上的獨立功能按鍵（數字易經／姓名學）：檢查權限後直接切換到該畫面。
+  // 導覽列上的獨立功能按鍵。data-free＝免費功能（擇日），不檢查權限；其餘（數字易經）檢查權限。
   document.querySelectorAll(".main-nav-link[data-feature]").forEach((btn) => {
     const key = btn.dataset.perm;
     btn.addEventListener("click", function () {
+      if (btn.dataset.free) {
+        if (btn.dataset.feature === "擇日") showZeriView();
+        return;
+      }
       if (!perms[key]) { showToast("此功能您未發放權限", "error"); return; }
       if (key === "fengshui") { showShuziView(); return; }
     });
@@ -210,7 +214,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView", "xingmingView", "xingmingCompanyView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView", "xingmingView", "xingmingCompanyView", "zeriView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -4280,6 +4284,112 @@ function runXingmingCompanyGen() {
 }
 document.getElementById("xingmingCoGenBtn").addEventListener("click", runXingmingCompanyGen);
 document.getElementById("xingmingCoGenMoreBtn").addEventListener("click", runXingmingCompanyGen);
+
+// ===================== 擇日・電子農民曆（免費功能，不需權限）=====================
+// 資料全部取自 lunar-javascript（宜忌/沖煞/吉神凶煞/彭祖百忌/二十八宿/時辰吉凶等），
+// 輸出一律以 s2t()（js/almanac-s2t.js）轉台灣繁體——該表涵蓋 lunar 全詞庫字集，農民曆輸出零漏字。
+let zeriDate = null;
+function zeriEnsureSelects() {
+  const y = document.getElementById("zeri-year");
+  if (y.options.length) return;
+  const nowY = new Date().getFullYear();
+  let yh = ""; for (let yy = nowY - 100; yy <= nowY + 50; yy++) yh += "<option>" + yy + "</option>";
+  y.innerHTML = yh;
+  let mh = ""; for (let m = 1; m <= 12; m++) mh += "<option>" + m + "</option>";
+  let dh = ""; for (let d = 1; d <= 31; d++) dh += "<option>" + d + "</option>";
+  document.getElementById("zeri-month").innerHTML = mh;
+  document.getElementById("zeri-day").innerHTML = dh;
+}
+function zeriSyncPicker() {
+  document.getElementById("zeri-year").value = zeriDate.y;
+  document.getElementById("zeri-month").value = zeriDate.m;
+  document.getElementById("zeri-day").value = zeriDate.d;
+}
+function showZeriView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("zeriView").style.display = "";
+  setActiveNav("擇日");
+  zeriEnsureSelects();
+  if (!zeriDate) { const t = new Date(); zeriDate = { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() }; }
+  zeriSyncPicker();
+  renderZeri();
+}
+function hideZeriView() {
+  document.getElementById("zeriView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+function zeriShift(days) {
+  const dt = new Date(zeriDate.y, zeriDate.m - 1, zeriDate.d);
+  dt.setDate(dt.getDate() + days);
+  zeriDate = { y: dt.getFullYear(), m: dt.getMonth() + 1, d: dt.getDate() };
+  zeriSyncPicker(); renderZeri();
+}
+function renderZeri() {
+  const y = zeriDate.y, m = zeriDate.m, d = zeriDate.d;
+  const solar = Solar.fromYmd(y, m, d);
+  const l = solar.getLunar();
+  const T = (v) => s2t(String(v == null ? "" : v));
+  const list = (arr) => (arr && arr.length ? arr.map(T).join("、") : "無");
+  const cell = (k, v) => '<div class="zeri-cell"><span class="zeri-k">' + k + '</span><span class="zeri-v">' + v + "</span></div>";
+  let h = "";
+  h += '<div class="zeri-head">' +
+    '<div class="zeri-solar">' + y + " 年 " + m + " 月 " + d + " 日　星期" + solar.getWeekInChinese() + "</div>" +
+    '<div class="zeri-lunar">農曆 ' + T(l.getYearInGanZhi()) + " 年（" + T(l.getYearShengXiao()) + "）" +
+    T(l.getMonthInChinese()) + "月" + T(l.getDayInChinese()) + "</div></div>";
+  const chongDesc = l.getDayChongDesc();
+  const chongGz = (chongDesc.match(/\((.+?)\)/) || [])[1] || "";
+  h += '<div class="zeri-grid">';
+  h += cell("干支", T(l.getYearInGanZhi()) + "年 " + T(l.getMonthInGanZhi()) + "月 " + T(l.getDayInGanZhi()) + "日");
+  h += cell("日納音", T(l.getDayNaYin()));
+  h += cell("值神", T(l.getDayTianShen()) + "（" + T(l.getDayTianShenType()) + "・" + T(l.getDayTianShenLuck()) + "）");
+  h += cell("建除", T(l.getZhiXing()) + "日");
+  h += cell("廿八宿", T(l.getXiu()) + T(l.getZheng()) + T(l.getAnimal()) + "・" + T(l.getGong()) + "方" + T(l.getShou()) + "（" + T(l.getXiuLuck()) + "）");
+  h += cell("沖煞", "沖" + T(l.getDayChongShengXiao()) + "（" + T(chongGz) + "）　煞" + T(l.getDaySha()));
+  h += "</div>";
+  h += '<div class="zeri-yiji">' +
+    '<div class="zeri-yi"><div class="zeri-yiji-h">宜</div><div class="zeri-yiji-b">' + list(l.getDayYi()) + "</div></div>" +
+    '<div class="zeri-ji"><div class="zeri-yiji-h">忌</div><div class="zeri-yiji-b">' + list(l.getDayJi()) + "</div></div></div>";
+  h += '<div class="zeri-grid">';
+  h += cell("財神", T(l.getDayPositionCaiDesc()));
+  h += cell("喜神", T(l.getDayPositionXiDesc()));
+  h += cell("福神", T(l.getDayPositionFuDesc()));
+  h += cell("陽貴神", T(l.getDayPositionYangGuiDesc()));
+  h += cell("陰貴神", T(l.getDayPositionYinGuiDesc()));
+  h += cell("今日胎神", T(l.getDayPositionTai()));
+  h += "</div>";
+  h += '<div class="zeri-pengzu">彭祖百忌：' + T(l.getPengZuGan()) + "　" + T(l.getPengZuZhi()) + "</div>";
+  h += '<div class="zibai-section-title" style="margin-top:14px">時辰吉凶</div>';
+  h += '<div class="xm-table-wrap"><table class="xm-table"><thead><tr><th>時辰</th><th>時間</th><th>吉凶</th><th>時辰宜</th></tr></thead><tbody>';
+  l.getTimes().forEach((t) => {
+    const luck = t.getTianShenLuck();
+    const cls = luck === "吉" ? "xm-good" : "xm-bad";
+    h += "<tr><td>" + T(t.getZhi()) + "時</td><td>" + t.getMinHm() + "–" + t.getMaxHm() + "</td>" +
+      '<td><span class="xm-tone ' + cls + '">' + T(luck) + "</span></td>" +
+      '<td style="text-align:left">' + list(t.getYi()) + "</td></tr>";
+  });
+  h += "</tbody></table></div>";
+  const pj = l.getPrevJieQi(true), nj = l.getNextJieQi(true), jToday = l.getJieQi();
+  h += '<div class="zeri-jieqi">節氣：' + (jToday ? "<b>今日交" + T(jToday) + "</b>　" : "") +
+    "上一節氣 " + T(pj.getName()) + "（" + pj.getSolar().toYmd() + "）　下一節氣 " + T(nj.getName()) + "（" + nj.getSolar().toYmd() + "）</div>";
+  document.getElementById("zeriResult").innerHTML = h;
+}
+document.getElementById("zeriBackBtn").addEventListener("click", hideZeriView);
+document.getElementById("zeriGoBtn").addEventListener("click", function () {
+  zeriDate = {
+    y: parseInt(document.getElementById("zeri-year").value, 10),
+    m: parseInt(document.getElementById("zeri-month").value, 10),
+    d: parseInt(document.getElementById("zeri-day").value, 10)
+  };
+  renderZeri();
+});
+document.getElementById("zeriPrevBtn").addEventListener("click", function () { zeriShift(-1); });
+document.getElementById("zeriNextBtn").addEventListener("click", function () { zeriShift(1); });
+document.getElementById("zeriTodayBtn").addEventListener("click", function () {
+  const t = new Date(); zeriDate = { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
+  zeriSyncPicker(); renderZeri();
+});
 
 document.getElementById("exportXingmingPdfBtn").addEventListener("click", async function () {
   const btn = this, orig = btn.textContent;
