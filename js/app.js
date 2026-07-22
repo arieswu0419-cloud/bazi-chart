@@ -4326,12 +4326,6 @@ function showZeriView() {
   zeriSyncPicker();
   renderZeri();
 }
-function zeriShift(days) {
-  const dt = new Date(zeriDate.y, zeriDate.m - 1, zeriDate.d);
-  dt.setDate(dt.getDate() + days);
-  zeriDate = { y: dt.getFullYear(), m: dt.getMonth() + 1, d: dt.getDate() };
-  zeriSyncPicker(); renderZeri();
-}
 function renderZeri() {
   const y = zeriDate.y, m = zeriDate.m, d = zeriDate.d;
   const solar = Solar.fromYmd(y, m, d);
@@ -4340,6 +4334,24 @@ function renderZeri() {
   const list = (arr) => (arr && arr.length ? arr.map(T).join("、") : "無");
   const cell = (k, v) => '<div class="zeri-cell"><span class="zeri-k">' + k + '</span><span class="zeri-v">' + v + "</span></div>";
   let h = "";
+  // 當日八字四柱＋日柱地支五行→今日穿衣開運色（置於最上方）。時柱固定以正午（午時）計，
+  // 確保年月日柱＝該曆日（與農民曆日干支一致，不受晚子時 23:00 進位影響）。
+  const bazi = calculateBazi({ year: y, month: m, day: d, hour: 12, minute: 0, gender: "male", name: "擇日" });
+  const cols = [
+    { k: "時柱", p: bazi.pillars[0] }, { k: "日柱", p: bazi.pillars[1] },
+    { k: "月柱", p: bazi.pillars[2] }, { k: "年柱", p: bazi.pillars[3] }
+  ];
+  h += '<div class="zibai-section-title">當日八字四柱</div>';
+  h += '<div class="xm-table-wrap"><table class="xm-table zeri-bazi"><thead><tr>' +
+    cols.map((c) => "<th>" + c.k + "</th>").join("") + "</tr></thead><tbody>";
+  h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.gan.cls + '">' + c.p.gan.char + "</span></td>").join("") + "</tr>";
+  h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.zhi.cls + '">' + c.p.zhi.char + "</span></td>").join("") + "</tr>";
+  h += "</tbody></table></div>";
+  const dz = bazi.pillars[1].zhi;
+  const color = ZERI_WUXING_COLOR[dz.wuxing] || "";
+  h += '<div class="zeri-color">👕 <b>今日開運穿衣色</b>：日柱地支「<span class="' + dz.cls + '">' + dz.char +
+    '</span>」五行屬「<span class="' + dz.cls + '">' + dz.wuxing + '</span>」，宜穿 <b class="' + dz.cls + '">' + color +
+    "</b> 等色系服飾，增添今日能量。</div>";
   h += '<div class="zeri-head">' +
     '<div class="zeri-solar">' + y + " 年 " + m + " 月 " + d + " 日　星期" + solar.getWeekInChinese() + "</div>" +
     '<div class="zeri-lunar">農曆 ' + T(l.getYearInGanZhi()) + " 年（" + T(l.getYearShengXiao()) + "）" +
@@ -4379,25 +4391,6 @@ function renderZeri() {
   const pj = l.getPrevJieQi(true), nj = l.getNextJieQi(true), jToday = l.getJieQi();
   h += '<div class="zeri-jieqi">節氣：' + (jToday ? "<b>今日交" + T(jToday) + "</b>　" : "") +
     "上一節氣 " + T(pj.getName()) + "（" + pj.getSolar().toYmd() + "）　下一節氣 " + T(nj.getName()) + "（" + nj.getSolar().toYmd() + "）</div>";
-
-  // 當日八字四柱＋日柱地支五行→今日穿衣開運色。時柱固定以正午（午時）計，確保年月日柱＝該曆日
-  // （與上方農民曆日干支一致，不受晚子時 23:00 進位影響）。
-  const bazi = calculateBazi({ year: y, month: m, day: d, hour: 12, minute: 0, gender: "male", name: "擇日" });
-  const cols = [
-    { k: "時柱", p: bazi.pillars[0] }, { k: "日柱", p: bazi.pillars[1] },
-    { k: "月柱", p: bazi.pillars[2] }, { k: "年柱", p: bazi.pillars[3] }
-  ];
-  h += '<div class="zibai-section-title" style="margin-top:14px">當日八字四柱</div>';
-  h += '<div class="xm-table-wrap"><table class="xm-table zeri-bazi"><thead><tr>' +
-    cols.map((c) => "<th>" + c.k + "</th>").join("") + "</tr></thead><tbody>";
-  h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.gan.cls + '">' + c.p.gan.char + "</span></td>").join("") + "</tr>";
-  h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.zhi.cls + '">' + c.p.zhi.char + "</span></td>").join("") + "</tr>";
-  h += "</tbody></table></div>";
-  const dz = bazi.pillars[1].zhi;
-  const color = ZERI_WUXING_COLOR[dz.wuxing] || "";
-  h += '<div class="zeri-color">👕 <b>今日開運穿衣色</b>：日柱地支「<span class="' + dz.cls + '">' + dz.char +
-    '</span>」五行屬「<span class="' + dz.cls + '">' + dz.wuxing + '</span>」，宜穿 <b class="' + dz.cls + '">' + color +
-    "</b> 等色系服飾，增添今日能量。</div>";
   document.getElementById("zeriResult").innerHTML = h;
 }
 document.getElementById("zeriGoBtn").addEventListener("click", function () {
@@ -4407,12 +4400,6 @@ document.getElementById("zeriGoBtn").addEventListener("click", function () {
     d: parseInt(document.getElementById("zeri-day").value, 10)
   };
   renderZeri();
-});
-document.getElementById("zeriPrevBtn").addEventListener("click", function () { zeriShift(-1); });
-document.getElementById("zeriNextBtn").addEventListener("click", function () { zeriShift(1); });
-document.getElementById("zeriTodayBtn").addEventListener("click", function () {
-  const t = new Date(); zeriDate = { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
-  zeriSyncPicker(); renderZeri();
 });
 
 document.getElementById("exportXingmingPdfBtn").addEventListener("click", async function () {
