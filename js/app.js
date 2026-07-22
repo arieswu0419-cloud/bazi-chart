@@ -4341,7 +4341,6 @@ function renderZeri() {
     { k: "時柱", p: bazi.pillars[0] }, { k: "日柱", p: bazi.pillars[1] },
     { k: "月柱", p: bazi.pillars[2] }, { k: "年柱", p: bazi.pillars[3] }
   ];
-  h += '<div class="zibai-section-title">當日八字四柱</div>';
   h += '<div class="xm-table-wrap"><table class="xm-table zeri-bazi"><thead><tr>' +
     cols.map((c) => "<th>" + c.k + "</th>").join("") + "</tr></thead><tbody>";
   h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.gan.cls + '">' + c.p.gan.char + "</span></td>").join("") + "</tr>";
@@ -4350,7 +4349,7 @@ function renderZeri() {
   const dz = bazi.pillars[1].zhi;
   const color = ZERI_WUXING_COLOR[dz.wuxing] || "";
   h += '<div class="zeri-color">👕 <b>今日開運穿衣色</b>：日柱地支「<span class="' + dz.cls + '">' + dz.char +
-    '</span>」五行屬「<span class="' + dz.cls + '">' + dz.wuxing + '</span>」，宜穿 <b class="' + dz.cls + '">' + color +
+    '</span>」五行屬「<span class="' + dz.cls + '">' + dz.wuxing + '</span>」，宜穿 <b class="zeri-color-hl ' + dz.cls + '">' + color +
     "</b> 等色系服飾，增添今日能量。</div>";
   h += '<div class="zeri-head">' +
     '<div class="zeri-solar">' + y + " 年 " + m + " 月 " + d + " 日　星期" + solar.getWeekInChinese() + "</div>" +
