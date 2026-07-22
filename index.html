@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=264">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=264">
+<link rel="stylesheet" href="css/style.css?v=265">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=265">
 </head>
 <body>
 
@@ -31,7 +31,7 @@
       <button type="button" class="main-nav-link" data-group="chessGroup">象棋卜卦</button>
       <button type="button" class="main-nav-link" data-feature="數字易經" data-perm="fengshui">數字易經</button>
       <button type="button" class="main-nav-link" data-group="kanyuGroup">堪輿風水</button>
-      <button type="button" class="main-nav-link" data-feature="姓名學" data-perm="xingming">姓名學</button>
+      <button type="button" class="main-nav-link" data-group="xingmingGroup">姓名學</button>
     </nav>
   </div>
 </header>
@@ -1296,8 +1296,13 @@
       </div>
       <div id="xingmingGenResult"></div>
     </div>
+    </div>
 
+    <div id="xingmingCompanyView" style="display:none">
     <div class="card" id="xingmingCompanyCard">
+      <div class="card-head">
+        <button type="button" class="btn secondary" id="xingmingCompanyBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
+      </div>
       <h2 class="zibai-title" style="font-size:19px">公司姓名學（總格數理・商業吉數）</h2>
       <div class="form-block">
         <div class="form-date-row">
@@ -1326,6 +1331,32 @@
       <div id="xingmingCompanyResultCard" style="display:none">
         <div id="xingmingCompanyResult"></div>
       </div>
+    </div>
+
+    <div class="card" id="xingmingCoGenCard">
+      <h2 class="zibai-title" style="font-size:19px">公司字號產生器</h2>
+      <div class="form-block">
+        <div class="form-date-row">
+          <div class="field">
+            <label for="xm-cogen-len">字號字數</label>
+            <select id="xm-cogen-len"><option value="2">兩個字</option><option value="3">三個字</option></select>
+          </div>
+          <div class="field">
+            <label for="xm-cogen-mode">五行依據</label>
+            <select id="xm-cogen-mode"><option value="auto">依負責人喜用（需填生日）</option><option value="all">不限五行</option></select>
+          </div>
+          <div class="field zibai-run-field" data-html2canvas-ignore="true">
+            <label>&nbsp;</label>
+            <button type="button" class="btn" id="xingmingCoGenBtn">產生字號</button>
+          </div>
+          <div class="field zibai-run-field" data-html2canvas-ignore="true">
+            <label>&nbsp;</label>
+            <button type="button" class="btn secondary" id="xingmingCoGenMoreBtn">換一批</button>
+          </div>
+        </div>
+        <div class="zibai-hint" id="xingmingCoGenHint">依上方負責人生日（八字喜用五行）與行業別，產生總格為商業吉數的候選公司字號。商業吉數與五行為通用版整理，供參考。</div>
+      </div>
+      <div id="xingmingCoGenResult"></div>
     </div>
     </div>
 
@@ -1417,35 +1448,35 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=264"></script>
-<script src="js/auth.js?v=264"></script>
+<script src="js/firebase-config.js?v=265"></script>
+<script src="js/auth.js?v=265"></script>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.7/lunar.js"></script>
-<script src="js/bazi-engine.js?v=264"></script>
-<script src="js/dayun-strategy-content.js?v=264"></script>
-<script src="js/shensha-content.js?v=264"></script>
-<script src="js/renge-content.js?v=264"></script>
-<script src="js/renge-engine.js?v=264"></script>
-<script src="js/lifenum-engine.js?v=264"></script>
-<script src="js/mingpian-engine.js?v=264"></script>
-<script src="js/name-strokes-data.js?v=264"></script>
-<script src="js/lunar-convert.js?v=264"></script>
-<script src="js/shuzi-engine.js?v=264"></script>
-<script src="js/jigong-engine.js?v=264"></script>
-<script src="js/guanyin-data.js?v=264"></script>
+<script src="js/bazi-engine.js?v=265"></script>
+<script src="js/dayun-strategy-content.js?v=265"></script>
+<script src="js/shensha-content.js?v=265"></script>
+<script src="js/renge-content.js?v=265"></script>
+<script src="js/renge-engine.js?v=265"></script>
+<script src="js/lifenum-engine.js?v=265"></script>
+<script src="js/mingpian-engine.js?v=265"></script>
+<script src="js/name-strokes-data.js?v=265"></script>
+<script src="js/lunar-convert.js?v=265"></script>
+<script src="js/shuzi-engine.js?v=265"></script>
+<script src="js/jigong-engine.js?v=265"></script>
+<script src="js/guanyin-data.js?v=265"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=264"></script>
-<script src="js/qimen-engine.js?v=264"></script>
-<script src="js/iztro.min.js?v=264"></script>
-<script src="js/cuiwang-engine.js?v=264"></script>
-<script src="js/qimen-shuzi-engine.js?v=264"></script>
-<script src="js/qimen-hexa-content.js?v=264"></script>
-<script src="js/qimen-hongpan-engine.js?v=264"></script>
-<script src="js/qimen-sansheng-engine.js?v=264"></script>
-<script src="js/fengshui-zibai-engine.js?v=264"></script>
-<script src="js/name-kangxi-strokes.js?v=264"></script>
-<script src="js/name-xingming-content.js?v=264"></script>
+<script src="js/jigong-bugua.js?v=265"></script>
+<script src="js/qimen-engine.js?v=265"></script>
+<script src="js/iztro.min.js?v=265"></script>
+<script src="js/cuiwang-engine.js?v=265"></script>
+<script src="js/qimen-shuzi-engine.js?v=265"></script>
+<script src="js/qimen-hexa-content.js?v=265"></script>
+<script src="js/qimen-hongpan-engine.js?v=265"></script>
+<script src="js/qimen-sansheng-engine.js?v=265"></script>
+<script src="js/fengshui-zibai-engine.js?v=265"></script>
+<script src="js/name-kangxi-strokes.js?v=265"></script>
+<script src="js/name-xingming-content.js?v=265"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=264"></script>
+<script src="js/app.js?v=265"></script>
 </body>
 </html>

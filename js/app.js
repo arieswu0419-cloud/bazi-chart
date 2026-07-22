@@ -26,6 +26,11 @@ const NAV_GROUPS = {
     { perm: "mingpian", label: "名片風水", show: function () { showMingpianView(); } },
     { perm: "zibai", label: "紫白風水", show: function () { showZibaiView(); } },
     { perm: "bazhai", label: "八宅風水", show: function () { showBazhaiView(); } }
+  ] },
+  // 姓名學群組：兩個子頁籤共用同一個 xingming 權限（帳號權限不變）
+  xingmingGroup: { label: "姓名學", members: [
+    { perm: "xingming", label: "個人姓名學", show: function () { showXingmingView(); } },
+    { perm: "xingming", label: "公司姓名學", show: function () { showXingmingCompanyView(); } }
   ] }
 };
 function findNavGroupByLabel(label) {
@@ -164,7 +169,6 @@ requireApprovedUser(function (user, data) {
     btn.addEventListener("click", function () {
       if (!perms[key]) { showToast("此功能您未發放權限", "error"); return; }
       if (key === "fengshui") { showShuziView(); return; }
-      if (key === "xingming") { showXingmingView(); return; }
     });
   });
   // 群組按鍵（奇門遁甲／象棋卜卦／堪輿風水）：開啟該群組第一個有權限的子頁籤（權限連動）。
@@ -183,7 +187,7 @@ requireApprovedUser(function (user, data) {
 // 所有「取代 mainView 的功能視圖」清單：切換視圖前先全部隱藏，再顯示目標視圖。
 // 修正：從奇門遁甲直接點導覽列切到奇門紅盤（或任兩個功能頁互切）時，前一頁沒被隱藏、
 // 兩個畫面上下疊在一起——每個 showXxxView 原本只藏 mainView，沒藏其他功能視圖。
-const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView", "xingmingView"];
+const FEATURE_VIEW_IDS = ["changePasswordView", "qimenDunjiaView", "qimenHongpanView", "cuiwangView", "qimenShuziView", "qimenSanshengView", "jigongView", "guanyinView", "shuziView", "mingpianView", "zibaiView", "bazhaiView", "xingmingView", "xingmingCompanyView"];
 function hideAllFeatureViews() {
   FEATURE_VIEW_IDS.forEach((id) => {
     const el = document.getElementById(id);
@@ -3675,11 +3679,23 @@ function showXingmingView() {
   hideAllFeatureViews();
   document.getElementById("mainView").style.display = "none";
   document.getElementById("xingmingView").style.display = "";
-  setActiveNav("姓名學");
+  setActiveNav("個人姓名學");
   fillBirthSelects("xm-byear", "xm-bmonth", "xm-bday", "xm-btime");
+}
+function showXingmingCompanyView() {
+  hideAllFeatureViews();
+  document.getElementById("mainView").style.display = "none";
+  document.getElementById("xingmingCompanyView").style.display = "";
+  setActiveNav("公司姓名學");
   fillBirthSelects("xm-co-byear", "xm-co-bmonth", "xm-co-bday", "xm-co-btime");
   fillCompanyIndustrySelect();
 }
+function hideXingmingCompanyView() {
+  document.getElementById("xingmingCompanyView").style.display = "none";
+  document.getElementById("mainView").style.display = "";
+  setActiveNav(null);
+}
+document.getElementById("xingmingCompanyBackBtn").addEventListener("click", hideXingmingCompanyView);
 function hideXingmingView() {
   document.getElementById("xingmingView").style.display = "none";
   document.getElementById("mainView").style.display = "";
@@ -4154,6 +4170,100 @@ function runXingmingCompany() {
 }
 document.getElementById("xingmingCompanyBtn").addEventListener("click", runXingmingCompany);
 document.getElementById("xm-co-name").addEventListener("keydown", function (e) { if (e.key === "Enter") runXingmingCompany(); });
+
+// ===== 公司字號產生器 =====
+// 依商業吉數（總格∈XM_BIZ_LUCKY）＋負責人八字喜用五行（選填）＋行業五行（選填），產生候選公司字號。
+// 字義五行取自 XM_NAME_POOL、筆劃取 KANGXI_STROKES、生剋用 xmWxRelation。
+function xmGenerateCompanyNames(opts) {
+  const seen = {}, cands = [];
+  Object.keys(XM_NAME_POOL).forEach((wx) => {
+    Array.from(XM_NAME_POOL[wx]).forEach((ch) => {
+      if (seen[ch]) return;
+      const k = (typeof KANGXI_STROKES !== "undefined") ? KANGXI_STROKES[ch] : null;
+      if (k == null) return;
+      seen[ch] = 1; cands.push({ ch, wx, k });
+    });
+  });
+  const pool = xmShuffle(cands);
+  const favSet = opts.favSet, industryWx = opts.industryWx;
+  const results = [];
+  function consider(arr) {
+    const total = arr.reduce((a, c) => a + c.k, 0);
+    const red = xmReduce81(total);
+    if (XM_BIZ_LUCKY.indexOf(red) === -1) return; // 只取商業吉數
+    const wx = xmNumWx(total);
+    let indTone = null;
+    if (industryWx) { const rel = xmWxRelation(wx, industryWx); if (rel.tone === "bad") return; indTone = rel.tone; }
+    const favHit = favSet ? favSet.indexOf(wx) !== -1 : false;
+    const score = (XM_BIZ_NOTE[red] ? 2 : 0) + (favHit ? 3 : 0) + (indTone === "good" ? 1 : 0);
+    results.push({ chars: arr.slice(), total, red, wx, bizNote: XM_BIZ_NOTE[red] || null, favHit, indTone, score });
+  }
+  if (opts.len === 3) {
+    const cap = pool.slice(0, 42);
+    for (let i = 0; i < cap.length; i++) for (let j = 0; j < cap.length; j++) for (let m = 0; m < cap.length; m++) {
+      if (i === j || j === m || i === m) continue; consider([cap[i], cap[j], cap[m]]);
+    }
+  } else {
+    const cap = pool.slice(0, 120);
+    for (let i = 0; i < cap.length; i++) for (let j = 0; j < cap.length; j++) { if (i === j) continue; consider([cap[i], cap[j]]); }
+  }
+  results.sort((a, b) => b.score - a.score);
+  const seen2 = {}, uniq = [];
+  results.forEach((r) => { const key = r.chars.map((c) => c.ch).join(""); if (!seen2[key]) { seen2[key] = 1; uniq.push(r); } });
+  return uniq.slice(0, opts.limit || 24);
+}
+function runXingmingCompanyGen() {
+  const hint = document.getElementById("xingmingCoGenHint");
+  const out = document.getElementById("xingmingCoGenResult");
+  const len = parseInt(document.getElementById("xm-cogen-len").value, 10);
+  const mode = document.getElementById("xm-cogen-mode").value;
+  const by = document.getElementById("xm-co-byear").value;
+  const bm = document.getElementById("xm-co-bmonth").value;
+  const bd = document.getElementById("xm-co-bday").value;
+  const bt = document.getElementById("xm-co-btime").value;
+  let favSet = null, note = "";
+  if (by && bm && bd) {
+    const hasHour = bt !== "";
+    const hour = hasHour ? parseInt(bt, 10) * 2 : 12;
+    try {
+      const bazi = calculateBazi({
+        year: parseInt(by, 10), month: parseInt(bm, 10), day: parseInt(bd, 10),
+        hour, minute: 0, gender: document.getElementById("xm-co-gender").value, name: "公司"
+      });
+      if (mode === "auto") { favSet = xmWuxingFavor(bazi, hasHour).primaryFav; note = "負責人喜用五行：" + favSet.join("、"); }
+      else note = "不限五行。";
+    } catch (e) { favSet = null; }
+  } else if (mode === "auto") {
+    hint.textContent = "「依負責人喜用」需在上方填負責人出生年月日；或將五行依據改為『不限五行』。"; out.innerHTML = ""; return;
+  } else { note = "未填負責人生日，僅取商業吉數字號。"; }
+  const indIdx = document.getElementById("xm-co-industry").value;
+  let industryWx = null;
+  if (indIdx !== "") { industryWx = XM_INDUSTRY[indIdx].wx; note += "　行業：" + XM_INDUSTRY[indIdx].label + "（" + industryWx + "）"; }
+  const results = xmGenerateCompanyNames({ len, favSet: mode === "auto" ? favSet : null, industryWx, limit: 24 });
+  hint.textContent = note;
+  if (!results.length) {
+    out.innerHTML = '<div class="xm-gen-empty">目前字庫與條件下暫無商業吉數字號，可改字數或改為『不限五行』再試。</div>';
+    return;
+  }
+  const wcls = { 木: 3, 火: 9, 土: 2, 金: 7, 水: 1 };
+  const wxChip = (wx) => '<span class="' + zbWxClass(wcls[wx]) + '">' + wx + "</span>";
+  let h = '<div class="xm-gen-grid">';
+  results.forEach((it) => {
+    const nameTxt = it.chars.map((c) => c.ch).join("");
+    const meta = it.chars.map((c) => c.ch + "（" + c.k + "劃・" + wxChip(c.wx) + "）").join(" ");
+    h += '<div class="xm-gen-item">' +
+      '<div class="xm-gen-name">' + nameTxt + "</div>" +
+      '<div class="xm-gen-meta">' + meta + "</div>" +
+      '<div class="xm-gen-tones"><span class="xm-gen-total">總格' + it.total + (it.total !== it.red ? "→" + it.red : "") + "</span>" + wxChip(it.wx) +
+      ' <span class="xm-tone xm-good">商業吉數</span>' + (it.favHit ? ' <span class="xm-gen-xi">合喜用</span>' : "") + "</div>" +
+      (it.bizNote ? '<div class="xm-gen-biznote">' + it.bizNote + "</div>" : "") +
+      "</div>";
+  });
+  h += "</div>";
+  out.innerHTML = h;
+}
+document.getElementById("xingmingCoGenBtn").addEventListener("click", runXingmingCompanyGen);
+document.getElementById("xingmingCoGenMoreBtn").addEventListener("click", runXingmingCompanyGen);
 
 document.getElementById("exportXingmingPdfBtn").addEventListener("click", async function () {
   const btn = this, orig = btn.textContent;
