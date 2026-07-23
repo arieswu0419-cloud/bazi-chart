@@ -66,20 +66,19 @@ function buildHexaTablesHtml(hexByGong, menByGong, gongInfo) {
     return "<tr><td>" + gongInfo[g].gua + "宮（" + gongInfo[g].dir + "）</td>" +
       '<td class="qhx-name">' + hexaFull(h.name) + "</td>" +
       "<td>" + h.upper + "上" + h.lower + "下</td>" +
-      "<td>" + hexaIntro(h.name) + "</td></tr>";
+      '<td class="qhx-l">' + hexaIntro(h.name) + "</td></tr>";
   }).join("");
   const rows2 = gongs.map((g) => {
     const h = hexByGong[g], men = menByGong[g] || "";
     const dr = hexaDoor(h.name, men);
     return "<tr><td>" + gongInfo[g].gua + "宮（" + gongInfo[g].dir + "）</td>" +
       '<td class="qhx-name">' + hexaFull(h.name) + "＋" + men + "門</td>" +
-      "<td>" + (dr && dr.tag ? dr.tag : "") + "</td></tr>";
+      '<td class="qhx-l">' + qhxDoorText(dr) + "</td></tr>";
   }).join("");
-  return '<div class="qhx-hint">點選上方任一宮格，即可展開該宮「宮位對應 64 卦說明」與「64 卦＋八門說明」完整內容。</div>' +
-    '<div class="zibai-section-title" style="margin-top:12px">宮位對應 64 卦說明</div>' +
+  return '<div class="zibai-section-title" style="margin-top:12px">宮位對應 64 卦說明</div>' +
     '<div class="qhx-wrap"><table class="qhx-table"><thead><tr><th>宮位</th><th>64卦</th><th>卦象</th><th>卦意</th></tr></thead><tbody>' + rows1 + "</tbody></table></div>" +
     '<div class="zibai-section-title" style="margin-top:16px">64 卦＋八門說明</div>' +
-    '<div class="qhx-wrap"><table class="qhx-table"><thead><tr><th>宮位</th><th>64卦＋八門</th><th>標語</th></tr></thead><tbody>' + rows2 + "</tbody></table></div>";
+    '<div class="qhx-wrap"><table class="qhx-table"><thead><tr><th>宮位</th><th>64卦＋八門</th><th>說明</th></tr></thead><tbody>' + rows2 + "</tbody></table></div>";
 }
 
 // 八門說明串接格式（依教材／使用者指定）：標語、關鍵詞為短語列表→頓號/點號一律轉「。」；

@@ -1895,6 +1895,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .qhx-table th { background: #fff; font-weight: 700; white-space: nowrap; }
 .qhx-table td:first-child { white-space: nowrap; font-weight: 700; }
 .qhx-name { font-weight: 800; white-space: nowrap; }
+.qhx-table td.qhx-l { text-align: left; line-height: 1.85; }
 .qhx-hint { font-size: 13px; color: #777; margin: 10px 0 2px; }
 /* 點宮展開的 64 卦卡片 */
 .qhx-card { margin-top: 10px; }
