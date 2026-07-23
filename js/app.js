@@ -2463,6 +2463,7 @@ function renderQimenDunjia(data) {
     computeQimenDunjiaGongNumbers(data)
   );
   const dunjiaHex = computeQimenDunjiaHexagrams(data);
+  data.hexagrams = dunjiaHex; // 供點宮展開 64 卦卡片使用（與紅盤 data.hexagrams 一致）
   document.getElementById("qimenDunjiaCompass").innerHTML = buildQimenCompassHtml(data, gridHtml, dunjiaHex);
   document.getElementById("qimenDunjiaExplain").style.display = "none";
   document.getElementById("qimenDunjiaExplain").innerHTML = "";
@@ -2485,7 +2486,11 @@ document.addEventListener("click", function (e) {
   const panel = document.getElementById(inHongpan ? "qimenHongpanExplain" : (inDunjia ? "qimenDunjiaExplain" : "qimenExplain"));
   document.querySelectorAll(".qimen-cell.qimen-cell-selected").forEach((el) => el.classList.remove("qimen-cell-selected"));
   cell.classList.add("qimen-cell-selected");
-  panel.innerHTML = buildQimenExplain(gong, data, inDunjia || inHongpan) + (inHongpan ? buildHongpanExplainExtra(gong, data) : "");
+  // 藍盤／紅盤：點宮展開該宮 64 卦＋八門完整卡片（命盤頁不顯示）
+  const hexForGong = (inDunjia || inHongpan) && data.hexagrams ? data.hexagrams[gong] : null;
+  const menForGong = data.gongs[gong] ? data.gongs[gong].men : "";
+  const hexCard = hexForGong ? buildHexaCard(hexForGong, menForGong) : "";
+  panel.innerHTML = buildQimenExplain(gong, data, inDunjia || inHongpan) + (inHongpan ? buildHongpanExplainExtra(gong, data) : "") + hexCard;
   panel.style.display = "block";
 });
 
@@ -2497,9 +2502,6 @@ function buildHongpanExplainExtra(gong, data) {
   if (c.grayGans && c.grayGans.length) rows += "<tr><th>隱干</th><td>" + c.grayGans.join("、") + "</td></tr>";
   const geju = typeof getGeju81 === "function" ? getGeju81(c.tianGan, c.diGan) : null;
   if (geju) rows += "<tr><th>格局</th><td>" + c.tianGan + c.diGan + "　" + geju.name + (geju.desc ? "：" + geju.desc : "") + "</td></tr>";
-  const hex = data.hexagrams && data.hexagrams[gong];
-  if (hex) rows += "<tr><th>64卦</th><td>" + hex.name + "（" + hex.upper + "上" + hex.lower + "下）" +
-    (typeof HEXA64_DESC !== "undefined" && HEXA64_DESC[hex.name] ? "：" + HEXA64_DESC[hex.name] : "") + "</td></tr>";
   const words = (c.cornerWords || []).map((w) => w.text).join("、");
   if (words || c.jiXing) rows += "<tr><th>提示</th><td>" + [c.jiXing ? "六儀擊刑" : "", words].filter(Boolean).join("、") + "</td></tr>";
   return rows ? '<table class="qimen-explain-table"><tbody>' + rows + "</tbody></table>" : "";

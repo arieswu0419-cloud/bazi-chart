@@ -41,36 +41,75 @@ const QIMEN_MEN_DESC = {
   驚: { jx: "凶", text: "驚恐官非，防口舌是非虛驚" }
 };
 
-// 產兩張表：
-// 表1「宮位對應 64 卦說明」：宮位（卦宮＋方位）｜64卦（上卦/下卦）｜卦意
-// 表2「64 卦＋八門說明」：宮位｜64卦＋門｜合成說明（卦意；配○門(吉凶)：門意）
-// hexByGong: {g:{upper,lower,name}}（8 宮）；menByGong: {g:門單字}；gongInfo: {g:{gua,dir}}
+// 短卦名→完整資料（HEXA64_DATA 見 js/qimen-hexa64-content.js）；查無則回退舊 HEXA64_DESC
+function hexaFull(name) {
+  const d = typeof HEXA64_DATA !== "undefined" ? HEXA64_DATA[name] : null;
+  return d && d.full ? d.full : name;
+}
+function hexaIntro(name) {
+  const d = typeof HEXA64_DATA !== "undefined" ? HEXA64_DATA[name] : null;
+  return d && d.intro ? d.intro : (HEXA64_DESC[name] || "");
+}
+function hexaDoor(name, men) {
+  const d = typeof HEXA64_DATA !== "undefined" ? HEXA64_DATA[name] : null;
+  return d && d.doors ? d.doors[men] : null;
+}
+
+// 底部總覽兩張表（點宮才展開詳解，故此處為精簡索引）：
+// 表1「宮位對應 64 卦說明」：宮位｜64卦(全名)｜卦象｜卦意(卦辭+特質)
+// 表2「64 卦＋八門說明」：宮位｜64卦＋門(全名)｜標語
 function buildHexaTablesHtml(hexByGong, menByGong, gongInfo) {
   const gongs = [1, 8, 3, 4, 9, 2, 7, 6].filter((g) => hexByGong && hexByGong[g]);
   if (!gongs.length) return "";
   const rows1 = gongs.map((g) => {
     const h = hexByGong[g];
     return "<tr><td>" + gongInfo[g].gua + "宮（" + gongInfo[g].dir + "）</td>" +
-      '<td class="qhx-name">' + h.name + "</td>" +
+      '<td class="qhx-name">' + hexaFull(h.name) + "</td>" +
       "<td>" + h.upper + "上" + h.lower + "下</td>" +
-      "<td>" + (HEXA64_DESC[h.name] || "") + "</td></tr>";
+      "<td>" + hexaIntro(h.name) + "</td></tr>";
   }).join("");
   const rows2 = gongs.map((g) => {
-    const h = hexByGong[g];
-    const men = menByGong[g] || "";
-    const md = QIMEN_MEN_DESC[men];
-    const combined = (HEXA64_DESC[h.name] || "") +
-      (md ? "；配" + men + "門（" + md.jx + "）：" + md.text : "");
+    const h = hexByGong[g], men = menByGong[g] || "";
+    const dr = hexaDoor(h.name, men);
     return "<tr><td>" + gongInfo[g].gua + "宮（" + gongInfo[g].dir + "）</td>" +
-      '<td class="qhx-name">' + h.name + "＋" + men + "門</td>" +
-      "<td>" + combined + "</td></tr>";
+      '<td class="qhx-name">' + hexaFull(h.name) + "＋" + men + "門</td>" +
+      "<td>" + (dr && dr.tag ? dr.tag : "") + "</td></tr>";
   }).join("");
-  return '<div class="zibai-section-title" style="margin-top:16px">宮位對應 64 卦說明</div>' +
+  return '<div class="qhx-hint">點選上方任一宮格，即可展開該宮「宮位對應 64 卦說明」與「64 卦＋八門說明」完整內容。</div>' +
+    '<div class="zibai-section-title" style="margin-top:12px">宮位對應 64 卦說明</div>' +
     '<div class="qhx-wrap"><table class="qhx-table"><thead><tr><th>宮位</th><th>64卦</th><th>卦象</th><th>卦意</th></tr></thead><tbody>' + rows1 + "</tbody></table></div>" +
     '<div class="zibai-section-title" style="margin-top:16px">64 卦＋八門說明</div>' +
-    '<div class="qhx-wrap"><table class="qhx-table"><thead><tr><th>宮位</th><th>64卦＋八門</th><th>說明</th></tr></thead><tbody>' + rows2 + "</tbody></table></div>";
+    '<div class="qhx-wrap"><table class="qhx-table"><thead><tr><th>宮位</th><th>64卦＋八門</th><th>標語</th></tr></thead><tbody>' + rows2 + "</tbody></table></div>";
+}
+
+// 點宮展開的完整卡片：宮位對應 64 卦說明 ＋ 64 卦＋八門說明（關鍵詞/卦象引導/玄商策略/易道速斷）
+// hex: {upper,lower,name(短名)}；men: 門單字
+function buildHexaCard(hex, men) {
+  if (!hex) return "";
+  const full = hexaFull(hex.name), intro = hexaIntro(hex.name);
+  let h = '<div class="qhx-card">';
+  h += '<div class="qhx-card-h">宮位對應 64 卦說明</div>';
+  h += '<div class="qhx-card-b"><div class="qhx-gua">' + full +
+    '<span class="qhx-xiang">' + hex.upper + "上" + hex.lower + "下</span></div>" +
+    (intro ? '<div class="qhx-intro">' + intro + "</div>" : "") + "</div>";
+  const dr = hexaDoor(hex.name, men);
+  h += '<div class="qhx-card-h" style="margin-top:10px">64 卦＋八門說明</div>';
+  if (dr) {
+    h += '<div class="qhx-card-b"><div class="qhx-gua">' + full + "＋" + men + "門" +
+      (dr.tag ? '<span class="qhx-tag">' + dr.tag + "</span>" : "") + "</div>" +
+      '<table class="qhx-field"><tbody>' +
+      (dr.kw ? "<tr><th>關鍵詞</th><td>" + dr.kw + "</td></tr>" : "") +
+      (dr.guide ? "<tr><th>卦象引導</th><td>" + dr.guide + "</td></tr>" : "") +
+      (dr.strategy ? "<tr><th>玄商策略</th><td>" + dr.strategy + "</td></tr>" : "") +
+      (dr.speed ? "<tr><th>易道速斷</th><td>" + dr.speed + "</td></tr>" : "") +
+      "</tbody></table></div>";
+  } else {
+    h += '<div class="qhx-card-b">（' + full + "＋" + men + "門）查無說明資料。</div>";
+  }
+  h += "</div>";
+  return h;
 }
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { HEXA64_DESC, QIMEN_MEN_DESC, buildHexaTablesHtml };
+  module.exports = { HEXA64_DESC, QIMEN_MEN_DESC, buildHexaTablesHtml, buildHexaCard };
 }
