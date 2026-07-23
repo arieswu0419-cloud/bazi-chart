@@ -82,30 +82,28 @@ function buildHexaTablesHtml(hexByGong, menByGong, gongInfo) {
     '<div class="qhx-wrap"><table class="qhx-table"><thead><tr><th>宮位</th><th>64卦＋八門</th><th>標語</th></tr></thead><tbody>' + rows2 + "</tbody></table></div>";
 }
 
-// 點宮展開的完整卡片：宮位對應 64 卦說明 ＋ 64 卦＋八門說明（關鍵詞/卦象引導/玄商策略/易道速斷）
+// 八門說明串接格式（依教材／使用者指定）：標語、關鍵詞為短語列表→頓號/點號一律轉「。」；
+// 卦象引導、玄商策略、易道速斷為完整句→保留內部標點，各段以「。」收尾串接成一段。
+function qhxNormList(x) { return x ? x.replace(/[、．，]/g, "。").replace(/。+/g, "。").replace(/。$/, "") + "。" : ""; }
+function qhxNormSent(x) { return x ? (/[。！？]$/.test(x) ? x : x + "。") : ""; }
+function qhxDoorText(dr) {
+  if (!dr) return "";
+  return qhxNormList(dr.tag) + qhxNormList(dr.kw) + qhxNormSent(dr.guide) + qhxNormSent(dr.strategy) + qhxNormSent(dr.speed);
+}
+
+// 點宮展開的完整卡片：宮位對應 64 卦說明（卦辭+特質）＋ 64 卦＋八門說明（標語＋關鍵詞＋卦象引導＋玄商策略＋易道速斷串接）
 // hex: {upper,lower,name(短名)}；men: 門單字
 function buildHexaCard(hex, men) {
   if (!hex) return "";
-  const full = hexaFull(hex.name), intro = hexaIntro(hex.name);
+  const full = hexaFull(hex.name), intro = hexaIntro(hex.name), dr = hexaDoor(hex.name, men);
   let h = '<div class="qhx-card">';
   h += '<div class="qhx-card-h">宮位對應 64 卦說明</div>';
   h += '<div class="qhx-card-b"><div class="qhx-gua">' + full +
     '<span class="qhx-xiang">' + hex.upper + "上" + hex.lower + "下</span></div>" +
-    (intro ? '<div class="qhx-intro">' + intro + "</div>" : "") + "</div>";
-  const dr = hexaDoor(hex.name, men);
+    (intro ? '<div class="qhx-text">' + intro + "</div>" : "") + "</div>";
   h += '<div class="qhx-card-h" style="margin-top:10px">64 卦＋八門說明</div>';
-  if (dr) {
-    h += '<div class="qhx-card-b"><div class="qhx-gua">' + full + "＋" + men + "門" +
-      (dr.tag ? '<span class="qhx-tag">' + dr.tag + "</span>" : "") + "</div>" +
-      '<table class="qhx-field"><tbody>' +
-      (dr.kw ? "<tr><th>關鍵詞</th><td>" + dr.kw + "</td></tr>" : "") +
-      (dr.guide ? "<tr><th>卦象引導</th><td>" + dr.guide + "</td></tr>" : "") +
-      (dr.strategy ? "<tr><th>玄商策略</th><td>" + dr.strategy + "</td></tr>" : "") +
-      (dr.speed ? "<tr><th>易道速斷</th><td>" + dr.speed + "</td></tr>" : "") +
-      "</tbody></table></div>";
-  } else {
-    h += '<div class="qhx-card-b">（' + full + "＋" + men + "門）查無說明資料。</div>";
-  }
+  h += '<div class="qhx-card-b"><div class="qhx-gua">' + full + "＋" + men + "門</div>" +
+    '<div class="qhx-text">' + (dr ? qhxDoorText(dr) : "查無說明資料。") + "</div></div>";
   h += "</div>";
   return h;
 }

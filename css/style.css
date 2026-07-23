@@ -1903,11 +1903,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .qhx-gua { font-size: 18px; font-weight: 800; color: var(--gold-darker); letter-spacing: 1px; }
 .qhx-xiang { font-size: 12px; font-weight: 500; color: #999; margin-left: 8px; letter-spacing: 0; }
 .qhx-tag { font-size: 14px; font-weight: 700; color: #A32D2D; margin-left: 10px; letter-spacing: 1px; }
-.qhx-intro { margin-top: 6px; font-size: 14px; line-height: 1.8; color: #333; }
-.qhx-field { width: 100%; border-collapse: collapse; margin-top: 8px; }
-.qhx-field th { width: 68px; text-align: left; vertical-align: top; font-weight: 700; color: var(--gold-darker); padding: 5px 8px 5px 0; font-size: 13px; white-space: nowrap; }
-.qhx-field td { vertical-align: top; padding: 5px 0; font-size: 13.5px; line-height: 1.75; color: #333; border-bottom: 1px solid #eee5cc; }
-.qhx-field tr:last-child th, .qhx-field tr:last-child td { border-bottom: none; }
+.qhx-text { margin-top: 6px; font-size: 14px; line-height: 1.9; color: #333; }
 
 /* ===== 姓名學（五格剖象） ===== */
 .xm-name-row .field input, .xm-name-row .field select { width: 100%; height: 44px; box-sizing: border-box; padding: 0 10px; font-size: 16px; }
