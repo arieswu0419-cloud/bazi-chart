@@ -3830,6 +3830,20 @@ function xmShuffle(arr) {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; }
   return a;
 }
+// 音韻和諧（參考 pressplay 取名原則）：聲調要起伏（忌姓名全同調）、韻母要變化（忌相鄰同韻繞口）。
+// NAME_PINYIN[字]＝[韻母, 聲調]（見 js/name-pinyin.js）。查無拼音者不評（score 0、ok=null）。
+function xmPinyinOf(ch) { return (typeof NAME_PINYIN !== "undefined") ? NAME_PINYIN[ch] : null; }
+function xmPhonEval(surname, chars) {
+  const sLast = Array.from(surname).pop();
+  const seq = [xmPinyinOf(sLast)].concat(chars.map((c) => xmPinyinOf(c.ch)));
+  if (seq.some((x) => !x)) return { score: 0, ok: null, rhyme: 0, sameTone: false };
+  let rhyme = 0; // 相鄰音節同韻母次數
+  for (let i = 0; i < seq.length - 1; i++) if (seq[i][0] === seq[i + 1][0]) rhyme++;
+  const sameTone = seq.every((x) => x[1] === seq[0][1]); // 全部同聲調
+  let sc = (rhyme === 0 ? 1 : -1.5 * rhyme) + (sameTone ? -2 : 0.5);
+  return { score: sc, ok: rhyme === 0 && !sameTone, rhyme, sameTone };
+}
+
 // opts: { len:1|2, favSet:[五行]|null（null＝不限）, shengxiao:string|null, limit }
 function xmGenerateNames(surname, opts) {
   const sx = opts.shengxiao ? XM_ZODIAC[opts.shengxiao] : null;
@@ -3859,8 +3873,9 @@ function xmGenerateNames(surname, opts) {
     pool.forEach((c) => {
       const g = xmGridTonesFor(surname, c.ch);
       if (!g || !keep(g.tone)) return;
-      results.push({ chars: [c], grids: g.grids, tone: g.tone, sancai: g.sancai,
-        score: xmScoreTones(g.tone) + (c.xiHit ? 1 : 0) + (g.sancai === "good" ? 1 : 0) });
+      const phon = xmPhonEval(surname, [c]);
+      results.push({ chars: [c], grids: g.grids, tone: g.tone, sancai: g.sancai, phon,
+        score: xmScoreTones(g.tone) + (c.xiHit ? 1 : 0) + (g.sancai === "good" ? 1 : 0) + phon.score });
     });
   } else {
     const cap = pool.slice(0, 88); // 控制組合數（≤約7700組）
@@ -3870,8 +3885,9 @@ function xmGenerateNames(surname, opts) {
         const c1 = cap[i], c2 = cap[j];
         const g = xmGridTonesFor(surname, c1.ch + c2.ch);
         if (!g || !keep(g.tone)) continue;
-        results.push({ chars: [c1, c2], grids: g.grids, tone: g.tone, sancai: g.sancai,
-          score: xmScoreTones(g.tone) + (c1.xiHit ? 1 : 0) + (c2.xiHit ? 1 : 0) + (g.sancai === "good" ? 2 : 0) });
+        const phon = xmPhonEval(surname, [c1, c2]);
+        results.push({ chars: [c1, c2], grids: g.grids, tone: g.tone, sancai: g.sancai, phon,
+          score: xmScoreTones(g.tone) + (c1.xiHit ? 1 : 0) + (c2.xiHit ? 1 : 0) + (g.sancai === "good" ? 2 : 0) + phon.score });
       }
     }
   }
@@ -4142,7 +4158,8 @@ function runXingmingGen() {
       '<div class="xm-gen-name"><span class="xm-gen-surname">' + surname + "</span>" + givenTxt + "</div>" +
       '<div class="xm-gen-meta">' + meta + "</div>" +
       '<div class="xm-gen-tones">' + xmGenToneMini(it.tone) +
-      '<span class="xm-gen-sancai">三才' + (it.sancai === "good" ? "吉" : it.sancai === "bad" ? "凶" : "半") + "</span></div>" +
+      '<span class="xm-gen-sancai">三才' + (it.sancai === "good" ? "吉" : it.sancai === "bad" ? "凶" : "半") + "</span>" +
+      (it.phon && it.phon.ok ? '<span class="xm-gen-phon">音韻佳</span>' : "") + "</div>" +
       "</div>";
   });
   h += "</div>";
