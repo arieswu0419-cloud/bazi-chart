@@ -3971,6 +3971,44 @@ function buildCompanyHtml(company, res, ownerBazi, industryWx, industryLabel) {
   return h;
 }
 
+// 格局詳批（原創敘述）：各格職掌＋五行性格＋81數吉凶＋提點；三才生剋敘述。
+function xmRelWord(a, b) {
+  if (a === b) return "比和（同氣相扶）";
+  if (XM_WX_SHENG[a] === b) return a + "生" + b + "（順生）";
+  if (XM_WX_SHENG[b] === a) return b + "生" + a + "（受生）";
+  if (XM_WX_KE[a] === b) return a + "剋" + b + "（下剋）";
+  return b + "剋" + a + "（受剋）";
+}
+function xmSancaiDetail(t, p, d, tone) {
+  const base = "天格屬" + t + "、人格屬" + p + "、地格屬" + d + "；天→人為" + xmRelWord(t, p) + "，人→地為" + xmRelWord(p, d) + "。";
+  const concl = tone === "good" ? "三才生化順暢、上下相扶，主基礎穩固、身心安泰、運途少阻，一生較得長輩與環境之助。"
+    : tone === "bad" ? "三才有相剋、氣機不順，主過程多阻逆、易生波折或身心壓力；宜以人格為主善加調和，後天靠修養與努力扭轉。"
+      : "三才生剋互見、吉凶參半，主際遇起伏、成敗在乎人為；把握吉處、化解剋處，仍大有可為。";
+  return base + concl;
+}
+function buildXingmingDetail(r) {
+  const order = ["天格", "人格", "地格", "外格", "總格"];
+  let h = '<div class="zibai-section-title" style="margin-top:16px">格局詳批</div><div class="xm-detail">';
+  order.forEach((name) => {
+    const n = r.grids[name], red = xmReduce81(n), wx = xmNumWx(n);
+    const info = XM_SHU81[red] || ["mixed", ""], tone = info[0], gi = XM_GE_INFO[name];
+    const toneTxt = tone === "good" ? "吉" : tone === "bad" ? "凶" : "半吉";
+    const advise = tone === "good" ? "為吉數，善加發揮可得其力。"
+      : tone === "bad" ? "數理欠佳，宜以人格為主調和、後天修德惜福以補運，趨吉避凶。"
+        : "吉中帶凶，宜守正持穩、謹慎行事以趨吉。";
+    h += '<div class="xm-detail-item"><div class="xm-detail-h"><b>' + name + " " + n +
+      (n !== red ? "（靈動" + red + "）" : "") + "・五行屬" + wx + "</b>　" + xmToneTag(tone) +
+      '　<span class="xm-detail-role">' + gi.role + "・" + gi.span + "</span></div>" +
+      '<div class="xm-detail-b">' + gi.desc + "五行屬" + wx + "，" + XM_WX_TRAIT[wx] +
+      "本格數理 " + red + " 屬" + toneTxt + "，主「" + info[1] + "」，" + advise + "</div></div>";
+  });
+  h += '<div class="xm-detail-item"><div class="xm-detail-h"><b>三才配置　' + r.sancaiWx.join("・") +
+    "</b>　" + xmToneTag(r.sancaiTone) + '　<span class="xm-detail-role">天人地五行生剋</span></div>' +
+    '<div class="xm-detail-b">' + xmSancaiDetail(r.sancaiWx[0], r.sancaiWx[1], r.sancaiWx[2], r.sancaiTone) + "</div></div>";
+  h += "</div>";
+  return h;
+}
+
 function buildXingmingHtml(r, gender, bazi) {
   const gridOrder = ["天格", "人格", "地格", "外格", "總格"];
   const gridRole = { 天格: "祖運・先天（1~15歲）", 人格: "主運・命運中心（一生・35~55歲最顯）", 地格: "前運・少壯（15~35歲）", 外格: "副運・社交外緣", 總格: "後運・中晚年（36歲後）" };
@@ -3999,6 +4037,8 @@ function buildXingmingHtml(r, gender, bazi) {
     "；" + (r.sancaiTone === "good" ? "三才相生順暢，基礎穩固、運途順遂。" :
       r.sancaiTone === "bad" ? "三才相剋，多阻逆、宜以人格為主善加調和。" :
         "三才生剋參半，吉凶互見、成敗在人為。") + "</div>";
+  // 格局詳批（原創敘述型解讀）
+  h += buildXingmingDetail(r);
   // ===== 八字五行喜忌配名（需出生年月日）=====
   if (bazi) {
     const wcls = { 木: 3, 火: 9, 土: 2, 金: 7, 水: 1 };
@@ -4031,6 +4071,19 @@ function buildXingmingHtml(r, gender, bazi) {
     h += "</tbody></table></div>";
     h += '<div class="xm-bazi-tip">建議：名字宜多用五行屬 <b>' + fav.primaryFav.join("、") +
       "</b> 之字（就三才五格派而言即人格／總格筆劃五行落於喜用），少用屬 <b>" + fav.primaryAvoid.join("、") + "</b> 者。</div>";
+    // 氣運總評：先天八字喜用 × 後天姓名五格 綜合
+    const geHits = ["人格", "地格", "外格", "總格"].map((name) => {
+      const w = xmNumWx(r.grids[name]);
+      return fav.primaryFav.indexOf(w) !== -1 ? 1 : (fav.primaryAvoid.indexOf(w) !== -1 ? -1 : 0);
+    });
+    const favCnt = geHits.filter((x) => x > 0).length, avoidCnt = geHits.filter((x) => x < 0).length;
+    const renHit = fav.primaryFav.indexOf(xmNumWx(r.grids.人格)) !== -1;
+    const qiyun = (favCnt >= 3 || (favCnt >= 2 && renHit))
+      ? "先天八字喜「" + fav.primaryFav.join("、") + "」，姓名五格多落喜用（尤以人格為要），先後天相輔、氣運相生，主一生得五行之助、運勢加分，名助其命。"
+      : (avoidCnt >= 2)
+        ? "先天八字喜「" + fav.primaryFav.join("、") + "」，然姓名五格偏落忌神，先後天未盡相合；宜於用字或後天佈局（顏色、方位、行業）補其喜用、化其所忌。"
+        : "先天八字喜「" + fav.primaryFav.join("、") + "」，姓名五格與喜忌互見、屬中性；可再就人格、總格微調用字，令名益命、錦上添花。";
+    h += '<div class="xm-bazi-tip"><b>氣運總評：</b>' + qiyun + "</div>";
     h += "</div>";
 
     // ===== 生肖姓名法 =====

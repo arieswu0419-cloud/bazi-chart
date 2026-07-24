@@ -105,6 +105,24 @@ function xmSancaiTone(tianWx, renWx, diWx) {
   return s >= 3 ? "good" : s <= -2 ? "bad" : "mixed";
 }
 
+// ===================== 格局詳批（原創敘述型解讀）=====================
+// 五行性格特質（用於各格詳批）
+const XM_WX_TRAIT = {
+  木: "主仁，性情正直上進、富同情心，行事積極不服輸；唯性直易折，宜以柔濟剛。",
+  火: "主禮，個性開朗熱情、光明磊落，行動與表現力強；唯性急易衝，宜穩中求進、戒躁進。",
+  土: "主信，為人誠懇厚道、務實包容，根基踏實重信諾；唯略嫌固執保守，宜靈活應變。",
+  金: "主義，個性果決剛毅、重義守信，講原則能擔當；唯性剛易折，宜圓融待人、剛柔並濟。",
+  水: "主智，天資聰穎機巧、善謀應變，人緣佳才思敏；唯心思多變，宜專一持恆、戒浮動。"
+};
+// 各格職掌（原創說明）
+const XM_GE_INFO = {
+  天格: { role: "先天祖運", span: "1~15歲", desc: "承自姓氏，代表祖蔭、家世與先天根基。天格本身不單論個人吉凶，重點在其五行對「人格」的生剋——生扶人格為助力，剋洩人格則為阻力。" },
+  人格: { role: "主運・命運中樞", span: "一生，35~55歲最顯", desc: "由姓末字與名首字相加，是姓名的核心，主導一生的性格、才能與際遇，也是三才的樞紐；人格吉、三才順，一生根基自穩。" },
+  地格: { role: "前運・少壯基礎", span: "15~35歲", desc: "為名字的筆劃結構，代表前半生的基礎運勢，以及與子女、部屬、晚輩的緣分，也反映內在情感與生活態度。" },
+  外格: { role: "副運・社交外緣", span: "外在際遇", desc: "主社交、人際、外在機遇與他人助力，反映一個人給外界的印象與交際手腕；外格吉則貴人多、外緣佳。" },
+  總格: { role: "後運・總體成就", span: "36歲後", desc: "為全名筆劃總和，統括一生的總格局與中晚年的成就歸宿，是綜合成敗的總結。" }
+};
+
 // ===================== 生肖姓名學（通用版）字根喜忌 =====================
 // 通用十二生肖姓名學：各生肖依習性、三合三會與六沖六害，歸納「喜用字根（部首／字形）」與
 // 「忌用字根」。字根偵測採常見姓名用字對照表（XM_ROOT_CHARS：token → 常見字），未收錄之字
@@ -240,5 +258,5 @@ const XM_INDUSTRY = [
 ];
 
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { XM_SHU81, xmNumWx, xmSancaiTone, XM_WX_SHENG, XM_WX_KE, XM_ROOT_CHARS, xmCharRoots, XM_ZODIAC, XM_NAME_POOL, XM_BIZ_LUCKY, XM_BIZ_NOTE, XM_INDUSTRY };
+  module.exports = { XM_SHU81, xmNumWx, xmSancaiTone, XM_WX_SHENG, XM_WX_KE, XM_ROOT_CHARS, xmCharRoots, XM_ZODIAC, XM_NAME_POOL, XM_BIZ_LUCKY, XM_BIZ_NOTE, XM_INDUSTRY, XM_WX_TRAIT, XM_GE_INFO };
 }
