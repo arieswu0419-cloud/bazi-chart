@@ -70,15 +70,24 @@ async function loadUsers() {
   const tbody = document.getElementById("adminTableBody");
   tbody.innerHTML = '<tr><td colspan="15">載入中...</td></tr>';
   try {
-    const snap = await db.collection("users").orderBy("createdAt", "desc").get();
+    // 不用 orderBy("createdAt")：Firestore 的 orderBy 會靜默略過「缺該欄位」的文件，
+    // 導致 createdAt 缺值／serverTimestamp 尚未解析的帳號（例如剛註冊）在後台看不到。
+    // 改抓全部、用戶端排序（缺 createdAt 者排最後，仍會顯示）。
+    const snap = await db.collection("users").get();
     tbody.innerHTML = "";
     if (snap.empty) {
       tbody.innerHTML = '<tr><td colspan="15">目前沒有任何帳號</td></tr>';
       return;
     }
-    snap.forEach((doc) => {
-      tbody.appendChild(renderUserRow(doc.id, doc.data()));
+    const docs = [];
+    snap.forEach((doc) => docs.push(doc));
+    docs.sort((a, b) => {
+      const ta = a.data().createdAt, tb = b.data().createdAt;
+      const va = ta && ta.toMillis ? ta.toMillis() : 0;
+      const vb = tb && tb.toMillis ? tb.toMillis() : 0;
+      return vb - va; // 由新到舊；缺 createdAt 者（0）排最後
     });
+    docs.forEach((doc) => tbody.appendChild(renderUserRow(doc.id, doc.data())));
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="15">載入失敗：' + err.message + "</td></tr>";
   }
