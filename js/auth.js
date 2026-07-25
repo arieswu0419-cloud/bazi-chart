@@ -1,6 +1,15 @@
 // 系統維護帳號，跟 firestore.rules 裡的 isAdmin() 判斷條件是同一個 email，兩邊要保持一致
 const ADMIN_EMAIL = "arieswu0419@gmail.com";
 
+// 新帳號初始權限：**必須與 firestore.rules 的 create 規則完全一致**（Firestore map == 為精確比對）。
+// 規則只允許這九個鍵、且全部 false；多寫任何一鍵（例如曾誤加的 qimenHongpan）都會被規則拒絕、
+// 導致 users 文件寫入失敗、帳號無法出現在後台。其餘新功能（qimenHongpan/zibai/…）由
+// effectivePermissions 預設 false，之後由管理者在後台開啟即可。
+const INIT_PERMISSIONS = {
+  bazi: false, renge: false, lifenum: false, qimen: false,
+  qimenDunjia: false, guanyin: false, jigong: false, fengshui: false, mingpian: false
+};
+
 function showMsg(el, text, type) {
   el.textContent = text;
   el.className = "form-msg show " + type;
@@ -30,11 +39,8 @@ async function handleSignup(e) {
       name: name,
       email: email,
       status: "pending",
-      // 九個功能權限預設全部關閉，審核通過後要由系統維護帳號登入後台手動開啟
-      permissions: {
-        bazi: false, renge: false, lifenum: false, qimen: false,
-        qimenDunjia: false, qimenHongpan: false, guanyin: false, jigong: false, fengshui: false, mingpian: false
-      },
+      // 初始權限＝INIT_PERMISSIONS（九個功能全關，須與 firestore.rules 一致）；審核通過後由後台手動開啟
+      permissions: INIT_PERMISSIONS,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     await auth.signOut();
@@ -61,6 +67,23 @@ async function handleLogin(e) {
     } else if (status === "pending") {
       await auth.signOut();
       showMsg(msg, "您的帳號尚在審核中，請等待管理者核准後再登入。", "info");
+    } else if (!doc.exists) {
+      // 有登入帳號、但沒有 users 資料文件（例如當初註冊時因權限規則不符導致文件沒寫成功）：
+      // 自動補建一份 pending 文件，讓管理者能在後台看到並審核，帳號不再「註冊了卻消失」。
+      try {
+        await db.collection("users").doc(cred.user.uid).set({
+          name: cred.user.displayName || email.split("@")[0],
+          email: email,
+          status: "pending",
+          permissions: INIT_PERMISSIONS,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        await auth.signOut();
+        showMsg(msg, "已為您補建帳號資料，狀態為審核中，請等待管理者核准後再登入。", "info");
+      } catch (e2) {
+        await auth.signOut();
+        showMsg(msg, "帳號資料補建失敗，請聯絡管理者。（" + (e2 && e2.message ? e2.message : "") + "）", "error");
+      }
     } else {
       await auth.signOut();
       showMsg(msg, "找不到有效的帳號資料，請聯絡管理者。", "error");
