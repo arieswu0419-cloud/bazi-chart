@@ -4280,7 +4280,7 @@ function xmGenerateCompanyNames(opts) {
     });
   });
   const pool = xmShuffle(cands);
-  const favSet = opts.favSet, industryWx = opts.industryWx;
+  const favSet = opts.favSet, industryWx = opts.industryWx, fixed = opts.fixedChar || null;
   const results = [];
   function consider(arr) {
     const total = arr.reduce((a, c) => a + c.k, 0);
@@ -4294,13 +4294,28 @@ function xmGenerateCompanyNames(opts) {
     results.push({ chars: arr.slice(), total, red, wx, bizNote: XM_BIZ_NOTE[red] || null, favHit, indTone, score });
   }
   if (opts.len === 3) {
-    const cap = pool.slice(0, 42);
-    for (let i = 0; i < cap.length; i++) for (let j = 0; j < cap.length; j++) for (let m = 0; m < cap.length; m++) {
-      if (i === j || j === m || i === m) continue; consider([cap[i], cap[j], cap[m]]);
+    const cap = pool.slice(0, fixed ? 60 : 42);
+    if (fixed) {
+      // 指定字固定於三個位置之一，其餘兩字取自字庫
+      for (let i = 0; i < cap.length; i++) for (let j = 0; j < cap.length; j++) {
+        if (i === j) continue;
+        consider([fixed, cap[i], cap[j]]);
+        consider([cap[i], fixed, cap[j]]);
+        consider([cap[i], cap[j], fixed]);
+      }
+    } else {
+      for (let i = 0; i < cap.length; i++) for (let j = 0; j < cap.length; j++) for (let m = 0; m < cap.length; m++) {
+        if (i === j || j === m || i === m) continue; consider([cap[i], cap[j], cap[m]]);
+      }
     }
   } else {
-    const cap = pool.slice(0, 120);
-    for (let i = 0; i < cap.length; i++) for (let j = 0; j < cap.length; j++) { if (i === j) continue; consider([cap[i], cap[j]]); }
+    if (fixed) {
+      // 指定字置前或置後，另一字取自字庫
+      for (let i = 0; i < pool.length; i++) { consider([fixed, pool[i]]); consider([pool[i], fixed]); }
+    } else {
+      const cap = pool.slice(0, 120);
+      for (let i = 0; i < cap.length; i++) for (let j = 0; j < cap.length; j++) { if (i === j) continue; consider([cap[i], cap[j]]); }
+    }
   }
   results.sort((a, b) => b.score - a.score);
   const seen2 = {}, uniq = [];
@@ -4334,17 +4349,30 @@ function runXingmingCompanyGen() {
   const indIdx = document.getElementById("xm-co-industry").value;
   let industryWx = null;
   if (indIdx !== "") { industryWx = XM_INDUSTRY[indIdx].wx; note += "　行業：" + XM_INDUSTRY[indIdx].label + "（" + industryWx + "）"; }
-  const results = xmGenerateCompanyNames({ len, favSet: mode === "auto" ? favSet : null, industryWx, limit: 24 });
+  // 指定字（選填）：字號必含此字，其餘字自動補
+  let fixedChar = null;
+  const fixRaw = (document.getElementById("xm-cogen-fix").value || "").trim();
+  if (fixRaw) {
+    const ch = Array.from(fixRaw)[0];
+    const k = (typeof KANGXI_STROKES !== "undefined") ? KANGXI_STROKES[ch] : null;
+    if (k == null) { hint.textContent = "指定字「" + ch + "」查無康熙筆劃，請改用常用中文字。"; out.innerHTML = ""; return; }
+    let fwx = xmNumWx(k); // 五行：字義（XM_NAME_POOL）優先，否則筆劃五行
+    for (const w in XM_NAME_POOL) { if (XM_NAME_POOL[w].indexOf(ch) !== -1) { fwx = w; break; } }
+    fixedChar = { ch, wx: fwx, k, fixed: true };
+    note = "指定含「" + ch + "」　" + note;
+  }
+  const results = xmGenerateCompanyNames({ len, favSet: mode === "auto" ? favSet : null, industryWx, fixedChar, limit: 24 });
   hint.textContent = note;
   if (!results.length) {
-    out.innerHTML = '<div class="xm-gen-empty">目前字庫與條件下暫無商業吉數字號，可改字數或改為『不限五行』再試。</div>';
+    out.innerHTML = '<div class="xm-gen-empty">' + (fixedChar ? "含「" + fixedChar.ch + "」" : "") +
+      "此條件下暫無商業吉數字號，可改字數、換指定字或改為『不限五行』再試。</div>";
     return;
   }
   const wcls = { 木: 3, 火: 9, 土: 2, 金: 7, 水: 1 };
   const wxChip = (wx) => '<span class="' + zbWxClass(wcls[wx]) + '">' + wx + "</span>";
   let h = '<div class="xm-gen-grid">';
   results.forEach((it) => {
-    const nameTxt = it.chars.map((c) => c.ch).join("");
+    const nameTxt = it.chars.map((c) => c.fixed ? '<span class="xm-gen-fixch">' + c.ch + "</span>" : c.ch).join("");
     const meta = it.chars.map((c) => c.ch + "（" + c.k + "劃・" + wxChip(c.wx) + "）").join(" ");
     h += '<div class="xm-gen-item">' +
       '<div class="xm-gen-name">' + nameTxt + "</div>" +
