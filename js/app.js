@@ -3866,28 +3866,29 @@ function xmGenerateNames(surname, opts) {
     });
   });
   const pool = xmShuffle(cands);
+  const fixed = opts.fixedChar || null; // {ch, wx, k, xiHit, fixed:true}
   const good = (t) => t === "good", notBad = (t) => t !== "bad";
   const keep = (tn) => good(tn.人格) && notBad(tn.地格) && notBad(tn.外格) && notBad(tn.總格);
   const results = [];
+  const evalName = (arr) => {
+    const g = xmGridTonesFor(surname, arr.map((c) => c.ch).join(""));
+    if (!g || !keep(g.tone)) return;
+    const phon = xmPhonEval(surname, arr);
+    const xiBonus = arr.reduce((a, c) => a + (c.xiHit ? 1 : 0), 0);
+    results.push({ chars: arr.slice(), grids: g.grids, tone: g.tone, sancai: g.sancai, phon,
+      score: xmScoreTones(g.tone) + xiBonus + (g.sancai === "good" ? (arr.length > 1 ? 2 : 1) : 0) + phon.score });
+  };
   if (opts.len === 1) {
-    pool.forEach((c) => {
-      const g = xmGridTonesFor(surname, c.ch);
-      if (!g || !keep(g.tone)) return;
-      const phon = xmPhonEval(surname, [c]);
-      results.push({ chars: [c], grids: g.grids, tone: g.tone, sancai: g.sancai, phon,
-        score: xmScoreTones(g.tone) + (c.xiHit ? 1 : 0) + (g.sancai === "good" ? 1 : 0) + phon.score });
-    });
+    if (fixed) evalName([fixed]);            // 指定字即單名
+    else pool.forEach((c) => evalName([c]));
   } else {
-    const cap = pool.slice(0, 88); // 控制組合數（≤約7700組）
-    for (let i = 0; i < cap.length; i++) {
-      for (let j = 0; j < cap.length; j++) {
-        if (i === j) continue;
-        const c1 = cap[i], c2 = cap[j];
-        const g = xmGridTonesFor(surname, c1.ch + c2.ch);
-        if (!g || !keep(g.tone)) continue;
-        const phon = xmPhonEval(surname, [c1, c2]);
-        results.push({ chars: [c1, c2], grids: g.grids, tone: g.tone, sancai: g.sancai, phon,
-          score: xmScoreTones(g.tone) + (c1.xiHit ? 1 : 0) + (c2.xiHit ? 1 : 0) + (g.sancai === "good" ? 2 : 0) + phon.score });
+    if (fixed) {
+      // 指定字置前或置後，另一字取自字庫
+      pool.forEach((c) => { evalName([fixed, c]); evalName([c, fixed]); });
+    } else {
+      const cap = pool.slice(0, 88); // 控制組合數（≤約7700組）
+      for (let i = 0; i < cap.length; i++) for (let j = 0; j < cap.length; j++) {
+        if (i === j) continue; evalName([cap[i], cap[j]]);
       }
     }
   }
@@ -4194,17 +4195,35 @@ function runXingmingGen() {
   } else {
     note = "未填生日，僅依吉數五格排字（不篩五行、不判生肖）。";
   }
-  const results = xmGenerateNames(surname, { len, favSet: mode === "auto" ? favSet : null, shengxiao, limit: 24 });
+  // 指定字（選填）：名字必含此字，其餘自動補
+  let fixedChar = null;
+  const fixRaw = (document.getElementById("xm-gen-fix").value || "").trim();
+  if (fixRaw) {
+    const ch = Array.from(fixRaw)[0];
+    const k = xmStrokes(ch);
+    if (k == null) { hint.textContent = "指定字「" + ch + "」查無筆劃，請改用常用中文字。"; out.innerHTML = ""; return; }
+    let fwx = xmNumWx(k); // 五行：字義（XM_NAME_POOL）優先，否則筆劃五行
+    for (const w in XM_NAME_POOL) { if (XM_NAME_POOL[w].indexOf(ch) !== -1) { fwx = w; break; } }
+    let xiHit = null;
+    if (shengxiao && XM_ZODIAC[shengxiao]) {
+      const z = XM_ZODIAC[shengxiao], x = xmCharRoots(ch).map((rt) => z.xi.find((e) => e[0] === rt)).find(Boolean);
+      if (x) xiHit = x[0];
+    }
+    fixedChar = { ch, wx: fwx, k, xiHit, fixed: true };
+    note = "指定含「" + ch + "」　" + note;
+  }
+  const results = xmGenerateNames(surname, { len, favSet: mode === "auto" ? favSet : null, shengxiao, fixedChar, limit: 24 });
   hint.textContent = note;
   if (!results.length) {
-    out.innerHTML = '<div class="xm-gen-empty">此姓氏在目前字庫與條件下暫無吉數組合，可改字數、改為『不限五行』或調整生日再試。</div>';
+    out.innerHTML = '<div class="xm-gen-empty">' + (fixedChar ? "含「" + fixedChar.ch + "」" : "此姓氏") +
+      "在目前字庫與條件下暫無吉數組合，可改字數、換指定字、改為『不限五行』或調整生日再試。</div>";
     return;
   }
   const wcls = { 木: 3, 火: 9, 土: 2, 金: 7, 水: 1 };
   const wxChip = (wx) => '<span class="' + zbWxClass(wcls[wx]) + '">' + wx + "</span>";
   let h = '<div class="xm-gen-grid">';
   results.forEach((it) => {
-    const givenTxt = it.chars.map((c) => c.ch).join("");
+    const givenTxt = it.chars.map((c) => c.fixed ? '<span class="xm-gen-fixch">' + c.ch + "</span>" : c.ch).join("");
     const meta = it.chars.map((c) =>
       c.ch + "（" + c.k + "劃・" + wxChip(c.wx) + (c.xiHit ? '<span class="xm-gen-xi">喜' + c.xiHit + "</span>" : "") + "）").join(" ");
     h += '<div class="xm-gen-item">' +
