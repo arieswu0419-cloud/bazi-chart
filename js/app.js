@@ -2102,7 +2102,7 @@ function buildQimenGridHtml(data, bottomLabelFn, centerLabel, cornerWordsFn, day
   return gridHtml;
 }
 
-// hexByGong：只有奇門遁甲頁面會傳（命盤頁傳 undefined），傳入時在 8 個方位格加顯示該宮的 64 卦
+// hexByGong：奇門遁甲頁與命盤頁都會傳（紅盤另有自己的），傳入時在 8 個方位格加顯示該宮的 64 卦
 // （上下兩個卦象符號＋卦名，見 computeQimenDunjiaHexagrams）
 // changShengByZhi：只有奇門紅盤會傳（地支→十二長生單字對照，如 寅→長），傳入時在每個地支旁
 // 顯示該字（同一個 qc-zhi-item 容器內，字級跟地支一致），並帶 data-zhi 供右上「長生」下拉連動改字
@@ -2316,7 +2316,7 @@ function qimenDunjiaIsOuterGong(g, isYang) {
   return (isYang ? QIMEN_DUNJIA_YANG_OUTER_GONGS : QIMEN_DUNJIA_YIN_OUTER_GONGS).includes(g);
 }
 
-// 奇門遁甲外環 64 卦：橘色羅盤 8 個卦位各顯示一個易經六十四卦（比照參考站，命盤頁不顯示）。
+// 奇門遁甲外環 64 卦：橘色羅盤 8 個卦位各顯示一個易經六十四卦（比照參考站；命盤頁亦同位置顯示）。
 // 演算法（用官網 15 張盤、120 個卦交叉驗證，涵蓋陽遁／陰遁／不同局數／符首本時與非本時／1978~2030）：
 //   基準——符首本時（甲子／甲戌…時）每宮顯示自己後天八卦的「純卦」（坎宮＝坎為水、離宮＝離為火…）。
 //   隨時辰前進，上卦環跟著「天盤（值符星）飛佈量」反方向轉、下卦環跟著「人盤（值使門）飛佈量」反方向轉。
@@ -2359,7 +2359,10 @@ function renderQimen(data) {
   document.getElementById("qimenInfoPanel").innerHTML = buildQimenInfoTable(data, true);
 
   const gridHtml = buildQimenGridHtml(data, (c) => c.dayunLabel, "命", (c) => c.cornerWords, false, null);
-  document.getElementById("qimenCompass").innerHTML = buildQimenCompassHtml(data, gridHtml);
+  // 命盤九宮格外環也顯示 64 卦，位置比照奇門藍盤（同一套 computeQimenDunjiaHexagrams／buildQimenCompassHtml）
+  const mingHex = computeQimenDunjiaHexagrams(data);
+  data.hexagrams = mingHex; // 供點宮展開 64 卦卡片使用（與藍盤／紅盤 data.hexagrams 一致）
+  document.getElementById("qimenCompass").innerHTML = buildQimenCompassHtml(data, gridHtml, mingHex);
   document.getElementById("qimenExplain").style.display = "none";
   document.getElementById("qimenExplain").innerHTML = "";
 }
