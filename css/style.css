@@ -2085,3 +2085,55 @@ h2.qsz-page-title { font-size: 22px; }
   .qsz-explain-row { grid-template-columns: 76px 46px 1fr; }
   .qsz-explain-mean { grid-column: 1 / -1; }
 }
+
+/* ================= 紫微「轉流年PDF分析報告」：設定面板＋報告版面（版面比照 Word 範本，深紅 #650707） ================= */
+.zr-panel { border: 1px solid var(--gold); border-radius: var(--radius); background: #FBF8EE; padding: 12px 14px; margin-bottom: 12px; }
+.zr-panel-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 8px; }
+.zr-panel-row label.zr-panel-label { font-weight: 600; color: var(--gold-darker); }
+.zr-panel select { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; }
+.zr-picks { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.zr-picks label { display: flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; background: #fff; cursor: pointer; font-size: 14px; }
+.zr-picks label.zr-on { border-color: #650707; background: #F6EEEF; color: #650707; font-weight: 600; }
+.zr-picks input:disabled + span { color: var(--text-muted); }
+.zr-panel-hint { font-size: 13px; color: var(--text-secondary); }
+@media (max-width: 600px) { .zr-picks { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.zr-report { position: fixed; left: -10000px; top: 0; width: 720px; background: #fff; color: #262626;
+  font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif; font-size: 13px; line-height: 1.65; }
+.zr-block { padding: 0; }
+.zr-kicker { color: #650707; font-weight: 700; letter-spacing: 2px; font-size: 12px; margin-bottom: 4px; }
+.zr-title { font-size: 30px; font-weight: 700; color: #262626; margin-bottom: 6px; }
+.zr-sub { color: #414141; font-size: 14px; }
+.zr-sub b { font-size: 15px; }
+.zr-rule { border-bottom: 2px solid #650707; margin: 10px 0 14px; }
+.zr-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.zr-card { background: #F7F7F7; border-top: 4px solid #650707; padding: 8px 10px; }
+.zr-card-label { color: #7F7F7F; font-weight: 700; font-size: 11px; }
+.zr-card-big { color: #650707; font-weight: 700; font-size: 30px; line-height: 1.3; }
+.zr-card-desc { color: #414141; font-size: 11px; line-height: 1.5; }
+.zr-h1 { border-bottom: 1.5px solid #650707; padding-bottom: 4px; margin: 6px 0 10px; font-size: 20px; font-weight: 700; color: #262626; }
+.zr-num { color: #650707; font-size: 24px; margin-right: 10px; }
+.zr-h2 { border-left: 4px solid #650707; padding-left: 8px; margin: 10px 0 6px; font-size: 15px; font-weight: 700; color: #650707; }
+.zr-callout { background: #F6EEEF; border-left: 4px solid #650707; padding: 8px 12px; margin-bottom: 4px; }
+.zr-list, .zr-olist, .zr-check { margin: 0; padding-left: 22px; }
+.zr-list li, .zr-olist li, .zr-check li { margin-bottom: 4px; }
+.zr-list li::marker, .zr-olist li::marker { color: #650707; }
+.zr-check { list-style: none; padding-left: 4px; }
+.zr-check li::before { content: "☐"; color: #650707; margin-right: 8px; }
+.zr-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; line-height: 1.5;
+  border-top: 2px solid #650707; border-bottom: 2px solid #650707; }
+.zr-table th { background: #650707; color: #fff; text-align: left; padding: 5px 7px; font-weight: 700; }
+.zr-table td { padding: 5px 7px; border-top: 1px solid #D9D9D9; vertical-align: middle; word-break: break-all; }
+.zr-table tbody tr:nth-child(even) td { background: #F7F7F7; }
+.zr-table td.zr-first { color: #650707; font-weight: 700; }
+.zr-table td.zr-first-dark { color: #262626; }
+.zr-table td.zr-rate { text-align: center; font-weight: 700; }
+.zr-table td.zr-r-great { background: #650707 !important; color: #fff; }
+.zr-table td.zr-r-good { color: #650707; }
+.zr-table td.zr-r-flat { color: #7F7F7F; }
+.zr-table td.zr-r-warn { background: #EED9DA !important; color: #650707; }
+.zr-fig { text-align: center; }
+.zr-fig img { width: 100%; border: 1px solid #D9D9D9; }
+.zr-cap { color: #7F7F7F; font-size: 11px; margin-top: 4px; }
+.zr-note { color: #7F7F7F; font-size: 11px; }
+.zr-end { text-align: center; color: #7F7F7F; font-size: 11px; margin-top: 14px; }

@@ -513,6 +513,89 @@ document.getElementById("exportZiweiPdfBtn").addEventListener("click", async fun
   finally { btn.disabled = false; btn.textContent = orig; }
 });
 
+// 轉流年PDF分析報告（解讀與版面在 js/ziwei-report.js）：設定面板選流年年份＋十二宮任選三項，
+// 先截本命／大限／流年三張命盤圖，再把報告逐區塊轉成 PDF（沿用 addSectionsToPdf 分頁，不會把表格切半）
+const ZR_MAX_PICKS = 3;
+function zrSyncPicks() {
+  const boxes = Array.from(document.querySelectorAll("#zr-picks input"));
+  const n = boxes.filter((b) => b.checked).length;
+  boxes.forEach((b) => { b.disabled = !b.checked && n >= ZR_MAX_PICKS; b.parentElement.classList.toggle("zr-on", b.checked); });
+  document.getElementById("zr-pick-count").textContent = "已選 " + n + " / " + ZR_MAX_PICKS;
+}
+document.getElementById("zr-picks").innerHTML = ZiweiReport.PALACES.map((p) =>
+  '<label><input type="checkbox" value="' + p + '"' + (ZiweiReport.DEFAULT_PICKS.indexOf(p) >= 0 ? " checked" : "") + "><span>" + p + "</span></label>").join("");
+document.getElementById("zr-picks").addEventListener("change", zrSyncPicks);
+zrSyncPicks();
+
+document.getElementById("ziweiReportToggleBtn").addEventListener("click", function () {
+  if (!zwState) { showToast("請先排盤。", "error"); return; }
+  const panel = document.getElementById("ziweiReportPanel");
+  const open = panel.style.display === "none";
+  if (open) {
+    // 年份範圍＝出生年起 100 年；預設保留上次選的年份，沒有就用今年
+    const sel = document.getElementById("zr-year");
+    const by = zwState.input.y, thisYear = new Date().getFullYear();
+    const keep = Number(sel.value) || thisYear;
+    sel.innerHTML = "";
+    for (let yy = by; yy <= by + 100; yy++) sel.add(new Option(yy + " 年", yy));
+    sel.value = String(keep >= by && keep <= by + 100 ? keep : thisYear);
+  }
+  panel.style.display = open ? "" : "none";
+});
+
+// 依序重繪本命／大限／流年盤並截圖（查詢時間設在該年年中，確保落在同一個農曆年），完成後還原使用者原本的盤別與時間
+async function zrCaptureCharts(year) {
+  const hd = document.getElementById("zw-hdate"), ht = document.getElementById("zw-htime");
+  const saved = { scope: zwState.scope || "natal", date: hd.value, time: ht.value };
+  hd.value = year + "-06-30"; ht.value = "12:00";
+  const out = [];
+  try {
+    for (const [scope, label] of [["natal", "本命盤"], ["decadal", "大限盤"], ["yearly", "流年盤"]]) {
+      zwRenderChart(scope);
+      const info = document.querySelector("#ziweiChart .zw-scope-info");
+      const canvas = await html2canvas(document.querySelector("#ziweiChart .zw-grid"), { scale: 2, backgroundColor: "#ffffff" });
+      out.push({ src: canvas.toDataURL("image/jpeg", 0.9),
+        caption: "圖 " + (out.length + 1) + "　" + label + (info ? "　" + info.textContent.replace(/^\S+盤\s*/, "") : "") });
+    }
+  } finally {
+    hd.value = saved.date; ht.value = saved.time;
+    zwRenderChart(saved.scope);
+  }
+  return out;
+}
+
+document.getElementById("ziweiReportGenBtn").addEventListener("click", async function () {
+  if (!zwState) { showToast("請先排盤。", "error"); return; }
+  const picks = Array.from(document.querySelectorAll("#zr-picks input:checked")).map((b) => b.value);
+  if (!picks.length) { showToast("請至少選一個重點宮位。", "error"); return; }
+  const year = Number(document.getElementById("zr-year").value);
+  const btn = this, status = document.getElementById("zr-status"), orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "產生中...";
+  let box = null;
+  try {
+    status.textContent = "擷取命盤圖...";
+    const charts = await zrCaptureCharts(year);
+    status.textContent = "分析與排版中...";
+    const inp = zwState.input;
+    const model = ZiweiReport.analyze(zwState.a, { year, picks, name: inp.name, gender: inp.gender, birth: inp,
+      lunarText: inp.lunarText, lunarMonth: inp.lunarMonth, tIdx: inp.tIdx });
+    box = ZiweiReport.render(model, charts);
+    document.body.appendChild(box);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 12;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 紫微斗數流年分析報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    await addSectionsToPdf(pdf, Array.from(box.children), margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save(inp.name + "-" + year + "流年分析報告.pdf");
+    status.textContent = "已下載";
+  } catch (err) { status.textContent = ""; alert("產生失敗：" + err.message); }
+  finally { if (box) box.remove(); btn.disabled = false; btn.textContent = orig; }
+});
+
 function renderZiwei({ name, gender, y, mo, d, h, mi }) {
   const a = iztro.astro.bySolar(y + "-" + mo + "-" + d, zwTimeIndex(h), gender === "male" ? "男" : "女", true, "zh-TW");
   // 農曆與節氣四柱（lunar-javascript；晚子時進位日柱與全站一致）
@@ -569,8 +652,8 @@ function renderZiwei({ name, gender, y, mo, d, h, mi }) {
     '<div class="zw-foot">本內容僅供參考，命運掌握在自己手裡</div>' +
     "</div>";
 
-  // 存狀態供盤別切換（本命/流年/流月/流日/流時）重繪使用
-  zwState = { a, centerHtml: center };
+  // 存狀態供盤別切換（本命/流年/流月/流日/流時）重繪使用；input 供「轉流年PDF分析報告」使用
+  zwState = { a, centerHtml: center, input: { name, gender, y, mo, d, h, mi, lunarText: lunar.toString(), lunarMonth, tIdx } };
   // 流盤查詢時間預設＝現在
   const now = new Date();
   document.getElementById("zw-hdate").value = now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate());

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=287">
-<link rel="stylesheet" href="css/jigong-bugua.css?v=287">
+<link rel="stylesheet" href="css/style.css?v=288">
+<link rel="stylesheet" href="css/jigong-bugua.css?v=288">
 </head>
 <body>
 
@@ -270,8 +270,22 @@
 
     <div id="ziweiTabPanel" style="display:none">
     <div class="card" id="ziweiCard2">
-      <div class="card-head" style="justify-content:flex-end">
+      <div class="card-head" style="justify-content:flex-end;gap:8px">
+        <button class="btn secondary" id="ziweiReportToggleBtn" style="width:auto" data-html2canvas-ignore="true">轉流年PDF分析報告</button>
         <button class="btn secondary" id="exportZiweiPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+      <div class="zr-panel" id="ziweiReportPanel" style="display:none" data-html2canvas-ignore="true">
+        <div class="zr-panel-row">
+          <label class="zr-panel-label" for="zr-year">流年年份</label>
+          <select id="zr-year"></select>
+          <span class="zr-panel-hint">依農曆年起算，報告含當年大限、流年與十二個流月</span>
+        </div>
+        <div class="zr-panel-row"><span class="zr-panel-label">重點分析（十二宮任選三項）</span><span class="zr-panel-hint" id="zr-pick-count"></span></div>
+        <div class="zr-picks" id="zr-picks"></div>
+        <div class="zr-panel-row" style="margin:10px 0 0">
+          <button type="button" class="btn" id="ziweiReportGenBtn" style="width:auto">產生 PDF 報告</button>
+          <span class="zr-panel-hint" id="zr-status"></span>
+        </div>
       </div>
       <h2 class="zibai-title">紫微斗數命盤</h2>
       <div class="zw-scope-row" data-html2canvas-ignore="true">
@@ -1467,38 +1481,39 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=287"></script>
-<script src="js/auth.js?v=287"></script>
+<script src="js/firebase-config.js?v=288"></script>
+<script src="js/auth.js?v=288"></script>
 <script src="js/vendor/lunar-javascript-1.7.7.js"></script>
-<script src="js/bazi-engine.js?v=287"></script>
-<script src="js/dayun-strategy-content.js?v=287"></script>
-<script src="js/shensha-content.js?v=287"></script>
-<script src="js/renge-content.js?v=287"></script>
-<script src="js/renge-engine.js?v=287"></script>
-<script src="js/lifenum-engine.js?v=287"></script>
-<script src="js/mingpian-engine.js?v=287"></script>
-<script src="js/name-strokes-data.js?v=287"></script>
-<script src="js/lunar-convert.js?v=287"></script>
-<script src="js/shuzi-engine.js?v=287"></script>
-<script src="js/jigong-engine.js?v=287"></script>
-<script src="js/guanyin-data.js?v=287"></script>
+<script src="js/bazi-engine.js?v=288"></script>
+<script src="js/dayun-strategy-content.js?v=288"></script>
+<script src="js/shensha-content.js?v=288"></script>
+<script src="js/renge-content.js?v=288"></script>
+<script src="js/renge-engine.js?v=288"></script>
+<script src="js/lifenum-engine.js?v=288"></script>
+<script src="js/mingpian-engine.js?v=288"></script>
+<script src="js/name-strokes-data.js?v=288"></script>
+<script src="js/lunar-convert.js?v=288"></script>
+<script src="js/shuzi-engine.js?v=288"></script>
+<script src="js/jigong-engine.js?v=288"></script>
+<script src="js/guanyin-data.js?v=288"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.3/html2pdf.bundle.min.js"></script>
-<script src="js/jigong-bugua.js?v=287"></script>
-<script src="js/qimen-engine.js?v=287"></script>
-<script src="js/iztro.min.js?v=287"></script>
-<script src="js/cuiwang-engine.js?v=287"></script>
-<script src="js/qimen-shuzi-engine.js?v=287"></script>
-<script src="js/qimen-hexa64-content.js?v=287"></script>
-<script src="js/qimen-hexa-content.js?v=287"></script>
-<script src="js/qimen-hongpan-engine.js?v=287"></script>
-<script src="js/qimen-sansheng-engine.js?v=287"></script>
-<script src="js/fengshui-zibai-engine.js?v=287"></script>
-<script src="js/name-kangxi-strokes.js?v=287"></script>
-<script src="js/name-xingming-content.js?v=287"></script>
-<script src="js/name-pinyin.js?v=287"></script>
-<script src="js/almanac-s2t.js?v=287"></script>
+<script src="js/jigong-bugua.js?v=288"></script>
+<script src="js/qimen-engine.js?v=288"></script>
+<script src="js/iztro.min.js?v=288"></script>
+<script src="js/ziwei-report.js?v=288"></script>
+<script src="js/cuiwang-engine.js?v=288"></script>
+<script src="js/qimen-shuzi-engine.js?v=288"></script>
+<script src="js/qimen-hexa64-content.js?v=288"></script>
+<script src="js/qimen-hexa-content.js?v=288"></script>
+<script src="js/qimen-hongpan-engine.js?v=288"></script>
+<script src="js/qimen-sansheng-engine.js?v=288"></script>
+<script src="js/fengshui-zibai-engine.js?v=288"></script>
+<script src="js/name-kangxi-strokes.js?v=288"></script>
+<script src="js/name-xingming-content.js?v=288"></script>
+<script src="js/name-pinyin.js?v=288"></script>
+<script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=287"></script>
+<script src="js/app.js?v=288"></script>
 </body>
 </html>
