@@ -291,6 +291,45 @@ function fillYearMonthDaySelects(yearSel, monthSel, daySel, today) {
     String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
 })();
 
+// 國曆年/月/日下拉：日只能選該月實際有的天數（2/30、4/31、平年 2/29 等不存在的日子設為不可選）。
+// 修正前選了 2/30 會被曆法函式庫默默當成 3/2 排盤，報告卻仍印「02-30」。
+// 改年／月後原本的日超過當月天數 → 自動改成當月最後一天，並觸發 change 讓連動重算的頁面跟著更新。
+// 有些頁面會用程式直接設定年月（不觸發 change），所以打開日下拉前（focus／pointerdown）也重新檢查一次。
+const SOLAR_DATE_SELECTS = [
+  ["f-byear", "f-bmonth", "f-bday"], ["f-qyear", "f-qmonth", "f-qday"],
+  ["shuzi-lunar-year", "shuzi-lunar-month", "shuzi-lunar-day"],
+  ["qd-byear", "qd-bmonth", "qd-bday"], ["ss-byear", "ss-bmonth", "ss-bday"], ["hp-byear", "hp-bmonth", "hp-bday"],
+  ["zb-byear", "zb-bmonth", "zb-bday"], ["zb-oyear", "zb-omonth", "zb-oday"], ["zbfx-oyear", "zbfx-omonth", "zbfx-oday"],
+  ["bz-oyear", "bz-omonth", "bz-oday"], ["xm-byear", "xm-bmonth", "xm-bday"], ["xm-co-byear", "xm-co-bmonth", "xm-co-bday"],
+  ["zeri-year", "zeri-month", "zeri-day"]
+];
+// 年未選（姓名學的選填欄位）時用閏年 2000 計算，2/29 仍可選
+function solarDaysInMonth(y, m) {
+  return new Date(y || 2000, m, 0).getDate();
+}
+function isValidSolarDate(y, m, d) {
+  return m >= 1 && m <= 12 && d >= 1 && d <= solarDaysInMonth(y, m);
+}
+function syncSolarDaySelect(ids) {
+  const [ySel, mSel, dSel] = ids.map((id) => document.getElementById(id));
+  if (!ySel || !mSel || !dSel) return;
+  const m = Number(mSel.value);
+  const max = m ? solarDaysInMonth(Number(ySel.value), m) : 31;
+  Array.from(dSel.options).forEach((o) => { o.disabled = Number(o.value) > max; });
+  if (Number(dSel.value) > max) {
+    dSel.value = String(max);
+    dSel.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+}
+SOLAR_DATE_SELECTS.forEach((ids) => {
+  [ids[0], ids[1]].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", () => syncSolarDaySelect(ids));
+  });
+  const daySel = document.getElementById(ids[2]);
+  if (daySel) ["focus", "pointerdown"].forEach((ev) => daySel.addEventListener(ev, () => syncSolarDaySelect(ids)));
+});
+
 // 出生日期／時間：組成跟原本 <input type="date">/<input type="time"> 一樣格式的字串（YYYY-MM-DD／HH:MM），
 // 給下面各報告的 submit handler 沿用同一套讀值方式
 function getBirthDateVal() {
@@ -621,14 +660,22 @@ document.getElementById("baziForm").addEventListener("submit", function (e) {
 
   const [year, month, day] = dateVal.split("-").map(Number);
   const [hour, minute] = timeVal.split(":").map(Number);
+  if (!isValidSolarDate(year, month, day)) {
+    showToast(year + " 年 " + month + " 月沒有 " + day + " 日，請重新選擇出生日期。", "error");
+    return;
+  }
 
-  currentChart = calculateBazi({ year, month, day, hour, minute, gender, name });
-  selectedDayun = currentChart.daYunList.findIndex((d) => d.isCurrent);
-  if (selectedDayun < 0) selectedDayun = 0;
-  selectedLiunian = null;
-  selectedMainPillar = null;
-  document.getElementById("shenshaExplainCard").style.display = "none";
-  renderChart(currentChart);
+  try {
+    currentChart = calculateBazi({ year, month, day, hour, minute, gender, name });
+    selectedDayun = currentChart.daYunList.findIndex((d) => d.isCurrent);
+    if (selectedDayun < 0) selectedDayun = 0;
+    selectedLiunian = null;
+    selectedMainPillar = null;
+    document.getElementById("shenshaExplainCard").style.display = "none";
+    renderChart(currentChart);
+    // 修正：停在其他報告頁籤（人格解碼／生命靈數…）時按「八字命卷報告」，結果畫在隱藏的 baziTabPanel 裡看不到
+    setActiveTab("bazi");
+  } catch (err) { showToast("排盤失敗：" + err.message, "error"); }
 });
 
 const GENDER_TEXT = { male: "男", female: "女" };
