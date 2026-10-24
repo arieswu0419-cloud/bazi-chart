@@ -1,10 +1,13 @@
 // ================= 命理諮詢「個人通勝」=================
 // 依出生資料（bazi-engine.js 的 calculateBazi 結果）產生指定年份 1～12 月的個人擇日月曆，一個月一張 A4。
 // 每日內容：建除（lunar-javascript）、廿八宿、農曆與干支、本命日別、適合／不適合、喜財貴方位、大吉／次吉／小吉五行。
-// 本命日別一律以「本命年柱」（立春為界）對當日日支判斷：
-//   貴人＝年干天乙貴人｜人緣＝與年支三合、六合｜旺財＝年干祿位、帝旺｜旺財健康＝年干長生
-//   冲＝日支沖年支（干也相沖＝天克地冲）｜三刑＝日支刑年支｜三殺＝年支三合局的三殺方
-//   回頭殺＝月支是「回頭貢殺」三合局的庫、且日支落在該三合局（例：申子辰年生人，丑月的巳酉丑日）
+// 本命日別依「本命日柱（日主、夫妻宮）＋本命年柱」與個人喜用神判斷，每個人不同（同年生也不同）：
+//   天克地冲＝當日干支與本命日柱或年柱天剋地沖｜冲＝日支沖本命日支或年支｜三刑＝刑本命年支
+//   回頭殺＝月支是年支「回頭貢殺」三合局的庫、且日支落在該三合局（例：申子辰年生人，丑月的巳酉丑日）
+//   貴人＝日干或年干的天乙貴人｜人緣＝與年支三合、六合，或與日支六合
+//   旺財＝日主祿位，或財星為喜用時的財星日｜旺財健康＝日主長生
+//   三殺＝年支三合局的三殺方｜喜用＝當日天干、地支五行皆為本命喜用｜其餘為平日
+// 適合／不適合：建除宜忌＋本命日別，再依當日天干對日主的十神（為喜用加一項適合、為忌加一項不適合）。
 // 大吉／次吉／小吉：本命喜忌（BaziReport.natal）加上當日干、日支、月支五行的生剋，取分數最高的三個五行。
 (function () {
   const ELEMS = ["木", "火", "土", "金", "水"];
@@ -46,41 +49,49 @@
   const pairHit = (list, a, b) => list.some((p) => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a));
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  // 本命日別：負面（天克地冲＞冲＞回頭殺＞三刑）優先；其次正面（人緣、貴人、旺財可並列）；再次三殺；其餘為平日
-  function dayType(yG, yZ, dG, dZ, mZ) {
-    const triad = triadOf(yZ);
-    if (pairHit(ZHI_CHONG, yZ, dZ)) {
-      return pairHit(GAN_CHONG, yG, dG) ? { key: "天克地冲", label: "本命天克地冲日", kind: "bad" } : { key: "冲", label: "本命冲日", kind: "bad" };
-    }
+  // 當日天干對日主的十神類別 → 個人化的適合（十神為喜用）／不適合（十神為忌）
+  const SS_CAT = { 比肩: "比劫", 劫財: "比劫", 食神: "食傷", 傷官: "食傷", 正財: "財", 偏財: "財", 正官: "官殺", 七殺: "官殺", 正印: "印", 偏印: "印" };
+  const TEN_YI = { 比劫: "合作洽談", 食傷: "創作發表", 財: "理財規劃", 官殺: "面試拜訪長官", 印: "學習考試" };
+  const TEN_JI = { 比劫: "借貸作保", 食傷: "頂撞上司", 財: "衝動消費", 官殺: "違規冒險", 印: "拖延決定" };
+  const xingHit = (a, b) => (a === b && ZI_XING.indexOf(a) >= 0) || pairHit([["子", "卯"]], a, b) ||
+    SAN_XING.some((g) => g.indexOf(a) >= 0 && g.indexOf(b) >= 0 && a !== b);
+  const liuheHit = (a, b) => ZHI_LIUHE.some((p) => (p[0] === a && p[1] === b) || (p[1] === a && p[0] === b));
+
+  // 本命日別：負面（天克地冲＞冲＞回頭殺＞三刑）優先；其次正面（人緣、貴人、旺財可並列）；再次三殺；
+  // 再次喜用日（干支皆為喜用）；其餘為平日。B＝本命資料 { yG, yZ, dG, dZ, natal }
+  function dayType(B, dG, dZ, mZ) {
+    const triad = triadOf(B.yZ);
+    const tkdc = [[B.dG, B.dZ], [B.yG, B.yZ]].some(([g, z]) => pairHit(ZHI_CHONG, z, dZ) && pairHit(GAN_CHONG, g, dG));
+    if (tkdc) return { key: "天克地冲", label: "本命天克地冲日", kind: "bad" };
+    if (pairHit(ZHI_CHONG, B.dZ, dZ) || pairHit(ZHI_CHONG, B.yZ, dZ)) return { key: "冲", label: "本命冲日", kind: "bad" };
     const ht = HUITOU[triad];
     if (mZ === KU[ht] && ht.indexOf(dZ) >= 0) return { key: "回頭殺", label: "本命回頭殺", kind: "bad" };
-    const xing = (yZ === dZ && ZI_XING.indexOf(dZ) >= 0) || pairHit([["子", "卯"]], yZ, dZ) ||
-      SAN_XING.some((g) => g.indexOf(yZ) >= 0 && g.indexOf(dZ) >= 0 && yZ !== dZ);
-    if (xing) return { key: "三刑", label: "本命三刑日", kind: "bad" };
+    if (xingHit(B.yZ, dZ)) return { key: "三刑", label: "本命三刑日", kind: "bad" };
     const pos = [];
-    if (triad.indexOf(dZ) >= 0 && dZ !== yZ || ZHI_LIUHE.some((p) => (p[0] === yZ && p[1] === dZ) || (p[1] === yZ && p[0] === dZ))) pos.push("人緣");
-    if ((TIANYI_GUIREN[yG] || []).indexOf(dZ) >= 0) pos.push("貴人");
-    const ds = getDiShi(yG, dZ);
-    if (ds === "長生") pos.push("旺財健康");
-    else if (LU_SHEN[yG] === dZ || ds === "帝旺") pos.push("旺財");
+    if ((triad.indexOf(dZ) >= 0 && dZ !== B.yZ) || liuheHit(B.yZ, dZ) || liuheHit(B.dZ, dZ)) pos.push("人緣");
+    if ((TIANYI_GUIREN[B.dG] || []).indexOf(dZ) >= 0 || (TIANYI_GUIREN[B.yG] || []).indexOf(dZ) >= 0) pos.push("貴人");
+    const caiElem = CONTROLS[WUXING_OF_GAN[B.dG]];
+    if (getDiShi(B.dG, dZ) === "長生") pos.push("旺財健康");
+    else if (LU_SHEN[B.dG] === dZ || (WUXING_OF_ZHI[dZ] === caiElem && B.natal.fav(caiElem) > 0)) pos.push("旺財");
     if (pos.length) return { key: pos.join(""), label: "本命" + pos.join("") + "日", kind: "good", pos };
     if (SANSHA[triad].indexOf(dZ) >= 0) return { key: "三殺", label: "本命三殺日", kind: "bad" };
+    if (B.natal.fav(WUXING_OF_GAN[dG]) > 0 && B.natal.fav(WUXING_OF_ZHI[dZ]) > 0) return { key: "喜用", label: "本命喜用日", kind: "good", pos: [] };
     return { key: "平", label: "本命平日", kind: "flat" };
   }
 
-  function activities(jc, t) {
+  function activities(jc, t, ten) {
     const base = JIANCHU[jc] || { yi: [], ji: [] };
     let yi, ji;
     if (t.kind === "bad") {
       yi = ERRANDS.slice();
-      ji = uniq((TYPE_JI[t.key] || []).concat(base.ji));
+      ji = uniq((TYPE_JI[t.key] || []).concat(ten.good ? [] : [TEN_JI[ten.cat]], base.ji));
     } else {
-      const extra = [];
+      const extra = ten.good ? [TEN_YI[ten.cat]] : [];
       (t.pos || []).forEach((p) => {
         if (p === "旺財健康") extra.push(...TYPE_YI.旺財, ...TYPE_YI.健康);
         else extra.push(...(TYPE_YI[p] || []));
       });
-      ji = base.ji.slice();
+      ji = uniq((ten.good ? [] : [TEN_JI[ten.cat]]).concat(base.ji));
       yi = uniq(extra.concat(base.yi)).filter((x) => ji.indexOf(x) < 0).slice(0, 7);
     }
     return { yi, ji };
@@ -96,8 +107,8 @@
 
   function build(chart, year) {
     const natal = BaziReport.natal(chart);
-    const yP = chart.pillars[3];
-    const yG = yP.gan.char, yZ = yP.zhi.char;
+    const yG = chart.pillars[3].gan.char, yZ = chart.pillars[3].zhi.char;
+    const B = { yG, yZ, dG: chart.dayGan, dZ: chart.pillars[1].zhi.char, natal };
     const T = (v) => s2t(String(v == null ? "" : v));
     const months = [];
     for (let m = 1; m <= 12; m++) {
@@ -108,19 +119,21 @@
         const l = Solar.fromYmdHms(year, m, d, 12, 0, 0).getLunar();
         const dG = l.getDayGan(), dZ = l.getDayZhi(), mZ = l.getMonthZhiExact();
         const jc = T(l.getZhiXing());
-        const t = dayType(yG, yZ, dG, dZ, mZ);
+        const t = dayType(B, dG, dZ, mZ);
+        const ss = getShiShen(chart.dayGan, dG);
+        const ten = { ss, cat: SS_CAT[ss], good: natal.fav(WUXING_OF_GAN[dG]) > 0 };
         const lm = l.getMonth();
         days.push({
           d, dow: new Date(year, m - 1, d).getDay(), jc, xiu: T(l.getXiu()),
           huangdao: l.getDayTianShenType() === "黄道",
           lunar: l.getDay() === 1 ? (lm < 0 ? "閏" : "") + T(l.getMonthInChinese()) + "月" : T(l.getDayInChinese()),
-          monthGz: l.getMonthInGanZhiExact(), dayGz: dG + dZ, type: t, act: activities(jc, t),
+          monthGz: l.getMonthInGanZhiExact(), dayGz: dG + dZ, ss, type: t, act: activities(jc, t, ten),
           xi: XI[dG], cai: CAI[dG], gui: ZHI_DIR[YANG_GUI[dG]], lucky: luckyElems(natal, dG, dZ, mZ)
         });
       }
       months.push({ m, days });
     }
-    return { chart, year, natal, yG, yZ, months };
+    return { chart, year, natal, yG, yZ, dG: B.dG, dZ: B.dZ, months };
   }
 
   // 一個月一張 A4（794×1123px＝96dpi）。日曆用 table 排版：html2canvas 對 grid 的支援不穩定。
@@ -132,7 +145,7 @@
     page.className = "ts-page";
     const genderText = c.gender === "male" ? "男" : "女";
     let h = '<div class="ts-head"><div class="ts-brand"><img src="assets/logo.png" alt=""><span>個人擇日通勝</span></div>' +
-      '<div class="ts-who"><b>' + esc(c.name) + "</b>　" + genderText + "・本命" + M.yG + M.yZ + "（" + c.shengxiao + "）</div></div>" +
+      '<div class="ts-who"><b>' + esc(c.name) + "</b>　" + genderText + "・本命" + M.yG + M.yZ + "年（" + c.shengxiao + "）・" + M.dG + M.dZ + "日</div></div>" +
       '<div class="ts-bar">' + M.year + " 年 " + m + " 月　" + MONTH_EN[m - 1] + " " + M.year + "</div>" +
       '<table class="ts-cal"><thead><tr>' + ["日", "一", "二", "三", "四", "五", "六"].map((w, i) =>
         '<th class="' + (i === 0 || i === 6 ? "ts-we" : "") + '">' + ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][i] + " " + w + "</th>").join("") + "</tr></thead><tbody>";
@@ -146,7 +159,7 @@
         h += '<td><div class="ts-c" style="height:' + cellH + 'px">' +
           '<div class="ts-top"><span class="ts-d">' + x.d + '</span><span class="ts-jc' + (x.huangdao ? " ts-red" : "") + '">' + x.jc + "</span>" +
           '<span class="ts-sep">｜</span><span class="ts-xiu">' + x.xiu + '</span><span class="ts-lunar' + (x.lunar.indexOf("月") >= 0 ? " ts-red" : "") + '">' + x.lunar + "</span></div>" +
-          '<div class="ts-gz">' + x.monthGz + "月　" + x.dayGz + "日</div>" +
+          '<div class="ts-gz">' + x.monthGz + "月　" + x.dayGz + "日・" + x.ss + "</div>" +
           '<div class="ts-type ts-' + t.kind + '">' + t.label + "</div>" +
           '<div class="ts-yi"><b>適合：</b>' + x.act.yi.join("、") + "</div>" +
           '<div class="ts-ji"><b>不適合：</b>' + (x.act.ji.join("、") || "—") + "</div>" +
@@ -158,8 +171,9 @@
       h += "</tr>";
     }
     h += "</tbody></table>" +
-      '<div class="ts-foot"><div><b>本命日別</b>（依本命年柱' + M.yG + M.yZ + "）：貴人＝年干天乙貴人｜人緣＝與年支三合、六合｜旺財＝年干祿位、帝旺｜旺財健康＝年干長生｜" +
-      "冲＝沖年支，干支皆沖為天克地冲｜三刑＝刑年支｜三殺＝年支三殺方｜回頭殺＝回頭貢殺。紅字建除為黃道日。</div>" +
+      '<div class="ts-foot"><div><b>本命日別</b>（依本命日柱' + M.dG + M.dZ + "、年柱" + M.yG + M.yZ + "與喜用神）：貴人＝日干或年干天乙貴人｜人緣＝與年支三合六合、與日支六合｜" +
+      "旺財＝日主祿位或喜用財星日｜旺財健康＝日主長生｜喜用＝干支皆為喜用｜冲＝沖日支或年支，干支皆沖為天克地冲｜三刑＝刑年支｜三殺＝年支三殺方｜回頭殺＝回頭貢殺。" +
+      "日干支後為當日天干對日主的十神；紅字建除為黃道日。</div>" +
       "<div><b>大吉／次吉／小吉</b>：本命喜用神結合當日干支五行。" + ELEMS.map((e) => e + "：" + WX_COLOR[e]).join("｜") + "</div>" +
       '<div class="ts-note">Aries 命理工作室　·　本內容依傳統擇日規則推算，僅供參考，重大決定請自行斟酌。</div></div>';
     page.innerHTML = h;
