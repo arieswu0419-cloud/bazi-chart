@@ -303,9 +303,12 @@
     const natalBullets = ["<b>命宮 " + soulN.stem + soulN.branch + "：" + esc(starsText(soulN)) + "。</b> " +
       bulletsFor(soulN, "命宮").filter((t) => t.indexOf("化") < 0).map((t) => t.replace(/<\/?b>/g, "")).join(" ")];
     natalBullets.push("<b>身宮 " + bodyN.stem + bodyN.branch + "（" + bodyN.natalName + "）：" + esc(starsText(bodyN)) + "。</b> " + (BODY_IN[bodyN.natalName] || "") + "。");
+    // 生年四化影響一生：祿＝得利、權＝主導與責任（不一定是好事，例如權入疾厄＝身體扛得多）、科＝名聲貴人、忌＝課題
+    const NATAL_MUT_NOTE = { 祿: "這是一生容易得利、有收穫的地方", 權: "這是一生要主導、也要扛責任的地方",
+      科: "這是一生有名聲、遇貴人的地方", 忌: "這是一生要花心力經營的課題" };
     natalMuts.forEach((m) => {
       const x = P[m.idx];
-      natalBullets.push("<b>生年" + m.star + "化" + m.mut + "入" + x.natalName + "（" + x.branch + "）：</b>" + PAL[x.natalName][MUT_KEY[m.mut]] + "，這是一生的" + (m.mut === "忌" ? "功課" : "優勢") + "所在。");
+      natalBullets.push("<b>生年" + m.star + "化" + m.mut + "入" + x.natalName + "（" + x.branch + "）：</b>" + PAL[x.natalName][MUT_KEY[m.mut]] + "，" + NATAL_MUT_NOTE[m.mut] + "。");
     });
     add(ul(natalBullets));
 
