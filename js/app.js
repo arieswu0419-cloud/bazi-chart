@@ -532,13 +532,14 @@ document.getElementById("ziweiReportToggleBtn").addEventListener("click", functi
   const panel = document.getElementById("ziweiReportPanel");
   const open = panel.style.display === "none";
   if (open) {
-    // 年份範圍＝出生年起 100 年；預設保留上次選的年份，沒有就用今年
+    // 年份範圍＝今年（含）起到出生後 100 年（至少列到今年後 10 年）；預設保留上次選的年份，沒有就用今年
     const sel = document.getElementById("zr-year");
-    const by = zwState.input.y, thisYear = new Date().getFullYear();
-    const keep = Number(sel.value) || thisYear;
+    const thisYear = new Date().getFullYear();
+    const from = Math.max(thisYear, zwState.input.y), to = Math.max(zwState.input.y + 100, from + 10);
+    const keep = Number(sel.value) || from;
     sel.innerHTML = "";
-    for (let yy = by; yy <= by + 100; yy++) sel.add(new Option(yy + " 年", yy));
-    sel.value = String(keep >= by && keep <= by + 100 ? keep : thisYear);
+    for (let yy = from; yy <= to; yy++) sel.add(new Option(yy + " 年", yy));
+    sel.value = String(keep >= from && keep <= to ? keep : from);
   }
   panel.style.display = open ? "" : "none";
 });
