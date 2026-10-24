@@ -938,12 +938,54 @@ footer {
 .admin-table th, .admin-table td { border: 1px solid var(--border); padding: 8px 10px; text-align: center; white-space: nowrap; }
 .admin-table th { background: #F3F4F6; }
 .admin-table td:nth-child(1), .admin-table td:nth-child(2) { text-align: left; }
+/* 凍結「姓名」欄：橫向捲動時固定在左側（sticky 需在 .admin-table-wrap 這個捲動容器內才有效），
+   背景要不透明才不會被後面的欄位透出來；右側加一道淡陰影提示這欄是固定的 */
+.admin-table th:first-child, .admin-table td:first-child {
+  position: sticky; left: 0; z-index: 2; background: #fff;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+}
+.admin-table th:first-child { background: #F3F4F6; z-index: 3; }
+/* 後台工具列：姓名查詢＋匯出 CSV 鍵並排，手機寬度時換行 */
+.admin-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
+.admin-export-btn { width: auto; height: 44px; white-space: nowrap; }
+/* 分頁列 */
+.admin-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--text-secondary); }
+.admin-pager-btns { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.admin-pager-btns button {
+  border: 1px solid var(--border); background: #fff; color: var(--text-primary); border-radius: 6px;
+  padding: 4px 10px; font-size: 13px; cursor: pointer; min-width: 32px;
+}
+.admin-pager-btns button:hover:not(:disabled) { border-color: var(--gold-dark); color: var(--gold-darker); }
+.admin-pager-btns button.current { background: var(--gold); border-color: var(--gold); color: #fff; font-weight: 700; }
+.admin-pager-btns button:disabled { opacity: 0.4; cursor: default; }
+.admin-pager-btns .admin-pager-info { margin-left: 8px; }
 .admin-checkbox-cell input { width: 18px; height: 18px; cursor: pointer; }
 .admin-status-btn {
   border: none; border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer;
 }
 .admin-status-btn.approved { background: var(--wood-bg); color: var(--wood-text); }
 .admin-status-btn.pending { background: var(--fire-bg); color: var(--fire-text); }
+/* 後台「移除帳號」鍵：紅框白底，滑過變紅底白字，跟狀態鍵同高 */
+.admin-delete-btn {
+  border: 1px solid #C0392B; border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer;
+  background: #fff; color: #C0392B;
+}
+.admin-delete-btn:hover:not(:disabled) { background: #C0392B; color: #fff; }
+.admin-delete-btn:disabled { opacity: 0.6; cursor: default; }
+.admin-self-tag { color: var(--text-secondary); font-size: 13px; }
+/* 後台「重設密碼」鍵：金色框，與移除鍵並排 */
+.admin-op-cell { white-space: nowrap; }
+.admin-op-cell > * + * { margin-left: 6px; }
+.admin-reset-btn {
+  border: 1px solid var(--gold-dark); border-radius: 999px; padding: 4px 12px; font-size: 13px; cursor: pointer;
+  background: #fff; color: var(--gold-darker);
+}
+.admin-reset-btn:hover:not(:disabled) { background: var(--gold-dark); color: #fff; }
+.admin-reset-btn:disabled { opacity: 0.6; cursor: default; }
+/* 登入頁：忘記密碼連結、說明小字 */
+.auth-links { text-align: right; margin: -6px 0 10px; font-size: 14px; }
+.auth-links a { color: var(--text-secondary); text-decoration: underline; }
+.auth-note { color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin: 8px 0 0; text-align: center; }
 
 /* 奇門遁甲命盤報告：深藍外框＋橘色中層（比照參考畫面配色） */
 .qimen-card { background: #005AB5; padding: 16px; border-radius: 12px; }

@@ -51,6 +51,17 @@ async function handleSignup(e) {
   }
 }
 
+// 記錄最後登入時間：寫入 users/{uid}.lastLoginAt（伺服器時間），後台「最後登入」欄顯示用。
+// firestore.rules 只放行使用者更新自己文件的這一個欄位，其餘欄位仍只有管理者能改。
+// 寫入失敗（例如規則尚未發布）不影響登入流程，只在 console 記錄。
+async function touchLastLogin(uid) {
+  try {
+    await db.collection("users").doc(uid).update({ lastLoginAt: firebase.firestore.FieldValue.serverTimestamp() });
+  } catch (err) {
+    console.warn("lastLoginAt 寫入失敗（不影響登入）：", err.code || err.message);
+  }
+}
+
 async function handleLogin(e) {
   e.preventDefault();
   const email = document.getElementById("li-email").value.trim();
@@ -63,6 +74,7 @@ async function handleLogin(e) {
     const status = doc.exists ? doc.data().status : null;
 
     if (status === "approved") {
+      await touchLastLogin(cred.user.uid);
       window.location.href = "index.html";
     } else if (status === "pending") {
       await auth.signOut();
@@ -93,6 +105,50 @@ async function handleLogin(e) {
   }
 }
 
+// 忘記密碼：登入頁「忘記密碼？」→ 輸入 Email → Firebase 寄送重設密碼信（信裡的連結由 Firebase 代管頁面處理，
+// 使用者在該頁設定新密碼後回來用新密碼登入）。找不到帳號時一律顯示同一句「已寄出」，避免被拿來試探哪些 Email 有註冊。
+function showForgotForm(e) {
+  if (e) e.preventDefault();
+  const li = document.getElementById("li-email");
+  const fp = document.getElementById("fp-email");
+  if (li && fp && !fp.value) fp.value = li.value.trim();
+  document.getElementById("login-panel").style.display = "none";
+  document.getElementById("forgot-panel").style.display = "";
+  const msg = document.getElementById("fp-msg");
+  msg.className = "form-msg"; msg.textContent = "";
+}
+function showLoginForm(e) {
+  if (e) e.preventDefault();
+  document.getElementById("forgot-panel").style.display = "none";
+  document.getElementById("login-panel").style.display = "";
+}
+async function handleForgotPassword(e) {
+  e.preventDefault();
+  const email = document.getElementById("fp-email").value.trim();
+  const msg = document.getElementById("fp-msg");
+  const btn = document.getElementById("fp-submit");
+  if (!email) { showMsg(msg, "請輸入 Email", "error"); return; }
+  btn.disabled = true;
+  try {
+    await auth.sendPasswordResetEmail(email);
+    showMsg(msg, "重設密碼信已寄出至 " + email + "，請到信箱（含垃圾郵件）點擊連結設定新密碼，完成後回到本頁用新密碼登入。", "success");
+  } catch (err) {
+    if (err.code === "auth/user-not-found") {
+      showMsg(msg, "重設密碼信已寄出至 " + email + "（若該 Email 有註冊），請到信箱查收。", "success");
+    } else {
+      showMsg(msg, translateAuthError(err), "error");
+    }
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// 管理者後台代寄重設密碼信：給忘記密碼又不會自己操作的學員用，同樣是 Firebase 寄信、由本人到信箱設定新密碼，
+// 管理者不會知道也不能指定新密碼（前端 SDK 沒有替別人改密碼的能力）。
+async function sendResetMailTo(email) {
+  await auth.sendPasswordResetEmail(email);
+}
+
 function translateAuthError(err) {
   const map = {
     "auth/email-already-in-use": "這個 Email 已經被註冊過了",
@@ -103,7 +159,10 @@ function translateAuthError(err) {
     "auth/invalid-credential": "帳號或密碼錯誤",
     "auth/user-disabled": "此帳號已被管理者停用，請聯絡管理者",
     "auth/too-many-requests": "嘗試次數過多，請稍後再試",
-    "auth/requires-recent-login": "請重新登入後再試一次"
+    "auth/requires-recent-login": "請重新登入後再試一次",
+    "auth/missing-email": "請輸入 Email",
+    "auth/invalid-login-credentials": "帳號或密碼錯誤",
+    "auth/network-request-failed": "網路連線失敗，請檢查網路後再試"
   };
   return map[err.code] || ("發生錯誤：" + err.message);
 }
@@ -122,6 +181,10 @@ function requireApprovedUser(onReady) {
       window.location.href = "login.html";
       return;
     }
+    // 已登入狀態直接開主頁（沒經過 login.html）也要更新最後登入時間；30 分鐘內重複載入不重寫，省寫入次數
+    const last = doc.data().lastLoginAt;
+    const lastMs = last && last.toMillis ? last.toMillis() : 0;
+    if (Date.now() - lastMs > 30 * 60 * 1000) touchLastLogin(user.uid);
     onReady(user, doc.data());
   });
 }

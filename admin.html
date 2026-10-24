@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>系統維護 - Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=231">
+<link rel="stylesheet" href="css/style.css?v=285">
 </head>
 <body>
 
@@ -27,10 +27,13 @@
 
     <div class="card">
       <h2>帳號權限管理</h2>
-      <p class="admin-hint">帳號＝信箱，密碼由使用者自訂。核准後，勾選下方報告／功能的權限即可開放使用；未勾選的項目該帳號登入後不會看到，點擊上方導覽按鍵會提示未開放。</p>
-      <div class="field" style="max-width:320px">
-        <label for="adminSearch">姓名查詢</label>
-        <input type="text" id="adminSearch" placeholder="輸入姓名關鍵字篩選">
+      <p class="admin-hint">帳號＝信箱，密碼由使用者自訂。核准後，勾選下方報告／功能的權限即可開放使用；未勾選的項目該帳號登入後不會看到，點擊上方導覽按鍵會提示未開放。<br>「移除」會刪除該帳號的審核狀態與全部權限，該使用者將無法再登入使用；若之後再次登入，會自動回到「審核中」等待重新核准。「重設密碼」會寄一封重設密碼信到該帳號信箱，由本人點信中連結設定新密碼（管理者無法查看或指定密碼）。每頁顯示 20 筆；表格往右捲動時「姓名」欄會固定在左側，方便核對。「匯出 CSV」會把目前篩選結果的全部帳號（不只目前頁）匯出成 Excel 可開啟的檔案。</p>
+      <div class="admin-toolbar">
+        <div class="field" style="max-width:320px;margin-bottom:0">
+          <label for="adminSearch">姓名查詢</label>
+          <input type="text" id="adminSearch" placeholder="輸入姓名關鍵字篩選">
+        </div>
+        <button type="button" class="btn secondary admin-export-btn" id="adminExportBtn">匯出 CSV</button>
       </div>
       <div class="form-msg" id="adminMsg"></div>
       <div class="admin-table-wrap">
@@ -58,11 +61,14 @@
               <th>紫微斗數</th>
               <th>姓名學</th>
               <th>申請時間</th>
+              <th>最後登入</th>
+              <th>操作</th>
             </tr>
           </thead>
           <tbody id="adminTableBody"></tbody>
         </table>
       </div>
+      <div class="admin-pager" id="adminPager"></div>
     </div>
 
   </div>
@@ -73,8 +79,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=231"></script>
-<script src="js/auth.js?v=231"></script>
-<script src="js/admin.js?v=231"></script>
+<script src="js/firebase-config.js?v=285"></script>
+<script src="js/auth.js?v=285"></script>
+<script src="js/admin.js?v=285"></script>
 </body>
 </html>

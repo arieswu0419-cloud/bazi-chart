@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>登入 - Aries 八字分析</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=199">
+<link rel="stylesheet" href="css/style.css?v=283">
 </head>
 <body>
 
@@ -20,28 +20,46 @@
 
 <div class="auth-wrap">
   <div class="auth-card">
-    <h1>學員登入</h1>
-    <div class="form-msg" id="li-msg"></div>
-    <form id="login-form" onsubmit="handleLogin(event)">
-      <div class="field">
-        <label for="li-email">Email</label>
-        <input type="email" id="li-email" required>
-      </div>
-      <div class="field">
-        <label for="li-password">密碼</label>
-        <input type="password" id="li-password" required>
-      </div>
-      <button type="submit" class="btn">登入</button>
-    </form>
-    <p class="auth-switch">還沒有帳號？<a href="signup.html">申請帳號</a></p>
+    <div id="login-panel">
+      <h1>學員登入</h1>
+      <div class="form-msg" id="li-msg"></div>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="field">
+          <label for="li-email">Email</label>
+          <input type="email" id="li-email" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="li-password">密碼</label>
+          <input type="password" id="li-password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn">登入</button>
+      </form>
+      <p class="auth-links"><a href="#" id="forgotLink" onclick="showForgotForm(event)">忘記密碼？</a></p>
+      <p class="auth-switch">還沒有帳號？<a href="signup.html">申請帳號</a></p>
+      <p class="auth-note">登入後可點右上角「修改密碼」自行更改密碼。</p>
+    </div>
+
+    <div id="forgot-panel" style="display:none">
+      <h1>忘記密碼</h1>
+      <p class="auth-note">輸入註冊時的 Email，系統會寄一封重設密碼信給您，點信中連結即可設定新密碼。</p>
+      <div class="form-msg" id="fp-msg"></div>
+      <form id="forgot-form" onsubmit="handleForgotPassword(event)">
+        <div class="field">
+          <label for="fp-email">Email</label>
+          <input type="email" id="fp-email" required autocomplete="username">
+        </div>
+        <button type="submit" class="btn" id="fp-submit">寄送重設密碼信</button>
+      </form>
+      <p class="auth-switch"><a href="#" onclick="showLoginForm(event)">← 返回登入</a></p>
+    </div>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?v=199"></script>
-<script src="js/auth.js?v=199"></script>
+<script src="js/firebase-config.js?v=283"></script>
+<script src="js/auth.js?v=283"></script>
 <script>
   if (new URLSearchParams(window.location.search).get("pwChanged") === "1") {
     showMsg(document.getElementById("li-msg"), "密碼已修改成功，請用新密碼重新登入。", "success");
