@@ -1,0 +1,12 @@
+// Cloudflare Workers 部署設定：mingli.ariesdesign.workers.dev（純靜態網站，無後端程式）
+// 先執行「打包Cloudflare.bat」產生 dist/，再執行 npx wrangler deploy 上傳。
+// 設定值與線上版本一致（html_handling／not_found_handling 沿用 Cloudflare 預設；安全標頭在 dist/_headers）。
+{
+  "name": "mingli",
+  "compatibility_date": "2026-09-07",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  }
+}

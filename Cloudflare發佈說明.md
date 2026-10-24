@@ -1,4 +1,21 @@
-# 發佈到 Cloudflare Pages
+# 發佈到 Cloudflare
+
+## 目前正式站：Workers（https://mingli.ariesdesign.workers.dev）
+
+正式站是名為 `mingli` 的 Cloudflare Worker（純靜態檔案，沒有後端程式），設定在專案根目錄的 `wrangler.jsonc`。更新步驟：
+
+1. 改了 JS／CSS 記得把 `index.html` 裡對應的 `?v=` 版號升一號
+2. 雙擊 `打包Cloudflare.bat`（或 `python build-cloudflare.py`）產生 `dist/`
+3. 在專案資料夾執行：
+
+```
+npx wrangler deploy --message "這次改了什麼"
+```
+
+第一次在新電腦使用要先 `npx wrangler login`。部署紀錄可用 `npx wrangler deployments list --name mingli` 查看；
+要退回上一版用 `npx wrangler rollback`。
+
+以下第二～六節是改用 Cloudflare Pages 的做法，目前沒有使用，留作參考。
 
 ## 一、打包
 
