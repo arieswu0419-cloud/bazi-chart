@@ -778,6 +778,7 @@ document.getElementById("baziForm").addEventListener("submit", function (e) {
     selectedLiunian = null;
     selectedMainPillar = null;
     document.getElementById("shenshaExplainCard").style.display = "none";
+    document.getElementById("baziReportPanel").style.display = "none"; // 換人排盤後年份範圍要重算
     renderChart(currentChart);
     // 修正：停在其他報告頁籤（人格解碼／生命靈數…）時按「八字命卷報告」，結果畫在隱藏的 baziTabPanel 裡看不到
     setActiveTab("bazi");
@@ -905,7 +906,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async function
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
 
     // 逐區塊（命盤資訊／四柱表格／天干地支合沖／五行十神）換頁，避免任何一個表格被硬切一半
-    const resultSections = Array.from(document.querySelectorAll("#resultCard > *:not(.card-head)"));
+    const resultSections = Array.from(document.querySelectorAll("#resultCard > *:not(.card-head):not(.zr-panel)"));
     await addSectionsToPdf(pdf, resultSections, margin, pageWidth, pageHeight, 26);
 
     // 大運流年另外強制換頁，不要被切一半；表格說明文字（點選欄位標題...）不匯出
@@ -1070,6 +1071,61 @@ document.getElementById("makeMingshuBtn").addEventListener("click", async functi
     if (printBuilt && printBuilt.host) printBuilt.host.remove();
     btn.disabled = false; btn.textContent = orig;
   }
+});
+
+// 八字「轉流年PDF分析報告」（解讀與版面在 js/bazi-report.js）：選流年年份（今年含以後），
+// 報告逐區塊轉成 PDF（沿用 addSectionsToPdf 分頁，不會把表格切半）
+document.getElementById("baziReportToggleBtn").addEventListener("click", function () {
+  if (!currentChart) { showToast("請先排盤。", "error"); return; }
+  const panel = document.getElementById("baziReportPanel");
+  const open = panel.style.display === "none";
+  if (open) {
+    // 年份範圍＝今年（含）起到出生後 100 年（至少列到今年後 10 年）；預設保留上次選的年份，沒有就用今年
+    const sel = document.getElementById("bz-year");
+    const birthYear = Number(currentChart.solarText.slice(0, 4));
+    const thisYear = new Date().getFullYear();
+    const from = Math.max(thisYear, birthYear), to = Math.max(birthYear + 100, from + 10);
+    const keep = Number(sel.value) || from;
+    sel.innerHTML = "";
+    for (let yy = from; yy <= to; yy++) sel.add(new Option(yy + " 年", yy));
+    sel.value = String(keep >= from && keep <= to ? keep : from);
+  }
+  panel.style.display = open ? "" : "none";
+});
+
+document.getElementById("baziReportGenBtn").addEventListener("click", async function () {
+  if (!currentChart) { showToast("請先排盤。", "error"); return; }
+  // 報告用的是上一次排盤的資料；表單改過姓名或出生資料卻沒重新排盤時擋下，避免報告與表單不一致
+  const pad = (v) => String(v).padStart(2, "0");
+  const formSolar = document.getElementById("f-byear").value + "-" + pad(document.getElementById("f-bmonth").value) + "-" +
+    pad(document.getElementById("f-bday").value) + " " + document.getElementById("f-btime").value;
+  if (document.getElementById("f-name").value.trim() !== currentChart.name || document.getElementById("f-gender").value !== currentChart.gender ||
+      formSolar !== currentChart.solarText) {
+    showToast("姓名或出生資料已變更，請先按「八字命卷報告」重新排盤，再產生流年報告。", "error");
+    return;
+  }
+  const year = Number(document.getElementById("bz-year").value);
+  const btn = this, status = document.getElementById("bz-status"), orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "產生中...";
+  let box = null;
+  try {
+    status.textContent = "分析與排版中...";
+    const model = BaziReport.analyze(currentChart, { year });
+    box = BaziReport.render(model);
+    document.body.appendChild(box);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 12;
+    const logoImg = document.querySelector(".brand img");
+    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 八字流年分析報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    await addSectionsToPdf(pdf, Array.from(box.children), margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save(currentChart.name + "-" + year + "八字流年分析報告.pdf");
+    status.textContent = "已下載";
+  } catch (err) { status.textContent = ""; alert("產生失敗：" + err.message); }
+  finally { if (box) box.remove(); btn.disabled = false; btn.textContent = orig; }
 });
 
 function charCell(part) {

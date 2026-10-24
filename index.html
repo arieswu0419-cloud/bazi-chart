@@ -99,8 +99,20 @@
     <div id="printArea">
     <div id="baziTabPanel">
     <div class="card" id="resultCard" style="display:none">
-      <div class="card-head" style="justify-content:flex-end">
+      <div class="card-head" style="justify-content:flex-end;gap:8px">
+        <button class="btn secondary" id="baziReportToggleBtn" style="width:auto" data-html2canvas-ignore="true">轉流年PDF分析報告</button>
         <button class="btn secondary" id="exportPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+      <div class="zr-panel" id="baziReportPanel" style="display:none" data-html2canvas-ignore="true">
+        <div class="zr-panel-row">
+          <label class="zr-panel-label" for="bz-year">流年年份</label>
+          <select id="bz-year"></select>
+          <span class="zr-panel-hint">以立春為界，報告含當年大運、流年與十二個流月</span>
+        </div>
+        <div class="zr-panel-row" style="margin:10px 0 0">
+          <button type="button" class="btn" id="baziReportGenBtn" style="width:auto">產生 PDF 報告</button>
+          <span class="zr-panel-hint" id="bz-status"></span>
+        </div>
       </div>
 
       <div class="info-panel" id="infoPanel"></div>
@@ -1501,6 +1513,7 @@
 <script src="js/qimen-engine.js?v=288"></script>
 <script src="js/iztro.min.js?v=288"></script>
 <script src="js/ziwei-report.js?v=290"></script>
+<script src="js/bazi-report.js?v=291"></script>
 <script src="js/cuiwang-engine.js?v=288"></script>
 <script src="js/qimen-shuzi-engine.js?v=288"></script>
 <script src="js/qimen-hexa64-content.js?v=288"></script>
@@ -1514,6 +1527,6 @@
 <script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=290"></script>
+<script src="js/app.js?v=291"></script>
 </body>
 </html>
