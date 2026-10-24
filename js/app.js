@@ -535,20 +535,15 @@ document.getElementById("zr-picks").innerHTML = ZiweiReport.PALACES.map((p) =>
 document.getElementById("zr-picks").addEventListener("change", zrSyncPicks);
 zrSyncPicks();
 
+// 紫微流年報告固定「今年度」（不選年份）：紫微流年依農曆年起算，今天還沒過春節，今年度＝去年
+function ziweiCurrentYear() {
+  return Solar.fromDate(new Date()).getLunar().getYear();
+}
 document.getElementById("ziweiReportToggleBtn").addEventListener("click", function () {
   if (!zwState) { showToast("請先排盤。", "error"); return; }
   const panel = document.getElementById("ziweiReportPanel");
   const open = panel.style.display === "none";
-  if (open) {
-    // 年份範圍＝今年（含）起到出生後 100 年（至少列到今年後 10 年）；預設保留上次選的年份，沒有就用今年
-    const sel = document.getElementById("zr-year");
-    const thisYear = new Date().getFullYear();
-    const from = Math.max(thisYear, zwState.input.y), to = Math.max(zwState.input.y + 100, from + 10);
-    const keep = Number(sel.value) || from;
-    sel.innerHTML = "";
-    for (let yy = from; yy <= to; yy++) sel.add(new Option(yy + " 年", yy));
-    sel.value = String(keep >= from && keep <= to ? keep : from);
-  }
+  if (open) document.getElementById("zr-year-hint").textContent = ziweiCurrentYear() + " 年度（依農曆年起算），報告含當年大限、流年與十二個流月";
   panel.style.display = open ? "" : "none";
 });
 
@@ -599,7 +594,7 @@ document.getElementById("ziweiReportGenBtn").addEventListener("click", async fun
     showToast("姓名或出生資料已變更，請先按「紫微斗數報告」重新排盤，再產生流年報告。", "error");
     return;
   }
-  const year = Number(document.getElementById("zr-year").value);
+  const year = ziweiCurrentYear();
   const btn = this, status = document.getElementById("zr-status"), orig = btn.textContent;
   btn.disabled = true; btn.textContent = "產生中...";
   let box = null;
