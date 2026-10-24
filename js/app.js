@@ -543,17 +543,30 @@ document.getElementById("ziweiReportToggleBtn").addEventListener("click", functi
   panel.style.display = open ? "" : "none";
 });
 
-// 依序重繪本命／大限／流年盤並截圖（查詢時間設在該年年中，確保落在同一個農曆年），完成後還原使用者原本的盤別與時間
+// 依序重繪本命／大限／流年盤並截圖（查詢時間設在該年年中，確保落在同一個農曆年），完成後還原使用者原本的盤別與時間。
+// 截圖用離屏複本：固定 1240px 寬（中央資訊區才放得下，螢幕窄時原盤中央會出捲軸被截斷），
+// 並把中央「流斗」改成報告年份的斗君，避免圖上顯示今年、報告卻是別的年份。
 async function zrCaptureCharts(year) {
   const hd = document.getElementById("zw-hdate"), ht = document.getElementById("zw-htime");
   const saved = { scope: zwState.scope || "natal", date: hd.value, time: ht.value };
   hd.value = year + "-06-30"; ht.value = "12:00";
+  const liuDou = ZW_ZHI[zwDouJun(((year - 4) % 12 + 12) % 12, zwState.input.lunarMonth, zwState.input.tIdx)];
   const out = [];
   try {
     for (const [scope, label] of [["natal", "本命盤"], ["decadal", "大限盤"], ["yearly", "流年盤"]]) {
       zwRenderChart(scope);
       const info = document.querySelector("#ziweiChart .zw-scope-info");
-      const canvas = await html2canvas(document.querySelector("#ziweiChart .zw-grid"), { scale: 2, backgroundColor: "#ffffff" });
+      const holder = document.createElement("div");
+      holder.style.cssText = "position:fixed;left:-12000px;top:0;width:1240px";
+      const clone = document.querySelector("#ziweiChart .zw-grid").cloneNode(true);
+      clone.style.width = "1240px"; clone.style.maxWidth = "none";
+      clone.querySelectorAll(".zw-info-table th").forEach((th) => {
+        if (th.textContent === "流斗") th.nextElementSibling.textContent = liuDou + "（" + year + "年）";
+      });
+      holder.appendChild(clone);
+      document.body.appendChild(holder);
+      let canvas;
+      try { canvas = await html2canvas(clone, { scale: 2, backgroundColor: "#ffffff" }); } finally { holder.remove(); }
       out.push({ src: canvas.toDataURL("image/jpeg", 0.9),
         caption: "圖 " + (out.length + 1) + "　" + label + (info ? "　" + info.textContent.replace(/^\S+盤\s*/, "") : "") });
     }
@@ -568,6 +581,15 @@ document.getElementById("ziweiReportGenBtn").addEventListener("click", async fun
   if (!zwState) { showToast("請先排盤。", "error"); return; }
   const picks = Array.from(document.querySelectorAll("#zr-picks input:checked")).map((b) => b.value);
   if (!picks.length) { showToast("請至少選一個重點宮位。", "error"); return; }
+  // 報告用的是上一次排盤的資料；表單改過姓名或出生資料卻沒重新排盤時擋下，避免報告與表單不一致
+  const inp0 = zwState.input, t = document.getElementById("f-btime").value.split(":").map(Number);
+  const formNow = [document.getElementById("f-name").value.trim(), document.getElementById("f-gender").value,
+    +document.getElementById("f-byear").value, +document.getElementById("f-bmonth").value, +document.getElementById("f-bday").value, t[0], t[1]];
+  const charted = [inp0.name, inp0.gender, inp0.y, inp0.mo, inp0.d, inp0.h, inp0.mi];
+  if (formNow.some((v, i) => v !== charted[i])) {
+    showToast("姓名或出生資料已變更，請先按「紫微斗數報告」重新排盤，再產生流年報告。", "error");
+    return;
+  }
   const year = Number(document.getElementById("zr-year").value);
   const btn = this, status = document.getElementById("zr-status"), orig = btn.textContent;
   btn.disabled = true; btn.textContent = "產生中...";
