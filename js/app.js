@@ -1122,17 +1122,17 @@ document.getElementById("baziReportToggleBtn").addEventListener("click", async f
   finally { if (box) box.remove(); btn.disabled = false; btn.textContent = orig; }
 });
 
-// 命理諮詢「個人通勝」（推算與版面在 js/tongsheng.js）：年份今年（含）起可選，畫面預覽單月，匯出全年 12 張 A4
-let tsState = null; // { chart, cache: { 年份: TongSheng.build 結果 } }
+// 命理諮詢「個人通勝」（推算與版面在 js/tongsheng.js）：固定今年度（不選年份），畫面預覽單月，一次匯出今年 12 個月（12 張 A4）
+let tsState = null; // { chart, year: 今年, cache: { 年份: TongSheng.build 結果 } }
 function tsModel(year) {
   if (!tsState.cache[year]) tsState.cache[year] = TongSheng.build(tsState.chart, year);
   return tsState.cache[year];
 }
 function tsRenderPreview() {
-  const year = Number(document.getElementById("ts-year").value), m = Number(document.getElementById("ts-month").value);
+  const m = Number(document.getElementById("ts-month").value);
   const pv = document.getElementById("tsPreview");
   pv.innerHTML = "";
-  pv.appendChild(TongSheng.renderMonth(tsModel(year), m));
+  pv.appendChild(TongSheng.renderMonth(tsModel(tsState.year), m));
 }
 document.getElementById("tongshengSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();
@@ -1143,22 +1143,18 @@ document.getElementById("tongshengSubmitBtn").addEventListener("click", function
   const [hour, minute] = timeVal.split(":").map(Number);
   if (!isValidSolarDate(year, month, day)) { showToast(year + " 年 " + month + " 月沒有 " + day + " 日，請重新選擇出生日期。", "error"); return; }
   try {
-    tsState = { chart: calculateBazi({ year, month, day, hour, minute, gender, name }), cache: {} };
-    // 年份範圍＝今年（含）起到出生後 100 年（至少列到今年後 10 年）
     const now = new Date(), thisYear = now.getFullYear();
-    const from = Math.max(thisYear, year), to = Math.max(year + 100, from + 10);
-    const ys = document.getElementById("ts-year"), ms = document.getElementById("ts-month");
-    ys.innerHTML = "";
-    for (let yy = from; yy <= to; yy++) ys.add(new Option(yy + " 年", yy));
+    tsState = { chart: calculateBazi({ year, month, day, hour, minute, gender, name }), year: thisYear, cache: {} };
+    const ms = document.getElementById("ts-month");
     if (!ms.options.length) for (let mm = 1; mm <= 12; mm++) ms.add(new Option(mm + " 月", mm));
-    ys.value = String(from);
-    ms.value = String(from === thisYear ? now.getMonth() + 1 : 1);
+    ms.value = String(now.getMonth() + 1);
+    document.getElementById("ts-status").textContent = thisYear + " 年度：依本命年柱推算每日本命日別、適合與不適合，一個月一張 A4";
     document.getElementById("tongshengCard").style.display = "";
     tsRenderPreview();
     setActiveTab("tongsheng");
   } catch (err) { showToast("排盤失敗：" + err.message, "error"); }
 });
-["ts-year", "ts-month"].forEach((id) => document.getElementById(id).addEventListener("change", function () { if (tsState) tsRenderPreview(); }));
+document.getElementById("ts-month").addEventListener("change", function () { if (tsState) tsRenderPreview(); });
 
 document.getElementById("exportTongshengPdfBtn").addEventListener("click", async function () {
   if (!tsState) { showToast("請先按「個人通勝」排盤。", "error"); return; }
@@ -1170,7 +1166,7 @@ document.getElementById("exportTongshengPdfBtn").addEventListener("click", async
     showToast("姓名或出生資料已變更，請先按「個人通勝」重新排盤，再匯出。", "error");
     return;
   }
-  const year = Number(document.getElementById("ts-year").value);
+  const year = tsState.year;
   const btn = this, status = document.getElementById("ts-status"), orig = btn.textContent;
   btn.disabled = true; btn.textContent = "產生中...";
   const holder = document.createElement("div");
@@ -1195,14 +1191,13 @@ document.getElementById("exportTongshengPdfBtn").addEventListener("click", async
   finally { holder.remove(); btn.disabled = false; btn.textContent = orig; }
 });
 
-// 命理諮詢「十二星座」（行星推算、解讀與版面在 js/xingzuo.js）：個人星座個性＋選定年份每月運勢，
-// 年份今年（含）起可選，畫面預覽整份報告，匯出 PDF 沿用 addSectionsToPdf 逐區塊分頁
-let xzState = null; // { input: 出生資料 }
+// 命理諮詢「十二星座」（行星推算、解讀與版面在 js/xingzuo.js）：個人星座個性＋今年度每月運勢（不選年份），
+// 畫面預覽整份報告，匯出 PDF 沿用 addSectionsToPdf 逐區塊分頁
+let xzState = null; // { input: 出生資料, year: 今年 }
 function xzRender() {
-  const year = Number(document.getElementById("xz-year").value);
   const pv = document.getElementById("xzPreview");
   pv.innerHTML = "";
-  pv.appendChild(Xingzuo.render(Xingzuo.analyze(Object.assign({ year }, xzState.input))));
+  pv.appendChild(Xingzuo.render(Xingzuo.analyze(Object.assign({ year: xzState.year }, xzState.input))));
 }
 document.getElementById("xingzuoSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();
@@ -1213,21 +1208,14 @@ document.getElementById("xingzuoSubmitBtn").addEventListener("click", function (
   const [h, mi] = timeVal.split(":").map(Number);
   if (!isValidSolarDate(y, mo, d)) { showToast(y + " 年 " + mo + " 月沒有 " + d + " 日，請重新選擇出生日期。", "error"); return; }
   try {
-    xzState = { input: { name, gender, birth: { y, mo, d, h, mi } } };
-    // 年份範圍＝今年（含）起到出生後 100 年（至少列到今年後 10 年）
     const thisYear = new Date().getFullYear();
-    const from = Math.max(thisYear, y), to = Math.max(y + 100, from + 10);
-    const ys = document.getElementById("xz-year");
-    const keep = Number(ys.value);
-    ys.innerHTML = "";
-    for (let yy = from; yy <= to; yy++) ys.add(new Option(yy + " 年", yy));
-    ys.value = String(keep >= from && keep <= to ? keep : from);
+    xzState = { input: { name, gender, birth: { y, mo, d, h, mi } }, year: thisYear };
+    document.getElementById("xz-status").textContent = thisYear + " 年度：依出生時太陽位置判定星座，每月運勢依當年實際行星位置推算";
     document.getElementById("xingzuoCard").style.display = "";
     xzRender();
     setActiveTab("xingzuo");
   } catch (err) { showToast("星座分析失敗：" + err.message, "error"); }
 });
-document.getElementById("xz-year").addEventListener("change", function () { if (xzState) xzRender(); });
 
 document.getElementById("exportXingzuoPdfBtn").addEventListener("click", async function () {
   if (!xzState) { showToast("請先按「十二星座」產生分析。", "error"); return; }
@@ -1240,7 +1228,7 @@ document.getElementById("exportXingzuoPdfBtn").addEventListener("click", async f
     showToast("姓名或出生資料已變更，請先按「十二星座」重新產生，再匯出。", "error");
     return;
   }
-  const year = Number(document.getElementById("xz-year").value);
+  const year = xzState.year;
   const btn = this, status = document.getElementById("xz-status"), orig = btn.textContent;
   btn.disabled = true; btn.textContent = "匯出中...";
   const box = Xingzuo.render(Xingzuo.analyze(Object.assign({ year }, inp)));
