@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=293">
+<link rel="stylesheet" href="css/style.css?v=294">
 <link rel="stylesheet" href="css/jigong-bugua.css?v=288">
 </head>
 <body>
@@ -92,6 +92,7 @@
           <button type="button" class="btn" id="qimenSubmitBtn">奇門命盤報告</button>
           <button type="button" class="btn" id="qimenDivineSubmitBtn">紫微斗數報告</button>
           <button type="button" class="btn" id="tongshengSubmitBtn">個人通勝</button>
+          <button type="button" class="btn" id="xingzuoSubmitBtn">十二星座</button>
         </div>
         <p class="form-msg show info" id="permissionNote" style="display:none">您的帳號目前沒有任何報告的使用權限，請聯絡管理者開通。</p>
       </div>
@@ -328,6 +329,21 @@
         <span class="zr-panel-hint" id="ts-status">依本命年柱推算每日本命日別、適合與不適合，一個月一張 A4</span>
       </div>
       <div class="ts-preview-wrap"><div id="tsPreview"></div></div>
+    </div>
+    </div>
+
+    <div id="xingzuoTabPanel" style="display:none">
+    <div class="card" id="xingzuoCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end;gap:8px">
+        <button class="btn secondary" id="exportXingzuoPdfBtn" style="width:auto">匯出 PDF</button>
+      </div>
+      <h2 class="zibai-title">十二星座分析</h2>
+      <div class="ts-controls">
+        <label class="zr-panel-label" for="xz-year">運勢年份</label>
+        <select id="xz-year"></select>
+        <span class="zr-panel-hint" id="xz-status">依出生時太陽位置判定星座，每月運勢依當年實際行星位置推算</span>
+      </div>
+      <div class="xz-preview"><div id="xzPreview"></div></div>
     </div>
     </div>
     </div>
@@ -1533,6 +1549,7 @@
 <script src="js/ziwei-report.js?v=290"></script>
 <script src="js/bazi-report.js?v=292"></script>
 <script src="js/tongsheng.js?v=293"></script>
+<script src="js/xingzuo.js?v=294"></script>
 <script src="js/cuiwang-engine.js?v=288"></script>
 <script src="js/qimen-shuzi-engine.js?v=288"></script>
 <script src="js/qimen-hexa64-content.js?v=288"></script>
@@ -1546,6 +1563,6 @@
 <script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=292"></script>
+<script src="js/app.js?v=294"></script>
 </body>
 </html>

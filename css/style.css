@@ -2178,3 +2178,8 @@ h2.qsz-page-title { font-size: 22px; }
 .ts-foot { margin-top: 4px; font-size: 8.5px; line-height: 1.5; color: #414141; border-top: 1.5px solid #650707; padding-top: 4px; }
 .ts-foot b { color: #650707; }
 .ts-note { color: #8C8C8C; text-align: center; margin-top: 2px; }
+
+/* ================= 十二星座：畫面預覽（報告本身沿用 zr-* 樣式；預覽時取消離屏定位） ================= */
+.xz-preview { background: #eee; padding: 12px; border-radius: var(--radius); overflow-x: auto; }
+.xz-preview .zr-report { position: static; left: auto; width: 720px; max-width: 100%; margin: 0 auto; padding: 24px; box-sizing: border-box; }
+.xz-preview .zr-block { margin-bottom: 14px; }

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>十二星座報告測試頁</title>
+<link rel="stylesheet" href="css/style.css">
+<style> body { padding: 16px; background: #eee; } #controls { margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } </style>
+</head>
+<body>
+<!-- 測試頁（不會打包上線）：不需登入，直接用固定出生資料驗證 js/xingzuo.js 的推算與版面 -->
+<div id="controls">
+  姓名 <input id="t-name" value="何佳穎" size="6">
+  出生 <input id="t-date" value="1988-04-04" size="10"> <input id="t-time" value="03:31" size="5">
+  <select id="t-gender"><option value="female">女</option><option value="male">男</option></select>
+  年份 <input id="t-year" value="2026" size="5">
+  <button id="t-render">預覽</button>
+</div>
+<div class="xz-preview"><div id="xzPreview"></div></div>
+<script src="js/xingzuo.js"></script>
+<script>
+document.getElementById("t-render").onclick = function () {
+  const [y, mo, d] = document.getElementById("t-date").value.split("-").map(Number);
+  const [h, mi] = document.getElementById("t-time").value.split(":").map(Number);
+  const R = Xingzuo.analyze({ year: Number(document.getElementById("t-year").value), name: document.getElementById("t-name").value,
+    gender: document.getElementById("t-gender").value, birth: { y, mo, d, h, mi } });
+  const pv = document.getElementById("xzPreview"); pv.innerHTML = ""; pv.appendChild(Xingzuo.render(R));
+};
+document.getElementById("t-render").click();
+</script>
+</body>
+</html>

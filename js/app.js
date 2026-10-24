@@ -41,11 +41,12 @@ const NAV_GROUPS = {
     { perm: "lifenum", label: "生命靈數報告", show: function () { showMingliTab("lifenum"); } },
     { perm: "qimen", label: "奇門命盤報告", show: function () { showMingliTab("qimen"); } },
     { perm: "ziwei", label: "紫微斗數報告", show: function () { showMingliTab("ziwei"); } },
-    { perm: "tongsheng", label: "個人通勝", show: function () { showMingliTab("tongsheng"); } }
+    { perm: "tongsheng", label: "個人通勝", show: function () { showMingliTab("tongsheng"); } },
+    { perm: "xingzuo", label: "十二星座", show: function () { showMingliTab("xingzuo"); } }
   ] }
 };
-const MINGLI_LABEL = { bazi: "八字命卷報告", renge: "人格解碼報告", lifenum: "生命靈數報告", qimen: "奇門命盤報告", ziwei: "紫微斗數報告", tongsheng: "個人通勝" };
-const REPORT_ORDER = ["bazi", "renge", "lifenum", "qimen", "ziwei", "tongsheng"];
+const MINGLI_LABEL = { bazi: "八字命卷報告", renge: "人格解碼報告", lifenum: "生命靈數報告", qimen: "奇門命盤報告", ziwei: "紫微斗數報告", tongsheng: "個人通勝", xingzuo: "十二星座" };
+const REPORT_ORDER = ["bazi", "renge", "lifenum", "qimen", "ziwei", "tongsheng", "xingzuo"];
 let currentReportTab = "bazi";
 // 命理諮詢：切換到某報告頁籤（顯示 mainView、切面板、反白命理諮詢群組與子頁籤）。
 function showMingliTab(tab) {
@@ -131,7 +132,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false, tongsheng: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false, tongsheng: false, xingzuo: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -151,7 +152,8 @@ function effectivePermissions(data) {
     qimenshuzi: !!raw.qimenshuzi,
     ziwei: !!raw.ziwei,
     xingming: !!raw.xingming,
-    tongsheng: !!raw.tongsheng
+    tongsheng: !!raw.tongsheng,
+    xingzuo: !!raw.xingzuo
   };
 }
 
@@ -172,6 +174,7 @@ requireApprovedUser(function (user, data) {
   if (!perms.qimen) document.getElementById("qimenSubmitBtn").style.display = "none";
   if (!perms.ziwei) document.getElementById("qimenDivineSubmitBtn").style.display = "none";
   if (!perms.tongsheng) document.getElementById("tongshengSubmitBtn").style.display = "none";
+  if (!perms.xingzuo) document.getElementById("xingzuoSubmitBtn").style.display = "none";
 
   // 命理諮詢：預先設定第一個有權限的報告頁籤（面板在隱藏的 mainView 內），供之後點「命理諮詢」時使用；
   // 全無報告權限則顯示提示。登入後的預設首頁改為「擇日」（免費），見下方 showZeriView()。
@@ -355,6 +358,7 @@ function setActiveTab(tab) {
   document.getElementById("qimenTabPanel").style.display = tab === "qimen" ? "" : "none";
   document.getElementById("ziweiTabPanel").style.display = tab === "ziwei" ? "" : "none";
   document.getElementById("tongshengTabPanel").style.display = tab === "tongsheng" ? "" : "none";
+  document.getElementById("xingzuoTabPanel").style.display = tab === "xingzuo" ? "" : "none";
   refreshSubNavActive(MINGLI_LABEL[tab]);
 }
 
@@ -1203,6 +1207,71 @@ document.getElementById("exportTongshengPdfBtn").addEventListener("click", async
     status.textContent = "已下載 " + year + " 年 12 個月";
   } catch (err) { status.textContent = ""; alert("匯出失敗：" + err.message); }
   finally { holder.remove(); btn.disabled = false; btn.textContent = orig; }
+});
+
+// 命理諮詢「十二星座」（行星推算、解讀與版面在 js/xingzuo.js）：個人星座個性＋選定年份每月運勢，
+// 年份今年（含）起可選，畫面預覽整份報告，匯出 PDF 沿用 addSectionsToPdf 逐區塊分頁
+let xzState = null; // { input: 出生資料 }
+function xzRender() {
+  const year = Number(document.getElementById("xz-year").value);
+  const pv = document.getElementById("xzPreview");
+  pv.innerHTML = "";
+  pv.appendChild(Xingzuo.render(Xingzuo.analyze(Object.assign({ year }, xzState.input))));
+}
+document.getElementById("xingzuoSubmitBtn").addEventListener("click", function () {
+  const name = document.getElementById("f-name").value.trim();
+  const gender = document.getElementById("f-gender").value;
+  const dateVal = getBirthDateVal(), timeVal = getBirthTimeVal();
+  if (!name || !dateVal || !timeVal) { showToast("請先填寫姓名與出生年月日時。", "error"); return; }
+  const [y, mo, d] = dateVal.split("-").map(Number);
+  const [h, mi] = timeVal.split(":").map(Number);
+  if (!isValidSolarDate(y, mo, d)) { showToast(y + " 年 " + mo + " 月沒有 " + d + " 日，請重新選擇出生日期。", "error"); return; }
+  try {
+    xzState = { input: { name, gender, birth: { y, mo, d, h, mi } } };
+    // 年份範圍＝今年（含）起到出生後 100 年（至少列到今年後 10 年）
+    const thisYear = new Date().getFullYear();
+    const from = Math.max(thisYear, y), to = Math.max(y + 100, from + 10);
+    const ys = document.getElementById("xz-year");
+    const keep = Number(ys.value);
+    ys.innerHTML = "";
+    for (let yy = from; yy <= to; yy++) ys.add(new Option(yy + " 年", yy));
+    ys.value = String(keep >= from && keep <= to ? keep : from);
+    document.getElementById("xingzuoCard").style.display = "";
+    xzRender();
+    setActiveTab("xingzuo");
+  } catch (err) { showToast("星座分析失敗：" + err.message, "error"); }
+});
+document.getElementById("xz-year").addEventListener("change", function () { if (xzState) xzRender(); });
+
+document.getElementById("exportXingzuoPdfBtn").addEventListener("click", async function () {
+  if (!xzState) { showToast("請先按「十二星座」產生分析。", "error"); return; }
+  // 報告用的是上一次產生時的資料；表單改過姓名或出生資料卻沒重新產生時擋下
+  const inp = xzState.input, t = document.getElementById("f-btime").value.split(":").map(Number);
+  const formNow = [document.getElementById("f-name").value.trim(), document.getElementById("f-gender").value,
+    +document.getElementById("f-byear").value, +document.getElementById("f-bmonth").value, +document.getElementById("f-bday").value, t[0], t[1]];
+  const used = [inp.name, inp.gender, inp.birth.y, inp.birth.mo, inp.birth.d, inp.birth.h, inp.birth.mi];
+  if (formNow.some((v, i) => v !== used[i])) {
+    showToast("姓名或出生資料已變更，請先按「十二星座」重新產生，再匯出。", "error");
+    return;
+  }
+  const year = Number(document.getElementById("xz-year").value);
+  const btn = this, status = document.getElementById("xz-status"), orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "匯出中...";
+  const box = Xingzuo.render(Xingzuo.analyze(Object.assign({ year }, inp)));
+  document.body.appendChild(box);
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 12;
+    pdf.addImage(document.querySelector(".brand img"), "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 十二星座運勢報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    await addSectionsToPdf(pdf, Array.from(box.children), margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save(inp.name + "-" + year + "星座運勢報告.pdf");
+    status.textContent = "已下載";
+  } catch (err) { status.textContent = ""; alert("匯出失敗：" + err.message); }
+  finally { box.remove(); btn.disabled = false; btn.textContent = orig; }
 });
 
 function charCell(part) {

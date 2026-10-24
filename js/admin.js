@@ -22,11 +22,11 @@ function formatCreatedAt(ts) {
 // 實際看到的權限一樣，管理者才不會誤判目前狀態。舊帳號（完全沒有 permissions 欄位）：八字／人格解碼／
 // 生命靈數／奇門命盤沿用舊行為視為開放，五個新導覽功能一律未開放；有 permissions 欄位但缺新欄位的帳號：
 // 奇門命盤沿用開放（避免現有使用者權限系統上線後突然被鎖），其餘新欄位視為未開放。
-const PERM_KEYS = ["bazi", "renge", "lifenum", "qimen", "qimenDunjia", "qimenHongpan", "qimenSansheng", "guanyin", "jigong", "fengshui", "mingpian", "zibai", "bazhai", "cuiwang", "qimenshuzi", "ziwei", "xingming", "tongsheng"];
+const PERM_KEYS = ["bazi", "renge", "lifenum", "qimen", "qimenDunjia", "qimenHongpan", "qimenSansheng", "guanyin", "jigong", "fengshui", "mingpian", "zibai", "bazhai", "cuiwang", "qimenshuzi", "ziwei", "xingming", "tongsheng", "xingzuo"];
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false, tongsheng: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false, tongsheng: false, xingzuo: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -46,7 +46,8 @@ function effectivePermissions(data) {
     qimenshuzi: !!raw.qimenshuzi,
     ziwei: !!raw.ziwei,
     xingming: !!raw.xingming,
-    tongsheng: !!raw.tongsheng
+    tongsheng: !!raw.tongsheng,
+    xingzuo: !!raw.xingzuo
   };
 }
 
@@ -161,7 +162,7 @@ const PERM_LABELS = {
   bazi: "八字", renge: "人格解碼", lifenum: "生命靈數", qimen: "奇門命盤", qimenDunjia: "奇門藍盤",
   qimenHongpan: "奇門紅盤", qimenSansheng: "奇門三勝宮", guanyin: "觀音棋卦", jigong: "濟公棋卦",
   fengshui: "數字易經", mingpian: "名片風水", zibai: "紫白風水", bazhai: "八宅風水", cuiwang: "奇門催旺",
-  qimenshuzi: "奇門數字", ziwei: "紫微斗數", xingming: "姓名學", tongsheng: "個人通勝"
+  qimenshuzi: "奇門數字", ziwei: "紫微斗數", xingming: "姓名學", tongsheng: "個人通勝", xingzuo: "十二星座"
 };
 
 function csvCell(v) {
