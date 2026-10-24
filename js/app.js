@@ -786,7 +786,6 @@ document.getElementById("baziForm").addEventListener("submit", function (e) {
     selectedLiunian = null;
     selectedMainPillar = null;
     document.getElementById("shenshaExplainCard").style.display = "none";
-    document.getElementById("baziReportPanel").style.display = "none"; // 換人排盤後年份範圍要重算
     renderChart(currentChart);
     // 修正：停在其他報告頁籤（人格解碼／生命靈數…）時按「八字命卷報告」，結果畫在隱藏的 baziTabPanel 裡看不到
     setActiveTab("bazi");
@@ -1081,27 +1080,15 @@ document.getElementById("makeMingshuBtn").addEventListener("click", async functi
   }
 });
 
-// 八字「轉流年PDF分析報告」（解讀與版面在 js/bazi-report.js）：選流年年份（今年含以後），
-// 報告逐區塊轉成 PDF（沿用 addSectionsToPdf 分頁，不會把表格切半）
-document.getElementById("baziReportToggleBtn").addEventListener("click", function () {
-  if (!currentChart) { showToast("請先排盤。", "error"); return; }
-  const panel = document.getElementById("baziReportPanel");
-  const open = panel.style.display === "none";
-  if (open) {
-    // 年份範圍＝今年（含）起到出生後 100 年（至少列到今年後 10 年）；預設保留上次選的年份，沒有就用今年
-    const sel = document.getElementById("bz-year");
-    const birthYear = Number(currentChart.solarText.slice(0, 4));
-    const thisYear = new Date().getFullYear();
-    const from = Math.max(thisYear, birthYear), to = Math.max(birthYear + 100, from + 10);
-    const keep = Number(sel.value) || from;
-    sel.innerHTML = "";
-    for (let yy = from; yy <= to; yy++) sel.add(new Option(yy + " 年", yy));
-    sel.value = String(keep >= from && keep <= to ? keep : from);
-  }
-  panel.style.display = open ? "" : "none";
-});
-
-document.getElementById("baziReportGenBtn").addEventListener("click", async function () {
+// 八字「轉流年PDF分析報告」（解讀與版面在 js/bazi-report.js）：按鍵直接產生「今年度」報告（不選年份）。
+// 八字流年以立春為界：今天還沒過今年立春，今年度＝去年。報告逐區塊轉成 PDF（沿用 addSectionsToPdf 分頁）
+function baziCurrentYear() {
+  const now = new Date(), y = now.getFullYear();
+  const lc = Solar.fromYmd(y, 6, 1).getLunar().getJieQiTable()["立春"];
+  const lichun = new Date(lc.getYear(), lc.getMonth() - 1, lc.getDay(), lc.getHour(), lc.getMinute(), lc.getSecond());
+  return now < lichun ? y - 1 : y;
+}
+document.getElementById("baziReportToggleBtn").addEventListener("click", async function () {
   if (!currentChart) { showToast("請先排盤。", "error"); return; }
   // 報告用的是上一次排盤的資料；表單改過姓名或出生資料卻沒重新排盤時擋下，避免報告與表單不一致
   const pad = (v) => String(v).padStart(2, "0");
@@ -1112,12 +1099,11 @@ document.getElementById("baziReportGenBtn").addEventListener("click", async func
     showToast("姓名或出生資料已變更，請先按「八字命卷報告」重新排盤，再產生流年報告。", "error");
     return;
   }
-  const year = Number(document.getElementById("bz-year").value);
-  const btn = this, status = document.getElementById("bz-status"), orig = btn.textContent;
+  const year = baziCurrentYear();
+  const btn = this, orig = btn.textContent;
   btn.disabled = true; btn.textContent = "產生中...";
   let box = null;
   try {
-    status.textContent = "分析與排版中...";
     const model = BaziReport.analyze(currentChart, { year });
     box = BaziReport.render(model);
     document.body.appendChild(box);
@@ -1131,8 +1117,8 @@ document.getElementById("baziReportGenBtn").addEventListener("click", async func
     await addSectionsToPdf(pdf, Array.from(box.children), margin, pageWidth, pageHeight, 26);
     addPageNumbers(pdf, pageWidth, pageHeight);
     pdf.save(currentChart.name + "-" + year + "八字流年分析報告.pdf");
-    status.textContent = "已下載";
-  } catch (err) { status.textContent = ""; alert("產生失敗：" + err.message); }
+    showToast(year + " 年度八字流年分析報告已下載。", "success");
+  } catch (err) { alert("產生失敗：" + err.message); }
   finally { if (box) box.remove(); btn.disabled = false; btn.textContent = orig; }
 });
 
