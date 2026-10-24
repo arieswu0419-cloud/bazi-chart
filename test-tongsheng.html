@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>個人通勝測試頁</title>
+<link rel="stylesheet" href="css/style.css?v=293">
+<style>
+  body { padding: 16px; background: #eee; }
+  #controls { margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  #preview .ts-page { box-shadow: 0 0 6px rgba(0,0,0,.2); }
+</style>
+</head>
+<body>
+<!-- 測試頁（不會打包上線）：不需登入，直接用固定出生資料驗證 js/tongsheng.js 的推算、版面與 PDF -->
+<div id="controls">
+  姓名 <input id="t-name" value="吳慧琳" size="6">
+  出生 <input id="t-date" value="1976-04-19" size="10"> <input id="t-time" value="20:20" size="5">
+  <select id="t-gender"><option value="female">女</option><option value="male">男</option></select>
+  年份 <input id="t-year" value="2026" size="5"> 月 <input id="t-month" value="1" size="3">
+  <button id="t-render">預覽</button>
+  <button id="t-pdf">產生全年 PDF</button>
+  <span id="t-status"></span>
+</div>
+<div id="preview"></div>
+
+<script src="js/vendor/lunar-javascript-1.7.7.js"></script>
+<script src="js/bazi-engine.js"></script>
+<script src="js/almanac-s2t.js"></script>
+<script src="js/bazi-report.js"></script>
+<script src="js/tongsheng.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+function buildModel() {
+  const [year, month, day] = document.getElementById("t-date").value.split("-").map(Number);
+  const [hour, minute] = document.getElementById("t-time").value.split(":").map(Number);
+  const chart = calculateBazi({ year, month, day, hour, minute, gender: document.getElementById("t-gender").value, name: document.getElementById("t-name").value });
+  return TongSheng.build(chart, Number(document.getElementById("t-year").value));
+}
+document.getElementById("t-render").onclick = function () {
+  window.lastModel = buildModel();
+  const pv = document.getElementById("preview"); pv.innerHTML = "";
+  pv.appendChild(TongSheng.renderMonth(window.lastModel, Number(document.getElementById("t-month").value)));
+};
+document.getElementById("t-pdf").onclick = async function () {
+  const st = document.getElementById("t-status");
+  try {
+    const model = buildModel();
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:fixed;left:-12000px;top:0;width:794px";
+    document.body.appendChild(holder);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    for (let m = 1; m <= 12; m++) {
+      st.textContent = "排版中 " + m + " / 12";
+      const page = TongSheng.renderMonth(model, m);
+      holder.appendChild(page);
+      const canvas = await html2canvas(page, { scale: 2, backgroundColor: "#ffffff" });
+      page.remove();
+      if (m > 1) pdf.addPage();
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297);
+    }
+    holder.remove();
+    // ?upload=埠號：改把 PDF 傳給本機收檔小程式（自動化驗證用），不跳下載
+    const up = new URLSearchParams(location.search).get("upload");
+    if (up) await fetch("http://127.0.0.1:" + up + "/save", { method: "POST", body: pdf.output("blob") });
+    else pdf.save(model.chart.name + "-" + model.year + "個人擇日通勝.pdf");
+    st.textContent = "完成，共 " + pdf.internal.getNumberOfPages() + " 頁";
+  } catch (e) { st.textContent = "失敗：" + e.message; console.error(e); }
+};
+document.getElementById("t-render").click();
+</script>
+</body>
+</html>

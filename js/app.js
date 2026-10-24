@@ -40,11 +40,12 @@ const NAV_GROUPS = {
     { perm: "renge", label: "人格解碼報告", show: function () { showMingliTab("renge"); } },
     { perm: "lifenum", label: "生命靈數報告", show: function () { showMingliTab("lifenum"); } },
     { perm: "qimen", label: "奇門命盤報告", show: function () { showMingliTab("qimen"); } },
-    { perm: "ziwei", label: "紫微斗數報告", show: function () { showMingliTab("ziwei"); } }
+    { perm: "ziwei", label: "紫微斗數報告", show: function () { showMingliTab("ziwei"); } },
+    { perm: "tongsheng", label: "個人通勝", show: function () { showMingliTab("tongsheng"); } }
   ] }
 };
-const MINGLI_LABEL = { bazi: "八字命卷報告", renge: "人格解碼報告", lifenum: "生命靈數報告", qimen: "奇門命盤報告", ziwei: "紫微斗數報告" };
-const REPORT_ORDER = ["bazi", "renge", "lifenum", "qimen", "ziwei"];
+const MINGLI_LABEL = { bazi: "八字命卷報告", renge: "人格解碼報告", lifenum: "生命靈數報告", qimen: "奇門命盤報告", ziwei: "紫微斗數報告", tongsheng: "個人通勝" };
+const REPORT_ORDER = ["bazi", "renge", "lifenum", "qimen", "ziwei", "tongsheng"];
 let currentReportTab = "bazi";
 // 命理諮詢：切換到某報告頁籤（顯示 mainView、切面板、反白命理諮詢群組與子頁籤）。
 function showMingliTab(tab) {
@@ -130,7 +131,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false, tongsheng: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -149,7 +150,8 @@ function effectivePermissions(data) {
     cuiwang: !!raw.cuiwang,
     qimenshuzi: !!raw.qimenshuzi,
     ziwei: !!raw.ziwei,
-    xingming: !!raw.xingming
+    xingming: !!raw.xingming,
+    tongsheng: !!raw.tongsheng
   };
 }
 
@@ -169,6 +171,7 @@ requireApprovedUser(function (user, data) {
   if (!perms.lifenum) document.getElementById("lifenumSubmitBtn").style.display = "none";
   if (!perms.qimen) document.getElementById("qimenSubmitBtn").style.display = "none";
   if (!perms.ziwei) document.getElementById("qimenDivineSubmitBtn").style.display = "none";
+  if (!perms.tongsheng) document.getElementById("tongshengSubmitBtn").style.display = "none";
 
   // 命理諮詢：預先設定第一個有權限的報告頁籤（面板在隱藏的 mainView 內），供之後點「命理諮詢」時使用；
   // 全無報告權限則顯示提示。登入後的預設首頁改為「擇日」（免費），見下方 showZeriView()。
@@ -351,6 +354,7 @@ function setActiveTab(tab) {
   document.getElementById("lifenumTabPanel").style.display = tab === "lifenum" ? "" : "none";
   document.getElementById("qimenTabPanel").style.display = tab === "qimen" ? "" : "none";
   document.getElementById("ziweiTabPanel").style.display = tab === "ziwei" ? "" : "none";
+  document.getElementById("tongshengTabPanel").style.display = tab === "tongsheng" ? "" : "none";
   refreshSubNavActive(MINGLI_LABEL[tab]);
 }
 
@@ -1126,6 +1130,79 @@ document.getElementById("baziReportGenBtn").addEventListener("click", async func
     status.textContent = "已下載";
   } catch (err) { status.textContent = ""; alert("產生失敗：" + err.message); }
   finally { if (box) box.remove(); btn.disabled = false; btn.textContent = orig; }
+});
+
+// 命理諮詢「個人通勝」（推算與版面在 js/tongsheng.js）：年份今年（含）起可選，畫面預覽單月，匯出全年 12 張 A4
+let tsState = null; // { chart, cache: { 年份: TongSheng.build 結果 } }
+function tsModel(year) {
+  if (!tsState.cache[year]) tsState.cache[year] = TongSheng.build(tsState.chart, year);
+  return tsState.cache[year];
+}
+function tsRenderPreview() {
+  const year = Number(document.getElementById("ts-year").value), m = Number(document.getElementById("ts-month").value);
+  const pv = document.getElementById("tsPreview");
+  pv.innerHTML = "";
+  pv.appendChild(TongSheng.renderMonth(tsModel(year), m));
+}
+document.getElementById("tongshengSubmitBtn").addEventListener("click", function () {
+  const name = document.getElementById("f-name").value.trim();
+  const gender = document.getElementById("f-gender").value;
+  const dateVal = getBirthDateVal(), timeVal = getBirthTimeVal();
+  if (!name || !dateVal || !timeVal) { showToast("請先填寫姓名與出生年月日時。", "error"); return; }
+  const [year, month, day] = dateVal.split("-").map(Number);
+  const [hour, minute] = timeVal.split(":").map(Number);
+  if (!isValidSolarDate(year, month, day)) { showToast(year + " 年 " + month + " 月沒有 " + day + " 日，請重新選擇出生日期。", "error"); return; }
+  try {
+    tsState = { chart: calculateBazi({ year, month, day, hour, minute, gender, name }), cache: {} };
+    // 年份範圍＝今年（含）起到出生後 100 年（至少列到今年後 10 年）
+    const now = new Date(), thisYear = now.getFullYear();
+    const from = Math.max(thisYear, year), to = Math.max(year + 100, from + 10);
+    const ys = document.getElementById("ts-year"), ms = document.getElementById("ts-month");
+    ys.innerHTML = "";
+    for (let yy = from; yy <= to; yy++) ys.add(new Option(yy + " 年", yy));
+    if (!ms.options.length) for (let mm = 1; mm <= 12; mm++) ms.add(new Option(mm + " 月", mm));
+    ys.value = String(from);
+    ms.value = String(from === thisYear ? now.getMonth() + 1 : 1);
+    document.getElementById("tongshengCard").style.display = "";
+    tsRenderPreview();
+    setActiveTab("tongsheng");
+  } catch (err) { showToast("排盤失敗：" + err.message, "error"); }
+});
+["ts-year", "ts-month"].forEach((id) => document.getElementById(id).addEventListener("change", function () { if (tsState) tsRenderPreview(); }));
+
+document.getElementById("exportTongshengPdfBtn").addEventListener("click", async function () {
+  if (!tsState) { showToast("請先按「個人通勝」排盤。", "error"); return; }
+  // 通勝用的是上一次排盤的資料；表單改過姓名或出生資料卻沒重新排盤時擋下
+  const c = tsState.chart, pad = (v) => String(v).padStart(2, "0");
+  const formSolar = document.getElementById("f-byear").value + "-" + pad(document.getElementById("f-bmonth").value) + "-" +
+    pad(document.getElementById("f-bday").value) + " " + document.getElementById("f-btime").value;
+  if (document.getElementById("f-name").value.trim() !== c.name || document.getElementById("f-gender").value !== c.gender || formSolar !== c.solarText) {
+    showToast("姓名或出生資料已變更，請先按「個人通勝」重新排盤，再匯出。", "error");
+    return;
+  }
+  const year = Number(document.getElementById("ts-year").value);
+  const btn = this, status = document.getElementById("ts-status"), orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "產生中...";
+  const holder = document.createElement("div");
+  holder.style.cssText = "position:fixed;left:-12000px;top:0;width:794px";
+  document.body.appendChild(holder);
+  try {
+    const model = tsModel(year);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    for (let m = 1; m <= 12; m++) {
+      status.textContent = "排版中 " + m + " / 12 月...";
+      const page = TongSheng.renderMonth(model, m);
+      holder.appendChild(page);
+      const canvas = await html2canvas(page, { scale: 2, backgroundColor: "#ffffff" });
+      page.remove();
+      if (m > 1) pdf.addPage();
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297);
+    }
+    pdf.save(c.name + "-" + year + "個人擇日通勝.pdf");
+    status.textContent = "已下載 " + year + " 年 12 個月";
+  } catch (err) { status.textContent = ""; alert("匯出失敗：" + err.message); }
+  finally { holder.remove(); btn.disabled = false; btn.textContent = orig; }
 });
 
 function charCell(part) {

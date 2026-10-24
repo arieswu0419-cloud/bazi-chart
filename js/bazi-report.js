@@ -489,7 +489,9 @@
       return b;
     };
     const genderText = c.gender === "male" ? "男" : "女";
-    const pillarsText = ["年", "月", "日", "時"].map((k) => R.P[k].gan.char + R.P[k].zhi.char).join(" ");
+    // 四柱一律依全站慣例「時／日／月／年」排列
+    const ORDER = ["時", "日", "月", "年"];
+    const pillarsText = ORDER.map((k) => R.P[k].gan.char + R.P[k].zhi.char).join(" ");
     const dayElem = N.D;
     const xuSui = y - R.birthYear + 1;
     const dyText = R.dy ? R.dy.gan.char + R.dy.zhi.char + "大運（" + R.dy.startYear + "–" + (R.dy.startYear + 9) + "，" + R.dy.startAge + "–" + R.dy.endAge + " 歲）" : "尚未起運";
@@ -514,8 +516,8 @@
     const first = R.dyRows[0] && R.dyRows[0].d;
     add(table([["項目", 19], ["內容", 81]], [
       ["出生", "公元 " + esc(c.solarText) + "（農曆" + esc(c.lunarText) + "），" + genderText + "命，生肖" + c.shengxiao],
-      ["四柱", pillarsText.split(" ").map((g, i) => g + ["年", "月", "日", "時"][i]).join("　")],
-      ["日主", c.dayGan + dayElem + "，" + N.level + "（同類比劫與印星約占 " + Math.round(N.ratio * 100) + "%）"],
+      ["四柱", pillarsText.split(" ").map((g, i) => g + ORDER[i]).join("　")],
+      ["日主", c.dayGan + dayElem + "，" + N.level + "（同類比劫與印星在五行強弱表合計 " + Math.round((c.wuxingPct[N.ce.比劫] + c.wuxingPct[N.ce.印]) * 10) / 10 + "%）"],
       ["格局", c.geju],
       ["喜用神", "用神 " + elemRole("用神") + "；喜神 " + elemRole("喜神")],
       ["忌神", "忌神 " + elemRole("忌神") + "；仇神 " + elemRole("仇神")],
@@ -525,8 +527,8 @@
     ], { darkFirst: true }));
 
     // 02 四柱排盤
-    const ks = ["年", "月", "日", "時"];
-    add(h1(num(), "四柱排盤") + table([["項目", 16], ["年柱", 21], ["月柱", 21], ["日柱", 21], ["時柱", 21]], [
+    const ks = ORDER;
+    add(h1(num(), "四柱排盤") + table([["項目", 16], ["時柱", 21], ["日柱", 21], ["月柱", 21], ["年柱", 21]], [
       ["天干十神"].concat(ks.map((k) => R.P[k].shiShenGan || "日主")),
       ["天干"].concat(ks.map((k) => R.P[k].gan.char + "（" + R.P[k].gan.wuxing + "）")),
       ["地支"].concat(ks.map((k) => R.P[k].zhi.char + "（" + R.P[k].zhi.wuxing + "）")),
@@ -541,17 +543,22 @@
 
     // 03 日主強弱與喜忌
     // 章節標題＋導言＋第一個表格放同一區塊，PDF 分頁時不會把標題留在上一頁
+    // 五行比重一律採用系統「五行強弱表」（chart.wuxingPct：四天干＋四地支本氣）；
+    // 強弱判斷另計月令加倍與藏干（N.ratio），文字只引用強弱表數字，避免兩套百分比並列
+    const wx = c.wuxingPct;
+    const sameSide = Math.round((wx[N.ce.比劫] + wx[N.ce.印]) * 10) / 10;
     add(h1(num(), "日主強弱與喜忌") + callout(
       c.dayGan + dayElem + "日主" + N.level + "，" + N.reason + "：用神取" + elemRole("用神") + "，喜神為" + elemRole("喜神") + "，最怕" + elemRole("忌神") + "。") +
-      table([["五行", 10], ["十神", 12], ["原局力量", 14], ["角色", 12], ["說明", 52]],
+      table([["五行", 10], ["十神", 12], ["五行強弱表", 14], ["角色", 12], ["說明", 52]],
       ROLE_ORDER.map((r) => {
         const e = N.elemOf(r);
-        return [e, N.roleCat[r], N.pct[e] + "%", r, ROLE_DESC[r]];
+        return [e, N.roleCat[r], wx[e] + "%", r, ROLE_DESC[r]];
       }), { darkFirst: true }));
+    const maxWx = Math.max(...ELEMS.map((e) => wx[e])), minWx = Math.min(...ELEMS.map((e) => wx[e]));
     const natalBul = [
       "<b>日主性格：</b>" + c.dayGan + dayElem + "如" + DAY_TRAIT[c.dayGan] + "。",
-      "<b>強弱判斷：</b>月令" + R.P.月.zhi.char + "（" + R.P.月.zhi.wuxing + "），同類五行（" + N.ce.比劫 + "、" + N.ce.印 + "）約占 " + Math.round(N.ratio * 100) + "%，屬" + N.level + "。",
-      "<b>最旺與最弱：</b>原局最旺是" + ELEMS.slice().sort((a, b) => N.pct[b] - N.pct[a])[0] + "，最弱是" + ELEMS.slice().sort((a, b) => N.pct[a] - N.pct[b])[0] + "；大運流年補到喜用神時運勢最順。"
+      "<b>強弱判斷：</b>月令" + R.P.月.zhi.char + "（" + R.P.月.zhi.wuxing + "），同類五行（" + N.ce.比劫 + "、" + N.ce.印 + "）在五行強弱表合計 " + sameSide + "%；再計入月令與藏干，判為" + N.level + "。",
+      "<b>最旺與最弱：</b>原局最旺是" + ELEMS.filter((e) => wx[e] === maxWx).join("、") + "，最弱是" + ELEMS.filter((e) => wx[e] === minWx).join("、") + "；大運流年補到喜用神時運勢最順。"
     ];
     if (N.tiaohou) natalBul.push("<b>調候：</b>" + N.tiaohou + "。");
     add(ul(natalBul));
@@ -677,12 +684,10 @@
     todo.push(low.gz[1] + "月（" + md(low.start) + "–" + md(low.end) + "）重大決定放慢，" + top.gz[1] + "月（" + md(top.start) + "–" + md(top.end) + "）主動出擊");
     todo.push("每季回顧一次本報告的流月提醒，提前安排重要計畫");
     add(h2("行動清單") + ul(todo, "zr-check"));
-    add(h2("說明") + ul([
-      "本報告依節氣四柱排盤，日主強弱、喜忌與合沖刑害採規則式判讀；起運歲數與流月交接日為約略值，可能有數日至數月誤差。",
-      "八字是傳統文化的詮釋工具，適合用來自我反思與規劃；健康請以醫師診斷為準，理財請以自身財務狀況與專業意見為準。"
-    ]) + '<div class="zr-end">Aries 命理工作室　·　' + new Date().getFullYear() + "/" + (new Date().getMonth() + 1) + "/" + new Date().getDate() + " 產生</div>");
+    add('<div class="zr-end">Aries 命理工作室　·　' + new Date().getFullYear() + "/" + (new Date().getMonth() + 1) + "/" + new Date().getDate() + " 產生</div>");
     return root;
   }
 
-  window.BaziReport = { analyze, render };
+  // natal：本命喜忌分析，個人通勝（js/tongsheng.js）用來排每日的大吉／次吉／小吉五行
+  window.BaziReport = { analyze, render, natal: analyzeNatal };
 })();

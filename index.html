@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=288">
+<link rel="stylesheet" href="css/style.css?v=293">
 <link rel="stylesheet" href="css/jigong-bugua.css?v=288">
 </head>
 <body>
@@ -91,6 +91,7 @@
           <button type="button" class="btn" id="lifenumSubmitBtn">生命靈數報告</button>
           <button type="button" class="btn" id="qimenSubmitBtn">奇門命盤報告</button>
           <button type="button" class="btn" id="qimenDivineSubmitBtn">紫微斗數報告</button>
+          <button type="button" class="btn" id="tongshengSubmitBtn">個人通勝</button>
         </div>
         <p class="form-msg show info" id="permissionNote" style="display:none">您的帳號目前沒有任何報告的使用權限，請聯絡管理者開通。</p>
       </div>
@@ -310,6 +311,23 @@
         <span class="zw-scope-date">查詢時間：<input type="date" id="zw-hdate"><input type="time" id="zw-htime"></span>
       </div>
       <div id="ziweiChart"></div>
+    </div>
+    </div>
+
+    <div id="tongshengTabPanel" style="display:none">
+    <div class="card" id="tongshengCard" style="display:none">
+      <div class="card-head" style="justify-content:flex-end;gap:8px">
+        <button class="btn secondary" id="exportTongshengPdfBtn" style="width:auto">匯出全年 PDF（12 張 A4）</button>
+      </div>
+      <h2 class="zibai-title">個人擇日通勝</h2>
+      <div class="ts-controls">
+        <label class="zr-panel-label" for="ts-year">年份</label>
+        <select id="ts-year"></select>
+        <label class="zr-panel-label" for="ts-month">預覽月份</label>
+        <select id="ts-month"></select>
+        <span class="zr-panel-hint" id="ts-status">依本命年柱推算每日本命日別、適合與不適合，一個月一張 A4</span>
+      </div>
+      <div class="ts-preview-wrap"><div id="tsPreview"></div></div>
     </div>
     </div>
     </div>
@@ -1513,7 +1531,8 @@
 <script src="js/qimen-engine.js?v=288"></script>
 <script src="js/iztro.min.js?v=288"></script>
 <script src="js/ziwei-report.js?v=290"></script>
-<script src="js/bazi-report.js?v=291"></script>
+<script src="js/bazi-report.js?v=292"></script>
+<script src="js/tongsheng.js?v=292"></script>
 <script src="js/cuiwang-engine.js?v=288"></script>
 <script src="js/qimen-shuzi-engine.js?v=288"></script>
 <script src="js/qimen-hexa64-content.js?v=288"></script>
@@ -1527,6 +1546,6 @@
 <script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=291"></script>
+<script src="js/app.js?v=292"></script>
 </body>
 </html>
