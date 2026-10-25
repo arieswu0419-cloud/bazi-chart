@@ -42,11 +42,12 @@ const NAV_GROUPS = {
     { perm: "qimen", label: "奇門命盤報告", show: function () { showMingliTab("qimen"); } },
     { perm: "ziwei", label: "紫微斗數報告", show: function () { showMingliTab("ziwei"); } },
     { perm: "tongsheng", label: "個人通勝", show: function () { showMingliTab("tongsheng"); } },
-    { perm: "xingzuo", label: "十二星座", show: function () { showMingliTab("xingzuo"); } }
+    { perm: "xingzuo", label: "十二星座", show: function () { showMingliTab("xingzuo"); } },
+    { perm: "tiepan", label: "鐵版神數", show: function () { showMingliTab("tiepan"); } }
   ] }
 };
-const MINGLI_LABEL = { bazi: "八字命卷報告", renge: "人格解碼報告", lifenum: "生命靈數報告", qimen: "奇門命盤報告", ziwei: "紫微斗數報告", tongsheng: "個人通勝", xingzuo: "十二星座" };
-const REPORT_ORDER = ["bazi", "renge", "lifenum", "qimen", "ziwei", "tongsheng", "xingzuo"];
+const MINGLI_LABEL = { bazi: "八字命卷報告", renge: "人格解碼報告", lifenum: "生命靈數報告", qimen: "奇門命盤報告", ziwei: "紫微斗數報告", tongsheng: "個人通勝", xingzuo: "十二星座", tiepan: "鐵版神數" };
+const REPORT_ORDER = ["bazi", "renge", "lifenum", "qimen", "ziwei", "tongsheng", "xingzuo", "tiepan"];
 let currentReportTab = "bazi";
 // 命理諮詢：切換到某報告頁籤（顯示 mainView、切面板、反白命理諮詢群組與子頁籤）。
 function showMingliTab(tab) {
@@ -132,7 +133,7 @@ function showToast(text, type) {
 function effectivePermissions(data) {
   const raw = data.permissions;
   if (!raw) {
-    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false, tongsheng: false, xingzuo: false };
+    return { bazi: true, renge: true, lifenum: true, qimen: true, qimenDunjia: false, qimenHongpan: false, qimenSansheng: false, guanyin: false, jigong: false, fengshui: false, mingpian: false, zibai: false, bazhai: false, cuiwang: false, qimenshuzi: false, ziwei: false, xingming: false, tongsheng: false, xingzuo: false, tiepan: false };
   }
   return {
     bazi: !!raw.bazi,
@@ -153,7 +154,8 @@ function effectivePermissions(data) {
     ziwei: !!raw.ziwei,
     xingming: !!raw.xingming,
     tongsheng: !!raw.tongsheng,
-    xingzuo: !!raw.xingzuo
+    xingzuo: !!raw.xingzuo,
+    tiepan: !!raw.tiepan
   };
 }
 
@@ -175,6 +177,7 @@ requireApprovedUser(function (user, data) {
   if (!perms.ziwei) document.getElementById("qimenDivineSubmitBtn").style.display = "none";
   if (!perms.tongsheng) document.getElementById("tongshengSubmitBtn").style.display = "none";
   if (!perms.xingzuo) document.getElementById("xingzuoSubmitBtn").style.display = "none";
+  if (!perms.tiepan) document.getElementById("tiepanSubmitBtn").style.display = "none";
 
   // 命理諮詢：預先設定第一個有權限的報告頁籤（面板在隱藏的 mainView 內），供之後點「命理諮詢」時使用；
   // 全無報告權限則顯示提示。登入後的預設首頁改為「擇日」（免費），見下方 showZeriView()。
@@ -359,6 +362,7 @@ function setActiveTab(tab) {
   document.getElementById("ziweiTabPanel").style.display = tab === "ziwei" ? "" : "none";
   document.getElementById("tongshengTabPanel").style.display = tab === "tongsheng" ? "" : "none";
   document.getElementById("xingzuoTabPanel").style.display = tab === "xingzuo" ? "" : "none";
+  document.getElementById("tiepanTabPanel").style.display = tab === "tiepan" ? "" : "none";
   refreshSubNavActive(MINGLI_LABEL[tab]);
 }
 
@@ -1240,6 +1244,61 @@ document.getElementById("exportXingzuoPdfBtn").addEventListener("click", async f
     pdf.save(inp.name + "-" + year + "星座運勢報告.pdf");
     status.textContent = "已下載";
   } catch (err) { status.textContent = ""; alert("匯出失敗：" + err.message); }
+  finally { box.remove(); btn.disabled = false; btn.textContent = orig; }
+});
+
+// 命理諮詢「鐵版神數」（簡化推算版；起卦、解讀與版面在 js/tiepan.js）：本命先天／後天卦＋今年度（立春起）值年與十二個節氣月，
+// 畫面預覽整份報告，匯出 PDF 沿用 addSectionsToPdf 逐區塊分頁
+let tpState = null; // { chart: calculateBazi 結果, year: 今年度 }
+function tpRender() {
+  const pv = document.getElementById("tpPreview");
+  pv.innerHTML = "";
+  pv.appendChild(Tiepan.render(Tiepan.analyze(tpState.chart, { year: tpState.year })));
+}
+document.getElementById("tiepanSubmitBtn").addEventListener("click", function () {
+  const name = document.getElementById("f-name").value.trim();
+  const gender = document.getElementById("f-gender").value;
+  const dateVal = getBirthDateVal(), timeVal = getBirthTimeVal();
+  if (!name || !dateVal || !timeVal) { showToast("請先填寫姓名與出生年月日時。", "error"); return; }
+  const [year, month, day] = dateVal.split("-").map(Number);
+  const [hour, minute] = timeVal.split(":").map(Number);
+  if (!isValidSolarDate(year, month, day)) { showToast(year + " 年 " + month + " 月沒有 " + day + " 日，請重新選擇出生日期。", "error"); return; }
+  try {
+    const thisYear = baziCurrentYear();
+    tpState = { chart: calculateBazi({ year, month, day, hour, minute, gender, name }), year: thisYear };
+    document.getElementById("tp-status").textContent = thisYear + " 年度（立春起）：依八字取河洛數起先天／後天卦，推值年與十二個節氣月；簡化推算版，非原典條文";
+    document.getElementById("tiepanCard").style.display = "";
+    tpRender();
+    setActiveTab("tiepan");
+  } catch (err) { showToast("鐵版神數推算失敗：" + err.message, "error"); }
+});
+
+document.getElementById("exportTiepanPdfBtn").addEventListener("click", async function () {
+  if (!tpState) { showToast("請先按「鐵版神數」產生分析。", "error"); return; }
+  // 報告用的是上一次產生時的資料；表單改過姓名或出生資料卻沒重新產生時擋下
+  const c = tpState.chart, pad = (v) => String(v).padStart(2, "0");
+  const formSolar = document.getElementById("f-byear").value + "-" + pad(document.getElementById("f-bmonth").value) + "-" +
+    pad(document.getElementById("f-bday").value) + " " + document.getElementById("f-btime").value;
+  if (document.getElementById("f-name").value.trim() !== c.name || document.getElementById("f-gender").value !== c.gender || formSolar !== c.solarText) {
+    showToast("姓名或出生資料已變更，請先按「鐵版神數」重新產生，再匯出。", "error");
+    return;
+  }
+  const btn = this, status = document.getElementById("tp-status"), orig = btn.textContent, saved = status.textContent;
+  btn.disabled = true; btn.textContent = "匯出中...";
+  const box = Tiepan.render(Tiepan.analyze(c, { year: tpState.year }));
+  document.body.appendChild(box);
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const pageWidth = 210, pageHeight = 297, margin = 12;
+    pdf.addImage(document.querySelector(".brand img"), "PNG", margin, 8, 12, 12);
+    const title = textToImage("Aries 鐵版神數命數報告", 20, "#212529");
+    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
+    await addSectionsToPdf(pdf, Array.from(box.children), margin, pageWidth, pageHeight, 26);
+    addPageNumbers(pdf, pageWidth, pageHeight);
+    pdf.save(c.name + "-" + tpState.year + "鐵版神數命數報告.pdf");
+    status.textContent = "已下載";
+  } catch (err) { status.textContent = saved; alert("匯出失敗：" + err.message); }
   finally { box.remove(); btn.disabled = false; btn.textContent = orig; }
 });
 

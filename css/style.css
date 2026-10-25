@@ -2183,3 +2183,13 @@ h2.qsz-page-title { font-size: 22px; }
 .xz-preview { background: #eee; padding: 12px; border-radius: var(--radius); overflow-x: auto; }
 .xz-preview .zr-report { position: static; left: auto; width: 720px; max-width: 100%; margin: 0 auto; padding: 24px; box-sizing: border-box; }
 .xz-preview .zr-block { margin-bottom: 14px; }
+
+/* ================= 鐵版神數：卦象圖（六爻由上而下，陽爻一橫、陰爻兩短橫，元堂／動爻標紅） ================= */
+.tp-hexcard { display: flex; align-items: center; gap: 16px; margin: 4px 0 10px; }
+.tp-hex { display: flex; flex-direction: column; gap: 5px; width: 72px; flex: none; }
+.tp-yao { display: flex; gap: 8px; height: 8px; }
+.tp-yang { flex: 1; background: #262626; border-radius: 1px; }
+.tp-yin { flex: 1; background: #262626; border-radius: 1px; }
+.tp-yao-mark .tp-yang, .tp-yao-mark .tp-yin { background: #650707; }
+.tp-hexname { font-size: 18px; font-weight: 700; color: #650707; }
+.tp-hexsub { font-size: 12px; color: #7F7F7F; }
