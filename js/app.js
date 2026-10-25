@@ -1131,7 +1131,7 @@ function tsRenderPreview() {
   const m = Number(document.getElementById("ts-month").value);
   const pv = document.getElementById("tsPreview");
   pv.innerHTML = "";
-  pv.appendChild(TongSheng.renderMonth(tsModel(tsState.year), m));
+  pv.appendChild(m === 0 ? TongSheng.renderGuide(tsModel(tsState.year)) : TongSheng.renderMonth(tsModel(tsState.year), m));
 }
 document.getElementById("tongshengSubmitBtn").addEventListener("click", function () {
   const name = document.getElementById("f-name").value.trim();
@@ -1145,9 +1145,9 @@ document.getElementById("tongshengSubmitBtn").addEventListener("click", function
     const now = new Date(), thisYear = now.getFullYear();
     tsState = { chart: calculateBazi({ year, month, day, hour, minute, gender, name }), year: thisYear, cache: {} };
     const ms = document.getElementById("ts-month");
-    if (!ms.options.length) for (let mm = 1; mm <= 12; mm++) ms.add(new Option(mm + " 月", mm));
+    if (!ms.options.length) { ms.add(new Option("擇日總則", 0)); for (let mm = 1; mm <= 12; mm++) ms.add(new Option(mm + " 月", mm)); }
     ms.value = String(now.getMonth() + 1);
-    document.getElementById("ts-status").textContent = thisYear + " 年度：依本命年柱推算每日本命日別、適合與不適合，一個月一張 A4";
+    document.getElementById("ts-status").textContent = thisYear + " 年度：第 1 頁為個人擇日總則，之後每月一張 A4；每日依十五類通用事項列出適合與不適合";
     document.getElementById("tongshengCard").style.display = "";
     tsRenderPreview();
     setActiveTab("tongsheng");
@@ -1175,17 +1175,18 @@ document.getElementById("exportTongshengPdfBtn").addEventListener("click", async
     const model = tsModel(year);
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "mm", "a4", true);
-    for (let m = 1; m <= 12; m++) {
-      status.textContent = "排版中 " + m + " / 12 月...";
-      const page = TongSheng.renderMonth(model, m);
+    // 第 1 頁總則，之後 12 個月各一頁
+    for (let m = 0; m <= 12; m++) {
+      status.textContent = m === 0 ? "排版中 總則..." : "排版中 " + m + " / 12 月...";
+      const page = m === 0 ? TongSheng.renderGuide(model) : TongSheng.renderMonth(model, m);
       holder.appendChild(page);
       const canvas = await html2canvas(page, { scale: 2, backgroundColor: "#ffffff" });
       page.remove();
-      if (m > 1) pdf.addPage();
+      if (m > 0) pdf.addPage();
       pdf.addImage(canvas.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297);
     }
     pdf.save(c.name + "-" + year + "個人擇日通勝.pdf");
-    status.textContent = "已下載 " + year + " 年 12 個月";
+    status.textContent = "已下載 " + year + " 年總則＋12 個月";
   } catch (err) { status.textContent = ""; alert("匯出失敗：" + err.message); }
   finally { holder.remove(); btn.disabled = false; btn.textContent = orig; }
 });
