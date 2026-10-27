@@ -849,11 +849,18 @@ function addCanvasToPdf(pdf, canvas, margin, pageWidth, pageHeight, startY, page
 // 只有單一區塊本身就比一整頁還高時，才不得已用 addCanvasToPdf 的切頁邏輯畫（沒有更好的辦法）。
 // backgroundColor 是每個區塊自己 html2canvas 時的底色（填補區塊內透明的地方）；pageBg 則是
 // 整張 PDF 頁面（含區塊間空白）的底色，兩者通常給同一個顏色，但概念上是不同層。
-async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, startY, backgroundColor, pageBg) {
+async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, startY, backgroundColor, pageBg, isolate) {
   const imgWidth = pageWidth - margin * 2;
   const maxHeight = pageHeight - margin * 2;
   let y = startY;
+  // isolate＝true：擷取某一區塊時先把同層的其他區塊暫時移出 DOM（html2canvas 每次都會複製整份文件，
+  // 區塊多、又含 SVG 圖表時，每次複製會拖到好幾秒；各區塊版面只靠容器寬度，彼此獨立，移出不影響排版）
+  const parent = isolate && sections.length ? sections[0].parentNode : null;
+  const all = parent ? Array.from(parent.children) : null;
+  const only = (el) => { if (!parent) return; all.forEach((x) => { if (x !== el && x.parentNode === parent) parent.removeChild(x); }); };
+  const restore = () => { if (!parent) return; all.forEach((x) => parent.appendChild(x)); };
   for (const el of sections) {
+    only(el);
     // 標了 data-pdf-break-before 的區塊強制另起新頁（除非已經在某頁最上方）——例如人格解碼的
     // 「數字對照表」整塊要從新的一頁開始
     if (el.dataset && el.dataset.pdfBreakBefore !== undefined && y > margin) {
@@ -865,6 +872,7 @@ async function addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, st
     // 讓列與列之間只靠各自的底線分隔，不會多出一段空白看起來像是斷開的區塊）
     const gap = el.dataset && el.dataset.pdfGap !== undefined ? Number(el.dataset.pdfGap) : 6;
     const canvas = await html2canvas(el, { scale: 1.5, backgroundColor: backgroundColor || "#ffffff" });
+    restore();
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     if (imgHeight > maxHeight) {
       if (y > startY) { pdf.addPage(); fillPdfPageBg(pdf, pageWidth, pageHeight, pageBg); y = margin; }
@@ -1104,16 +1112,16 @@ document.getElementById("baziReportToggleBtn").addEventListener("click", async f
   let box = null;
   try {
     const model = BaziReport.analyze(currentChart, { year });
-    box = BaziReport.render(model);
+    box = BaziReport.render(model, {
+      info: document.getElementById("infoPanel"), pillars: document.querySelector("#resultCard .pillars-wrap"),
+      note: document.getElementById("noteTable"), summary: document.querySelector("#resultCard .summary-grid"),
+      dayun: Array.from(document.querySelectorAll("#dayunCard .dayun-block"))
+    });
     document.body.appendChild(box);
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "mm", "a4", true);
     const pageWidth = 210, pageHeight = 297, margin = 12;
-    const logoImg = document.querySelector(".brand img");
-    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 八字流年分析報告", 20, "#212529");
-    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
-    await addSectionsToPdf(pdf, Array.from(box.children), margin, pageWidth, pageHeight, 26);
+    await addSectionsToPdf(pdf, Array.from(box.children), margin, pageWidth, pageHeight, margin, null, null, true);
     addPageNumbers(pdf, pageWidth, pageHeight);
     pdf.save(currentChart.name + "-" + year + "八字流年分析報告.pdf");
     showToast(year + " 年度八字流年分析報告已下載。", "success");
@@ -6499,4 +6507,40 @@ document.getElementById("exportMingpianPdfBtn").addEventListener("click", async 
     btn.disabled = false;
     btn.textContent = originalLabel;
   }
+});
+
+// ===== 八字命書報告（PDF）=====
+// 整本個人命書：章節與推算在 js/mingshu-report.js（文字資料在 mingshu-content*.js）。八字命卷與大運流年直接複製排盤畫面的區塊。
+document.getElementById("mingshuBookBtn").addEventListener("click", async function () {
+  if (!currentChart) { alert("請先產生八字命卷報告。"); return; }
+  const pad = (v) => String(v).padStart(2, "0");
+  const formSolar = document.getElementById("f-byear").value + "-" + pad(document.getElementById("f-bmonth").value) + "-" +
+    pad(document.getElementById("f-bday").value) + " " + document.getElementById("f-btime").value;
+  if (document.getElementById("f-name").value.trim() !== currentChart.name || document.getElementById("f-gender").value !== currentChart.gender || formSolar !== currentChart.solarText) {
+    showToast("姓名或出生資料已變更，請先按「八字命卷報告」重新排盤，再產生命書。", "error");
+    return;
+  }
+  const btn = this, orig = btn.textContent, status = document.getElementById("mingshuBookStatus");
+  btn.disabled = true; btn.textContent = "編撰中...";
+  let root = null;
+  try {
+    const year = baziCurrentYear();
+    const M = MingshuReport.build(currentChart, { year });
+    root = MingshuReport.render(M, {
+      info: document.getElementById("infoPanel"), pillars: document.querySelector("#resultCard .pillars-wrap"),
+      note: document.getElementById("noteTable"), summary: document.querySelector("#resultCard .summary-grid"),
+      dayun: Array.from(document.querySelectorAll("#dayunCard .dayun-block"))
+    });
+    document.body.appendChild(root);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const blocks = Array.from(root.children);
+    status.textContent = "排版中（共 " + blocks.length + " 個區塊，約需一到兩分鐘）...";
+    await addSectionsToPdf(pdf, blocks, 12, 210, 297, 12, null, null, true);
+    addPageNumbers(pdf, 210, 297);
+    pdf.save(currentChart.name + "-八字命書.pdf");
+    status.textContent = "已下載 " + currentChart.name + " 的八字命書（" + pdf.internal.getNumberOfPages() + " 頁）";
+    showToast("八字命書已下載。", "success");
+  } catch (err) { alert("編撰失敗：" + err.message); status.textContent = ""; }
+  finally { if (root) root.remove(); btn.disabled = false; btn.textContent = orig; }
 });

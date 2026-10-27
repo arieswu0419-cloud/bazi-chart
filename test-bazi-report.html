@@ -19,7 +19,7 @@
   姓名 <input id="t-name" value="吳慧琳" size="6">
   出生 <input id="t-date" value="1976-04-19" size="10"> <input id="t-time" value="20:20" size="5">
   <select id="t-gender"><option value="female">女</option><option value="male">男</option></select>
-  流年 <input id="t-year" value="2027" size="5">
+  流年 <input id="t-year" value="2026" size="5">
   <button id="t-render">預覽</button>
   <button id="t-pdf">產生 PDF</button>
   <span id="t-status"></span>
@@ -30,6 +30,9 @@
 <script src="js/bazi-engine.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="js/fengshui-zibai-engine.js"></script>
+<script src="js/mingshu-content2.js"></script>
+<script src="js/liunian-content.js"></script>
 <script src="js/bazi-report.js"></script>
 <script>
 // 直接從 app.js 抽出 PDF 分頁工具函式，確保測的是正式站同一份邏輯
@@ -71,10 +74,8 @@ document.getElementById("t-pdf").onclick = async function () {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "mm", "a4", true);
     const margin = 12;
-    pdf.addImage(document.querySelector(".brand img"), "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 八字流年分析報告", 20, "#212529");
-    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
-    await addSectionsToPdf(pdf, Array.from(box.children), margin, 210, 297, 26);
+    document.getElementById("preview").innerHTML = "";
+    await addSectionsToPdf(pdf, Array.from(box.children), margin, 210, 297, margin, null, null, true);
     addPageNumbers(pdf, 210, 297);
     box.remove();
     // ?upload=埠號：改把 PDF 傳給本機收檔小程式（自動化驗證用），不跳下載

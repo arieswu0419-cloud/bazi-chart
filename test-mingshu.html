@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>八字命書報告測試頁</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { padding: 16px; background: #eee; }
+  #controls { margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  #preview .zr-report { position: static; margin: 0 auto; padding: 24px; box-shadow: 0 0 6px rgba(0,0,0,.2); }
+  #preview .zr-block { margin-bottom: 14px; }
+  .brand img { width: 48px; }
+</style>
+</head>
+<body>
+<!-- 測試頁（不會打包上線）：不需登入，直接用固定出生資料驗證 js/mingshu-report.js 的內容與 PDF 分頁 -->
+<div class="brand" style="display:none"><img src="assets/logo.png" alt=""></div>
+<div id="controls">
+  姓名 <input id="t-name" value="姜筱郡" size="6">
+  出生 <input id="t-date" value="2001-03-22" size="10"> <input id="t-time" value="09:00" size="5">
+  <select id="t-gender"><option value="female">女</option><option value="male">男</option></select>
+  年度 <input id="t-year" value="" size="5" placeholder="自動">
+  <button id="t-render">預覽</button>
+  <button id="t-pdf">產生 PDF</button>
+  <span id="t-status"></span>
+</div>
+<div id="preview"></div>
+
+<script src="js/vendor/lunar-javascript-1.7.7.js"></script>
+<script src="js/bazi-engine.js"></script>
+<script src="js/shensha-content.js"></script>
+<script src="js/dayun-strategy-content.js"></script>
+<script src="js/fengshui-zibai-engine.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="js/bazi-report.js"></script>
+<script src="js/mingshu-content.js"></script>
+<script src="js/mingshu-content2.js"></script>
+<script src="js/mingshu-report.js"></script>
+<script>
+async function loadPdfHelpers() {
+  const src = await (await fetch("js/app.js")).text();
+  const names = ["function textToImage", "function fillPdfPageBg", "function addCanvasToPdf", "async function addSectionsToPdf", "function addPageNumbers"];
+  names.forEach((head) => {
+    const start = src.indexOf(head);
+    let i = src.indexOf("{", start), depth = 0;
+    for (; i < src.length; i++) { if (src[i] === "{") depth++; else if (src[i] === "}" && --depth === 0) break; }
+    (0, eval)(src.slice(start, i + 1));
+  });
+}
+function buildModel() {
+  const [year, month, day] = document.getElementById("t-date").value.split("-").map(Number);
+  const [hour, minute] = document.getElementById("t-time").value.split(":").map(Number);
+  const gender = document.getElementById("t-gender").value;
+  const name = document.getElementById("t-name").value;
+  const chart = calculateBazi({ year, month, day, hour, minute, gender, name });
+  const yv = document.getElementById("t-year").value;
+  const M = MingshuReport.build(chart, yv ? { year: Number(yv) } : {});
+  return { M, chart };
+}
+document.getElementById("t-render").onclick = function () {
+  const { M } = buildModel();
+  window.lastModel = M;
+  const root = MingshuReport.render(M);
+  const pv = document.getElementById("preview"); pv.innerHTML = ""; pv.appendChild(root);
+  document.getElementById("t-status").textContent = root.children.length + " 個區塊";
+};
+document.getElementById("t-pdf").onclick = async function () {
+  const st = document.getElementById("t-status");
+  st.textContent = "產生中...";
+  try {
+    await loadPdfHelpers();
+    const { M, chart } = buildModel();
+    const root = MingshuReport.render(M);
+    document.body.appendChild(root);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const t0 = Date.now();
+    document.getElementById("preview").innerHTML = "";
+    await addSectionsToPdf(pdf, Array.from(root.children), 12, 210, 297, 12, null, null, true);
+    addPageNumbers(pdf, 210, 297);
+    root.remove();
+    const port = new URLSearchParams(location.search).get("upload");
+    if (port) {
+      const blob = pdf.output("blob");
+      await fetch("http://127.0.0.1:" + port + "/save", { method: "POST", body: blob });
+      st.textContent = "已上傳 " + pdf.internal.getNumberOfPages() + " 頁，" + Math.round((Date.now() - t0) / 1000) + " 秒";
+    } else {
+      pdf.save(chart.name + "-八字命書.pdf");
+      st.textContent = "完成 " + pdf.internal.getNumberOfPages() + " 頁";
+    }
+  } catch (e) { st.textContent = "失敗：" + e.message; console.error(e); }
+};
+</script>
+</body>
+</html>

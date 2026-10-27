@@ -1,6 +1,6 @@
 // ================= 八字「轉流年PDF分析報告」=================
 // 依 bazi-engine.js 的排盤結果（app.js 的 currentChart）組出指定流年的分析報告 DOM，再由 app.js 逐區塊轉成 PDF。
-// 版面沿用紫微流年報告的 zr-* 樣式（深紅 #650707 主色、01–12 章節）。
+// 版面沿用 zr-* 樣式並加上 ln-*：封面、八字命卷／大運流年（複製排盤畫面）、流月表、年度總論、本命資源與能力圖表、各面向、流月折線、逐月頁（儀表／策略／附加能量／節氣養生）、流年風水、總結。文字資料在 js/liunian-content.js。
 // 解讀為規則式組合：日主強弱定喜忌 → 流年／大運干支的喜忌與十神 → 與原局、大運的合沖刑害 → 各面向評分與文字。
 // 評分只用來排「大吉／吉／平／注意」，文字一律以喜忌與合沖刑害為依據，不憑空推論。
 (function () {
@@ -428,7 +428,7 @@
       const mss = shenshaOf(pos.zhi, chart);
       let sc = mParts.reduce((s, p) => s + N.fav(p.elem) * p.w, 0) * 0.6 + r.reduce((s, x) => s + x.score, 0) * 0.5;
       mss.forEach((n) => { sc += ((SS_BONUS[n] || {}).all || 0); });
-      return Object.assign({}, m, { parts: mParts, rels: r, ss: mss, score: round1(sc), rating: rate(sc) });
+      return Object.assign({}, m, { parts: mParts, rels: r, ss: mss, score: round1(sc), rating: rate(sc), domains: domainScores(mParts, r, mss, N, chart) });
     });
     return { chart, o, N, year, gz, ln, P, natalPos, birthYear, dy, dyPos, dyRows, dyRels, yParts, rels, ss, domains, yearScore, months };
   }
@@ -479,37 +479,181 @@
     return '<table class="zr-table"><thead>' + head + "</thead><tbody>" + body + "</tbody></table>";
   }
 
-  function render(R) {
-    const c = R.chart, N = R.N, o = R.o, y = R.year;
-    const root = el("div", "zr-report");
-    const add = (html, pageBreak) => {
-      const b = el("div", "zr-block", html);
-      if (pageBreak) b.setAttribute("data-pdf-break-before", "");
+  // ---------- SVG 圖表（html2canvas 可直接轉成影像） ----------
+  const COL = { career: "#2F6DB5", wealth: "#E8A000", health: "#D0413A", love: "#3DA35D", family: "#6E46A8" };
+  const WX_COL = { 木: "#2e8b57", 火: "#c8102e", 土: "#8b5a2b", 金: "#b8860b", 水: "#1f5fa8" };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const pctOf = (s) => clamp(Math.round(55 + s * 16), 12, 95);
+  function donut(pct, color, label, sub) {
+    const r = 30, c = 2 * Math.PI * r, v = clamp(pct, 0, 100);
+    return '<div class="ln-donut"><svg width="84" height="84" viewBox="0 0 84 84"><circle cx="42" cy="42" r="' + r + '" fill="none" stroke="#e9e9e9" stroke-width="9"/>' +
+      '<circle cx="42" cy="42" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="9" stroke-dasharray="' + (c * v / 100).toFixed(1) + " " + c.toFixed(1) + '" stroke-linecap="round" transform="rotate(-90 42 42)"/>' +
+      '<text x="42" y="47" text-anchor="middle" font-size="15" font-weight="700" fill="#262626">' + v + "%</text></svg>" +
+      '<div class="ln-donut-l">' + esc(label) + "</div>" + (sub ? '<div class="ln-donut-s">' + esc(sub) + "</div>" : "") + "</div>";
+  }
+  function gauge(pct, color, label) {
+    const v = clamp(pct, 0, 100), cx = 70, cy = 66, R = 52;
+    const ang = Math.PI - Math.PI * v / 100;
+    const nx = (cx + Math.cos(ang) * (R - 10)).toFixed(1), ny = (cy - Math.sin(ang) * (R - 10)).toFixed(1);
+    let segs = "";
+    for (let i = 0; i < 10; i++) {
+      const a1 = Math.PI - Math.PI * i / 10, a2 = Math.PI - Math.PI * (i + 1) / 10 + 0.03;
+      const x1 = cx + Math.cos(a1) * R, y1 = cy - Math.sin(a1) * R, x2 = cx + Math.cos(a2) * R, y2 = cy - Math.sin(a2) * R;
+      const on = i < Math.round(v / 10);
+      segs += '<path d="M' + x1.toFixed(1) + " " + y1.toFixed(1) + " A" + R + " " + R + " 0 0 1 " + x2.toFixed(1) + " " + y2.toFixed(1) + '" fill="none" stroke="' + (on ? color : "#e6e6e6") + '" stroke-width="12" opacity="' + (on ? (0.45 + i * 0.055).toFixed(2) : 1) + '"/>';
+    }
+    return '<div class="ln-gauge"><svg width="140" height="84" viewBox="0 0 140 84">' + segs +
+      '<line x1="' + cx + '" y1="' + cy + '" x2="' + nx + '" y2="' + ny + '" stroke="#262626" stroke-width="3" stroke-linecap="round"/><circle cx="' + cx + '" cy="' + cy + '" r="5" fill="#262626"/>' +
+      '<text x="' + (cx + 40) + '" y="' + (cy + 14) + '" text-anchor="middle" font-size="16" font-weight="700" fill="#595959">' + v + "%</text></svg>" +
+      '<div class="ln-gauge-l" style="color:' + color + '">' + esc(label) + "</div></div>";
+  }
+  function hbar(name, pct, color, right, delta) {
+    const v = clamp(pct, 0, 100);
+    return '<div class="ln-hbar"><div class="ln-hbar-n">' + esc(name) + '</div><div class="ln-hbar-t"><div class="ln-hbar-f" style="width:' + v + "%;background:" + color + '"></div></div>' +
+      '<div class="ln-hbar-v">' + (right != null ? right : v + "%") + "</div>" + (delta != null ? '<div class="ln-hbar-d ' + (delta > 0 ? "up" : delta < 0 ? "down" : "") + '">' + (delta > 0 ? "+" : "") + delta + "%</div>" : "") + "</div>";
+  }
+  function radar(labels, series) {
+    const cx = 130, cy = 118, R = 88, n = labels.length;
+    const pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [(cx + Math.cos(a) * R * v / 100).toFixed(1), (cy + Math.sin(a) * R * v / 100).toFixed(1)]; };
+    let grid = "";
+    [25, 50, 75, 100].forEach((g) => { grid += '<polygon points="' + labels.map((_, i) => pt(i, g).join(",")).join(" ") + '" fill="none" stroke="#ddd"/>'; });
+    labels.forEach((_, i) => { const p = pt(i, 100); grid += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p[0] + '" y2="' + p[1] + '" stroke="#ddd"/>'; });
+    const polys = series.map((s) => '<polygon points="' + s.values.map((v, i) => pt(i, v).join(",")).join(" ") + '" fill="' + s.color + '" fill-opacity="0.25" stroke="' + s.color + '" stroke-width="2"/>').join("");
+    const txt = labels.map((l, i) => { const p = pt(i, 122); return '<text x="' + p[0] + '" y="' + p[1] + '" text-anchor="middle" font-size="11" fill="#414141">' + esc(l) + "</text>"; }).join("");
+    return '<svg width="260" height="236" viewBox="0 0 260 236">' + grid + polys + txt + "</svg>";
+  }
+  function lineChart(labels, series, mark) {
+    const W = 660, H = 190, L = 34, T = 14, B = 34, Rr = 12, w = W - L - Rr, h = H - T - B;
+    const x = (i) => (L + w * i / (labels.length - 1)).toFixed(1), y = (v) => (T + h - h * v / 100).toFixed(1);
+    let g = "";
+    [0, 25, 50, 75, 100].forEach((v) => { g += '<line x1="' + L + '" y1="' + y(v) + '" x2="' + (W - Rr) + '" y2="' + y(v) + '" stroke="#e5e5e5"/><text x="' + (L - 6) + '" y="' + (Number(y(v)) + 4) + '" text-anchor="end" font-size="9" fill="#999">' + v + "</text>"; });
+    if (mark != null) g += '<rect x="' + (Number(x(mark)) - 14) + '" y="' + T + '" width="28" height="' + h + '" fill="#F6EEEF"/>';
+    labels.forEach((l, i) => { g += '<text x="' + x(i) + '" y="' + (H - 18) + '" text-anchor="middle" font-size="10" fill="#414141">' + esc(l[0]) + '</text><text x="' + x(i) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="8.5" fill="#999">' + esc(l[1]) + "</text>"; });
+    series.forEach((s) => {
+      g += '<polyline points="' + s.values.map((v, i) => x(i) + "," + y(v)).join(" ") + '" fill="none" stroke="' + s.color + '" stroke-width="2.2" stroke-linejoin="round"/>';
+      s.values.forEach((v, i) => { g += '<circle cx="' + x(i) + '" cy="' + y(v) + '" r="3" fill="' + s.color + '"/>'; });
+    });
+    const legend = series.map((s, i) => '<rect x="' + (W - 230 + i * 74) + '" y="2" width="14" height="4" fill="' + s.color + '"/><text x="' + (W - 212 + i * 74) + '" y="7" font-size="10" fill="#414141">' + esc(s.name) + "</text>").join("");
+    return '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' + g + legend + "</svg>";
+  }
+
+  // ---------- 流年輔助 ----------
+  const LC = window.LIUNIAN_CONTENT;
+  const ZHI_ANIMAL = { 子: "鼠", 丑: "牛", 寅: "虎", 卯: "兔", 辰: "龍", 巳: "蛇", 午: "馬", 未: "羊", 申: "猴", 酉: "雞", 戌: "狗", 亥: "豬" };
+  const ZHI_PO = [["子", "酉"], ["丑", "辰"], ["寅", "亥"], ["卯", "午"], ["巳", "申"], ["未", "戌"]];
+  function taisuiRel(yz, lz) {
+    if (yz === lz) return "值";
+    if (pairHit(ZHI_CHONG, yz, lz)) return "沖";
+    if ((yz === "子" && lz === "卯") || (yz === "卯" && lz === "子") || SAN_XING.some((g) => g.indexOf(yz) >= 0 && g.indexOf(lz) >= 0)) return "刑";
+    if (pairHit(ZHI_HAI, yz, lz)) return "害";
+    if (pairHit(ZHI_PO, yz, lz)) return "破";
+    if (triadOf(yz) === triadOf(lz)) return "三合";
+    if (ZHI_LIUHE.some((p) => (p[0] === yz && p[1] === lz) || (p[1] === yz && p[0] === lz))) return "合";
+    return "無";
+  }
+  const JQ_TRAD = { 惊蛰: "驚蟄", 谷雨: "穀雨", 小满: "小滿", 芒种: "芒種", 处暑: "處暑", 小暑: "小暑" };
+  // 該年立春起到隔年立春前的 24 節氣日期（逐日掃描，lunar-javascript 的節氣名稱部分為簡體）
+  function jieqiOf(year) {
+    const out = [];
+    for (let t = new Date(year, 0, 20); t <= new Date(year + 1, 1, 20); t.setDate(t.getDate() + 1)) {
+      const lu = Solar.fromYmd(t.getFullYear(), t.getMonth() + 1, t.getDate()).getLunar();
+      const n = lu.getJieQi && lu.getJieQi();
+      if (n) out.push({ name: JQ_TRAD[n] || n, date: new Date(t) });
+    }
+    const i = out.findIndex((q) => q.name === "立春");
+    return out.slice(i, i + 25);
+  }
+  const GOOD_SS = /貴人|德|祿|將星|華蓋|金匱|天喜|紅鸞|天醫|文昌|學堂|詞館|福星|天赦|日德|日貴|六秀|十靈|魁罡|天廚|金輿|龍德/;
+  const NEUTRAL_SS = /桃花|驛馬|紅艷/;
+  const SS_HINT = { 劫煞: "防失竊與衝動", 災煞: "防意外與疾病", 亡神: "防心神不寧", 大耗: "防破財", 五鬼: "防小人", 白虎: "防血光", 天狗: "防損傷", 喪門: "防喪事憂傷", 病符: "防疾病", 羊刃: "防衝動傷害", 飛刃: "防意外", 血刃: "防開刀血光", 孤辰: "防孤獨", 寡宿: "防孤獨", 流霞: "防酒色血光", 陰差陽錯: "防婚姻波折" };
+
+  function render(R, src) {
+    src = src || {};
+    const c = R.chart, N = R.N, y = R.year;
+    const root = el("div", "zr-report ln-report");
+    let breakNext = false;
+    const add = (html, cls) => {
+      const b = el("div", "zr-block" + (cls ? " " + cls : ""), html);
+      if (breakNext) { b.setAttribute("data-pdf-break-before", ""); breakNext = false; }
       root.appendChild(b);
       return b;
     };
     const genderText = c.gender === "male" ? "男" : "女";
-    // 四柱一律依全站慣例「時／日／月／年」排列
     const ORDER = ["時", "日", "月", "年"];
     const pillarsText = ORDER.map((k) => R.P[k].gan.char + R.P[k].zhi.char).join(" ");
     const dayElem = N.D;
-    const xuSui = y - R.birthYear + 1;
+    const age = y - R.birthYear;
+    const xuSui = age + 1;
     const dyText = R.dy ? R.dy.gan.char + R.dy.zhi.char + "大運（" + R.dy.startYear + "–" + (R.dy.startYear + 9) + "，" + R.dy.startAge + "–" + R.dy.endAge + " 歲）" : "尚未起運";
     const elemRole = (r) => N.elemOf(r) + "（" + N.roleCat[r] + "）";
     const D = R.domains;
+    const yElem = WUXING_OF_GAN[R.gz[0]], yCol = WX_COL[yElem];
+    const yz = R.P.年.zhi.char, lz = R.gz[1];
     let n = 1;
     const num = () => pad2(n++);
+    const catPct = {};
+    Object.keys(SS_CAT).forEach((g) => { catPct[SS_CAT[g]] = (catPct[SS_CAT[g]] || 0) + (Number(c.shishenPct[g]) || 0); });
+    const godTop = Object.keys(SS_CAT).map((g) => ({ g, p: Number(c.shishenPct[g]) || 0 })).sort((a, b) => b.p - a.p).filter((x) => x.p > 0).slice(0, 2).map((x) => x.g);
+    while (godTop.length < 2) godTop.push(R.P.日.hideGans[0].shiShen);
+    const ctx = { dayGan: c.dayGan, yearGan: R.P.年.gan.char, yearZhi: yz, monthZhi: R.P.月.zhi.char, dayZhi: R.P.日.zhi.char, dayEmpty: getXunKongZhis(c.dayGan, R.P.日.zhi.char), yearEmpty: getXunKongZhis(R.P.年.gan.char, yz) };
+    const yearPillar = buildGanZhiPillar(R.gz, "liunian", ctx);
+    const monthPillars = R.months.map((m) => buildGanZhiPillar(m.gz, "liunian", ctx));
+    const jq = jieqiOf(y);
 
-    // 封面
-    add('<div class="zr-kicker">八字命理　·　</div>' +
-      '<div class="zr-title">' + y + " " + R.gz + " 流年分析報告</div>" +
-      '<div class="zr-sub"><b>' + esc(c.name) + "</b>　｜　" + genderText + "命・" + c.dayGan + dayElem + "日主・" + pillarsText + "</div>" +
-      '<div class="zr-rule"></div>' +
-      '<div class="zr-cards">' + ["career", "wealth", "health"].map((k) =>
-        '<div class="zr-card"><div class="zr-card-label">' + DOMAIN_NAME[k] + " · " + y + '</div><div class="zr-card-big">' + RATING_BIG[D[k].rating] +
-        '</div><div class="zr-card-desc">' + SUMMARY[k][D[k].rating] + "</div></div>").join("") + "</div>");
+    // ===== 封面 =====
+    add('<div class="ln-cover" style="--yc:' + yCol + '"><div class="ln-cover-top">Aries 命理　｜　八字流年分析</div>' +
+      '<div class="ln-cover-year">' + y + ' <span>' + R.gz + "年</span></div><div class=\"ln-cover-t\">流年運勢分析</div><div class=\"ln-cover-en\">YEARLY LUCK ANALYSIS　·　YEAR OF THE " + esc({ 子: "RAT", 丑: "OX", 寅: "TIGER", 卯: "RABBIT", 辰: "DRAGON", 巳: "SNAKE", 午: "HORSE", 未: "GOAT", 申: "MONKEY", 酉: "ROOSTER", 戌: "DOG", 亥: "PIG" }[lz]) + "</div>" +
+      '<div class="ln-cover-animal">' + ZHI_ANIMAL[lz] + '</div><div class="ln-cover-name">' + esc(c.name) + '</div><div class="ln-cover-info">' + genderText + "命・" + c.dayGan + dayElem + "日主・" + pillarsText + "<br>" + esc(c.solarText) + "　實歲 " + age + "　生肖" + c.shengxiao + '</div><div class="ln-cover-foot">專屬報告　·　依本人八字自動推算</div></div>', "ln-cover-block");
 
-    // 01 命盤基本資料
+    // ===== 八字命卷／大運流年（複製排盤畫面） =====
+    if (src.info) {
+      breakNext = true;
+      add('<div class="ln-bar">八字命卷<span>BAZI CHART</span></div>');
+      [src.info, src.pillars, src.note, src.summary].forEach((s) => { if (s) { const b = add("", "mb-clone"); b.appendChild(s.cloneNode(true)); } });
+    }
+    if (src.dayun && src.dayun.length) {
+      breakNext = true;
+      add('<div class="ln-bar">大運與流年<span>LUCK PILLARS</span></div>');
+      src.dayun.forEach((s) => { const b = add("", "mb-clone mb-clone-tbl"); b.appendChild(s.cloneNode(true)); });
+    }
+    // 流月表
+    add('<div class="ln-bar">' + y + " 流月<span>MONTH PILLARS</span></div>" +
+      '<table class="ln-mtable"><tr><td class="ln-ml"></td>' + R.months.map((m) => "<td><b>" + m.gz[1] + "月</b><br>" + md(m.start) + "</td>").join("") + "</tr>" +
+      '<tr><td class="ln-ml">十神</td>' + monthPillars.map((p) => "<td>" + p.shiShen + "</td>").join("") + "</tr>" +
+      '<tr><td class="ln-ml">天干</td>' + monthPillars.map((p) => '<td class="ln-gz" style="color:' + WX_COL[p.gan.wuxing] + '">' + p.gan.char + "<small>" + p.gan.sign + p.gan.wuxing + "</small></td>").join("") + "</tr>" +
+      '<tr><td class="ln-ml">地支</td>' + monthPillars.map((p) => '<td class="ln-gz" style="color:' + WX_COL[p.zhi.wuxing] + '">' + p.zhi.char + "<small>" + p.zhi.sign + p.zhi.wuxing + "</small></td>").join("") + "</tr>" +
+      '<tr><td class="ln-ml">藏干</td>' + monthPillars.map((p) => "<td>" + p.hideGansDisplay.map((hg) => hg.char + "<br><small>" + hg.shiShen + "</small>").join("") + "</td>").join("") + "</tr>" +
+      '<tr><td class="ln-ml">長生</td>' + monthPillars.map((p) => "<td>" + p.diShi + "</td>").join("") + "</tr>" +
+      '<tr><td class="ln-ml">神煞</td>' + monthPillars.map((p) => '<td class="ln-ss">' + (p.shensha || []).slice(0, 5).join("<br>") + "</td>").join("") + "</tr></table>" +
+      '<div class="zr-note">流月以節氣劃分（上列為各月約略起始日），十神與神煞皆以本人日主推算。</div>');
+
+    // ===== 序與年度總論 =====
+    breakNext = true;
+    add('<div class="ln-pref"><div class="ln-pref-t">序</div>' + LC.PREFACE.split("\n").map((t) => "<p>" + esc(t) + "</p>").join("") + "</div>");
+    const rel = taisuiRel(yz, lz), TS = LC.TAISUI[rel];
+    const wxN = c.wuxingPct, wxY = {};
+    ELEMS.forEach((e) => { wxY[e] = Math.round(((Number(wxN[e]) || 0) * 8 / 100 + (WUXING_OF_GAN[R.gz[0]] === e ? 1 : 0) + (WUXING_OF_ZHI[lz] === e ? 1 : 0)) * 10); });
+    add('<div class="ln-bar">' + y + " " + R.gz + "年<span>YEAR ENERGY</span></div>" +
+      '<div class="ln-ygz"><div class="ln-ygz-c" style="background:' + WX_COL[WUXING_OF_GAN[R.gz[0]]] + '">' + R.gz[0] + '</div><div class="ln-ygz-c" style="background:' + WX_COL[WUXING_OF_ZHI[lz]] + '">' + lz + '</div><div class="ln-ygz-t"><b>' + y + " " + R.gz + "年・" + ZHI_ANIMAL[lz] + "年</b><br>天干" + R.gz[0] + "（" + WUXING_OF_GAN[R.gz[0]] + "）為你的" + R.yParts[0].ss + "，地支" + lz + "（" + WUXING_OF_ZHI[lz] + "）為你的" + R.yParts[1].ss + "</div></div>" +
+      "<p>" + esc(LC.YEAR_GAN[R.gz[0]]) + "</p><p>" + esc(LC.YEAR_ZHI[lz]) + "</p>" +
+      '<div class="zr-callout"><b>' + esc(TS.t) + "：</b>" + esc(TS.d) + "</div>");
+    add(h2("本命五行能量 vs " + y + " 流年五行能量") + '<div class="ln-donuts">' + ELEMS.map((e) => donut(Number(wxN[e]) || 0, WX_COL[e], e + "・本命", N.role(e))).join("") + "</div>" +
+      '<div class="ln-donuts">' + ELEMS.map((e) => donut(wxY[e], WX_COL[e], e + "・流年", wxY[e] > (Number(wxN[e]) || 0) ? "▲ 增強" : wxY[e] < (Number(wxN[e]) || 0) ? "▼ 減弱" : "持平")).join("") + "</div>" +
+      '<div class="zr-note">本命以四柱八字計算；流年把 ' + y + " 年的天干地支加入後重新計算，看今年哪些五行被增強或削弱。你的喜用為" + N.elemOf("用神") + "、" + N.elemOf("喜神") + "，忌" + N.elemOf("忌神") + "、" + N.elemOf("仇神") + "。</div>");
+
+    // ===== 生肖頁：本命潛力與流年錦囊 =====
+    const pot = godTop.map((g) => LC.POTENTIAL[g]);
+    const ssGood = (yearPillar.shensha || []).filter((s) => GOOD_SS.test(s)), ssBad = (yearPillar.shensha || []).filter((s) => !GOOD_SS.test(s) && !NEUTRAL_SS.test(s)), ssMid = (yearPillar.shensha || []).filter((s) => NEUTRAL_SS.test(s));
+    add('<div class="ln-bar">生肖' + c.shengxiao + "・本命潛力<span>POTENTIAL</span></div>" +
+      '<div class="ln-pot"><div class="ln-pot-a">' + c.shengxiao + '</div><div class="ln-pot-b">' + pot.map((pname, i) => '<div class="ln-pot-row"><span class="ln-pot-k">' + esc(pname) + "</span><span class=\"ln-pot-g\">" + godTop[i] + " " + (Number(c.shishenPct[godTop[i]]) || 0) + "%</span><div>" + esc(LC.POTENTIAL_DESC[pname]) + "</div></div>").join("") + "</div></div>" +
+      h2(y + " 流年錦囊") +
+      '<div class="ln-pouch"><div class="ln-pouch-row"><span class="ln-pouch-k good">吉星</span>' + (ssGood.length ? ssGood.map((s) => "<b>" + s + "</b>").join("　") : "本年流年柱無明顯吉星，以干支喜忌為主") + "</div>" +
+      '<div class="ln-pouch-row"><span class="ln-pouch-k mid">動星</span>' + (ssMid.length ? ssMid.map((s) => "<b>" + s + "</b>").join("　") : "—") + "</div>" +
+      '<div class="ln-pouch-row"><span class="ln-pouch-k bad">凶星</span>' + (ssBad.length ? ssBad.map((s) => "<b>" + s + "</b><small>" + (SS_HINT[s] || "") + "</small>").join("　") : "本年流年柱無明顯凶星") + "</div></div>" +
+      '<div class="zr-note">吉星帶來助力與緩衝，凶星提醒需要留意的面向；神煞為輔助判斷，實際仍以干支喜忌與合沖為主。</div>');
+
+    // ===== 01 命盤基本資料 =====
+    breakNext = true;
     add(h1(num(), "命盤基本資料") + callout(
       esc(c.name) + "，" + genderText + "命，日主" + c.dayGan + dayElem + "，" + N.level + "，" + c.geju + "。" +
       y + " 年行" + dyText + "，流年" + R.gz + "：" + partsSentence(R, R.yParts) + "。"));
@@ -523,37 +667,16 @@
       ["忌神", "忌神 " + elemRole("忌神") + "；仇神 " + elemRole("仇神")],
       ["起運", first ? "約 " + first.startAge + " 歲起運（西元 " + first.startYear + " 年），每 10 年換一步大運" : "—"],
       ["現行大運", R.dy ? dyText + "：天干" + R.dy.shiShen + "、地支" + R.dy.hideGans[0].shiShen : "尚未起運"],
-      [y + " 流年", R.gz + "（實歲 " + (y - R.birthYear) + "、虛歲 " + xuSui + "）；天干" + R.yParts[0].ss + "、地支" + R.yParts[1].ss]
+      [y + " 流年", R.gz + "（實歲 " + age + "、虛歲 " + xuSui + "）；天干" + R.yParts[0].ss + "、地支" + R.yParts[1].ss + "；與年支" + yz + TS.t.replace(/（.*）/, "")]
     ], { darkFirst: true }));
 
-    // 02 四柱排盤
-    const ks = ORDER;
-    add(h1(num(), "四柱排盤") + table([["項目", 16], ["時柱", 21], ["日柱", 21], ["月柱", 21], ["年柱", 21]], [
-      ["天干十神"].concat(ks.map((k) => R.P[k].shiShenGan || "日主")),
-      ["天干"].concat(ks.map((k) => R.P[k].gan.char + "（" + R.P[k].gan.wuxing + "）")),
-      ["地支"].concat(ks.map((k) => R.P[k].zhi.char + "（" + R.P[k].zhi.wuxing + "）")),
-      ["藏干"].concat(ks.map((k) => R.P[k].hideGans.map((h) => h.char).join("、"))),
-      ["藏干十神"].concat(ks.map((k) => R.P[k].hideGans.map((h) => h.shiShen).join("、"))),
-      ["十二長生"].concat(ks.map((k) => R.P[k].diShi)),
-      ["納音"].concat(ks.map((k) => nayin(R.P[k].gan.char, R.P[k].zhi.char))),
-      ["神煞"].concat(ks.map((k) => (R.P[k].shensha || []).slice(0, 4).join("、") || "—")),
-      ["宮位"].concat(ks.map((k) => PALACE_ROW[k]))
-    ]));
-    add('<div class="zr-note">天干合克：' + esc(c.ganNoteText) + "。地支合沖：" + esc(c.zhiNoteText) + "。</div>");
-
-    // 03 日主強弱與喜忌
-    // 章節標題＋導言＋第一個表格放同一區塊，PDF 分頁時不會把標題留在上一頁
-    // 五行比重一律採用系統「五行強弱表」（chart.wuxingPct：四天干＋四地支本氣）；
-    // 強弱判斷另計月令加倍與藏干（N.ratio），文字只引用強弱表數字，避免兩套百分比並列
+    // ===== 02 日主強弱與喜忌 =====
     const wx = c.wuxingPct;
     const sameSide = Math.round((wx[N.ce.比劫] + wx[N.ce.印]) * 10) / 10;
     add(h1(num(), "日主強弱與喜忌") + callout(
       c.dayGan + dayElem + "日主" + N.level + "，" + N.reason + "：用神取" + elemRole("用神") + "，喜神為" + elemRole("喜神") + "，最怕" + elemRole("忌神") + "。") +
       table([["五行", 10], ["十神", 12], ["五行強弱表", 14], ["角色", 12], ["說明", 52]],
-      ROLE_ORDER.map((r) => {
-        const e = N.elemOf(r);
-        return [e, N.roleCat[r], wx[e] + "%", r, ROLE_DESC[r]];
-      }), { darkFirst: true }));
+      ROLE_ORDER.map((r) => { const e = N.elemOf(r); return [e, N.roleCat[r], wx[e] + "%", r, ROLE_DESC[r]]; }), { darkFirst: true }));
     const maxWx = Math.max(...ELEMS.map((e) => wx[e])), minWx = Math.min(...ELEMS.map((e) => wx[e]));
     const natalBul = [
       "<b>日主性格：</b>" + c.dayGan + dayElem + "如" + DAY_TRAIT[c.dayGan] + "。",
@@ -563,7 +686,39 @@
     if (N.tiaohou) natalBul.push("<b>調候：</b>" + N.tiaohou + "。");
     add(ul(natalBul));
 
-    // 04 大運
+    // ===== 03 本命資源、個人能力、流年運勢指數 =====
+    breakNext = true;
+    const maxCat = Math.max(...Object.keys(catPct).map((k) => catPct[k]), 1);
+    const yearCats = {};
+    R.yParts.forEach((p) => { yearCats[p.cat] = (yearCats[p.cat] || 0) + N.fav(p.elem) * p.w; });
+    const abilityRows = LC.ABILITY.map((a) => {
+      let natal = 0, delta = 0;
+      Object.keys(a.w).forEach((cat) => { natal += a.w[cat] * (catPct[cat] || 0); if (yearCats[cat]) delta += a.w[cat] * yearCats[cat] * 18; });
+      return { name: a.name, en: a.en, natal: clamp(Math.round(natal * 1.6), 5, 100), delta: Math.round(delta / 5) * 5 };
+    });
+    const negRels = R.rels.filter((r) => r.score < 0).length, posRels = R.rels.filter((r) => r.score > 0).length;
+    const idx = {
+      事業: pctOf(D.career.score), 健康: pctOf(D.health.score), 財運: pctOf(D.wealth.score),
+      耗財: clamp(Math.round(100 - pctOf(D.wealth.score) + (R.yParts.some((p) => p.cat === "比劫") ? 15 : 0) - 15), 10, 90),
+      感情: pctOf(D.love.score), 情緒: clamp(Math.round(68 - negRels * 9 + posRels * 4 + R.yearScore * 6), 15, 95),
+      壓力: clamp(Math.round(32 + negRels * 11 + (R.yParts.some((p) => p.cat === "官殺" && N.fav(p.elem) < 0) ? 20 : 0) - R.yearScore * 5), 10, 90)
+    };
+    add(h1(num(), "本命資源與個人能力") +
+      h2("本命資源") + '<div class="ln-gauges">' + LC.RESOURCE.map((r) => gauge(Math.round((catPct[r.cat] || 0) / maxCat * 90), { 比劫: "#2F6DB5", 財: "#E8A000", 印: "#3DA35D", 官殺: "#D0413A", 食傷: "#6E46A8" }[r.cat], r.name + " " + r.en)).join("") + "</div>" +
+      '<div class="zr-note">依十神類別比重換算：人脈＝比劫、財運＝財星、智慧＝印星、實體＝官殺、人力＝食傷（以最高者為 90% 為基準）。</div>');
+    add(h2("個人能力：本命 vs " + y + " 流年") + '<div class="ln-abil">' + abilityRows.map((a) => hbar(a.name + " " + a.en, a.natal, "#2F6DB5", a.natal + "%", a.delta)).join("") + "</div>" +
+      '<div class="zr-note">本命能力依十神類別比重換算；右側 ± 為 ' + y + " 流年干支帶來的增減（喜用十神為正、忌仇為負）。</div>");
+    add(h2(y + " 流年運勢指數") + '<div class="ln-abil">' + Object.keys(idx).map((k) => hbar(k, idx[k], { 事業: COL.career, 健康: COL.health, 財運: COL.wealth, 耗財: "#8c8c8c", 感情: COL.love, 情緒: "#6E46A8", 壓力: "#595959" }[k], idx[k] + "%")).join("") + "</div>" +
+      '<div class="zr-note">事業、健康、財運、感情依各面向評分換算；耗財、壓力越高越需留意，情緒越高越穩定。</div>');
+    // 五行人格雷達 + 十神分配
+    const radarN = ELEMS.map((e) => clamp(Math.round((Number(wx[e]) || 0) * 2.2), 5, 100)), radarY = ELEMS.map((e) => clamp(Math.round(wxY[e] * 2.2), 5, 100));
+    const ssN = ["比劫", "食傷", "財", "官殺", "印"].map((k) => catPct[k] || 0);
+    const ssY = ["比劫", "食傷", "財", "官殺", "印"].map((k) => { const add2 = R.yParts.filter((p) => p.cat === k).reduce((s, p) => s + p.w * 20, 0); return Math.round(((catPct[k] || 0) * 0.8 + add2) * 10) / 10; });
+    add(h2("五行人格與十神能量：本命 vs 流年") + '<div class="ln-two"><div class="ln-two-c"><div class="ln-two-t">五行人格雷達</div>' + radar(ELEMS.map((e) => e + "・" + LC.ELEM_TRAIT[e].split("・")[0]), [{ values: radarN, color: "#2F6DB5" }, { values: radarY, color: "#D0413A" }]) + '<div class="ln-legend"><span style="color:#2F6DB5">■ 本命</span><span style="color:#D0413A">■ 流年</span></div></div>' +
+      '<div class="ln-two-c"><div class="ln-two-t">十神能量分配</div>' + ["比劫", "食傷", "財", "官殺", "印"].map((k, i) => hbar(k, ssN[i] * 1.5, "#2F6DB5", ssN[i] + "%") + hbar("　流年", ssY[i] * 1.5, "#D0413A", ssY[i] + "%")).join("") + "</div></div>");
+
+    // ===== 04 大運 =====
+    breakNext = true;
     const cur = R.dyRows.find((x) => x.current);
     add(h1(num(), "大運") + callout(R.dy ?
       y + " 年走" + dyText + "：天干" + R.dy.gan.char + "為" + cur.parts[0].ss + "（" + favWord(N, cur.parts[0].elem) + "），地支" + R.dy.zhi.char + "為" + cur.parts[1].ss + "（" + favWord(N, cur.parts[1].elem) + "），整體評估「" + cur.rating + "」。傳統上天干管前五年、地支管後五年。" +
@@ -577,9 +732,9 @@
       }), { rating: true }));
     add('<div class="zr-note">粗體為 ' + y + " 年所在的大運；喜忌欄依序為天干／地支五行在本命的角色。</div>");
 
-    // 05 流年總論
+    // ===== 05 流年總論 =====
     const topRels = R.rels.slice().sort((a, b) => Math.abs(b.score) - Math.abs(a.score));
-    add(h1(num(), y + " " + R.gz + " 流年總論") + callout(
+    add(h1(num(), y + " " + R.gz + " 整體運勢分析") + callout(
       y + " 年整體評估「" + rate(R.yearScore) + "」。" + partsSentence(R, R.yParts) + "。" +
       (topRels.length ? "與原局、大運的主要作用是" + topRels.slice(0, 3).map((r) => r.label).join("、") + "。" : "與原局、大運之間沒有明顯的合沖刑害，運勢以干支喜忌為主。") +
       (R.ss.length ? "流年地支帶" + R.ss.join("、") + "。" : "")), true);
@@ -588,25 +743,23 @@
       '<div class="zr-card"><div class="zr-card-label">' + DOMAIN_NAME[k] + '</div><div class="zr-card-big" style="font-size:20px">' + KEYWORD[k][D[k].rating] +
       '</div><div class="zr-card-desc">評估：' + D[k].rating + "</div></div>").join("") + "</div>");
 
-    // 06–10 各面向
+    // ===== 06–10 各面向 =====
     const relsOf = (pred) => R.rels.filter(pred);
     const has = (r, s) => r.who.indexOf(s) >= 0;
     const domainSection = (k, title, bullets, extra) => {
-      add(h1(num(), title) + callout(DOMAIN_LUCK[k] + "「" + D[k].rating + "」：" + SUMMARY[k][D[k].rating] + "。") + (bullets.length ? ul(bullets) : ""));
+      add(h1(num(), title) + '<div class="ln-dom"><div class="ln-dom-g">' + gauge(pctOf(D[k].score), COL[k], DOMAIN_LUCK[k]) + "</div><div class=\"ln-dom-t\">" + callout(DOMAIN_LUCK[k] + "「" + D[k].rating + "」：" + SUMMARY[k][D[k].rating] + "。") + "</div></div>" + (bullets.length ? ul(bullets) : ""));
       if (extra) add(extra);
       add(h2(DOMAIN_NAME[k] + "建議") + ol(adviceFor(k, D[k].rating)));
     };
-    // 事業
     const careerB = catBullets(R, "career");
     relsOf((r) => has(r, "月支") || has(r, "月干") || (r.d.career || 0) !== 0).slice(0, 3).forEach((r) => careerB.push(relBullet(r)));
     if (R.ss.indexOf("天乙貴人") >= 0) careerB.push("<b>天乙貴人：</b>流年逢貴人，有長官或前輩提攜。");
     if (R.ss.indexOf("文昌") >= 0) careerB.push("<b>文昌：</b>利考試、證照、寫作與文書。");
     if (R.ss.indexOf("驛馬") >= 0) careerB.push("<b>驛馬：</b>工作變動、出差或外派機會多。");
     const goodCareer = monthsWith(R, (m) => m.rating === "大吉" || m.rating === "吉");
-    careerB.push("<b>時機：</b>" + (goodCareer.length ? "適合布局的月份是" + goodCareer.slice(0, 4).join("、") : "全年宜穩健推進") + "；" +
-      "需保守的月份是" + (monthsWith(R, (m) => m.rating === "注意").slice(0, 3).join("、") || "無特別凶月") + "。");
+    careerB.push("<b>時機：</b>" + (goodCareer.length ? "適合布局的月份是" + goodCareer.slice(0, 4).join("、") : "全年宜穩健推進") + "；需保守的月份是" + (monthsWith(R, (m) => m.rating === "注意").slice(0, 3).join("、") || "無特別凶月") + "。");
+    breakNext = true;
     domainSection("career", "事業與工作運", careerB);
-    // 財運
     const wealthB = catBullets(R, "wealth");
     relsOf((r) => (r.d.wealth || 0) !== 0).slice(0, 3).forEach((r) => wealthB.push(relBullet(r)));
     if (R.ss.indexOf("驛馬") >= 0) wealthB.push("<b>驛馬：</b>動中求財，外出、跑業務的收入較好。");
@@ -614,7 +767,6 @@
     const goodWealth = R.months.filter((m) => m.parts.some((p) => p.cat === "財" || p.cat === "食傷") && m.score > 0).map((m) => m.gz[1] + "月（" + md(m.start) + "起）");
     if (goodWealth.length) wealthB.push("<b>旺財月：</b>" + goodWealth.slice(0, 4).join("、") + "。");
     domainSection("wealth", "財運", wealthB, '<div class="zr-note">本報告不構成投資建議，實際資產配置請以自身財務狀況為準，必要時請教持牌的理財專業人士。</div>');
-    // 感情
     const spouseCat = c.gender === "female" ? "官殺" : "財";
     const loveB = [];
     uniq(R.yParts.map((p) => p.cat)).forEach((cat) => {
@@ -629,9 +781,8 @@
     if (loveMonths.length) loveB.push("<b>感情好時機：</b>" + loveMonths.slice(0, 3).join("、") + "。");
     if (loveBad.length) loveB.push("<b>易起摩擦：</b>" + loveBad.slice(0, 3).join("、") + "，多一點耐心。");
     domainSection("love", "感情與婚姻", loveB);
-    // 健康
     const hRows = [];
-    const pushH = (elem, basis) => { if (!hRows.some((h) => h[3] === elem)) hRows.push([ORGAN[elem], basis, HEALTH_TIP[elem], elem]); };
+    const pushH = (elem, basis) => { if (!hRows.some((hh) => hh[3] === elem)) hRows.push([ORGAN[elem], basis, HEALTH_TIP[elem], elem]); };
     R.yParts.forEach((p) => {
       if (p.cat === "官殺" && N.fav(p.elem) < 0) pushH(dayElem, "流年" + p.pos + p.char + "七殺／正官剋日主（" + dayElem + "）");
       if (N.fav(p.elem) <= -1) pushH(CONTROLS[p.elem], "流年" + p.elem + "為" + favWord(N, p.elem) + "，" + p.elem + "旺剋" + CONTROLS[p.elem]);
@@ -643,9 +794,8 @@
     const hBad = R.months.filter((m) => m.rating === "注意" || m.rels.some((r) => (r.d.health || 0) <= -0.5)).map((m) => m.gz[1] + "月（" + md(m.start) + "起）");
     if (hBad.length) healthB.push("<b>需多保養的月份：</b>" + hBad.slice(0, 4).join("、") + "。");
     domainSection("health", "健康", healthB,
-      table([["部位", 26], ["五行依據", 38], ["建議", 36]], hRows.map((h) => [h[0], esc(h[1]), h[2]]), { darkFirst: true }) +
+      table([["部位", 26], ["五行依據", 38], ["建議", 36]], hRows.map((hh) => [hh[0], esc(hh[1]), hh[2]]), { darkFirst: true }) +
       '<div class="zr-note">以上為命理上提示的留意方向，不是醫學診斷；身體有任何不適，請以醫師評估為準。</div>');
-    // 家庭人際貴人
     const famB = catBullets(R, "family");
     relsOf((r) => has(r, "年支") || has(r, "時支") || has(r, "年干") || has(r, "時干")).slice(0, 3).forEach((r) => famB.push(relBullet(r)));
     if (R.rels.some((r) => (r.kind === "沖" || r.kind === "三刑") && (has(r, "日支") || has(r, "月支")))) famB.push("<b>居家：</b>日支或月支受沖刑，可能有搬遷、修繕或居住安排上的調整，置產與大筆裝修宜審慎。");
@@ -654,11 +804,18 @@
     if (R.ss.indexOf("文昌") >= 0 || R.yParts.some((p) => p.cat === "印" && isGood(N, p.elem))) famB.push("<b>學習：</b>今年適合進修、考證照或培養新興趣。");
     domainSection("family", "家庭、人際與貴人", famB);
 
-    // 11 流月
+    // ===== 11 流月總覽 =====
+    const labels = R.months.map((m) => [m.gz[1] + "月", m.gz]);
+    const ser = [
+      { name: "事業 Career", color: COL.career, values: R.months.map((m) => pctOf(m.domains.career.score)) },
+      { name: "財運 Wealth", color: COL.wealth, values: R.months.map((m) => pctOf(m.domains.wealth.score)) },
+      { name: "健康 Health", color: COL.health, values: R.months.map((m) => pctOf(m.domains.health.score)) }
+    ];
     const top = R.months.slice().sort((a, b) => b.score - a.score)[0], low = R.months.slice().sort((a, b) => a.score - b.score)[0];
-    add(h1(num(), y + " 流月運勢") + callout(
-      "最佳是" + top.gz[1] + "月（" + md(top.start) + "–" + md(top.end) + "），最需小心的是" + low.gz[1] + "月（" + md(low.start) + "–" + md(low.end) + "）。月份以節氣劃分，從立春到隔年立春前，國曆日期為約略值。") +
-      table([["月令", 8], ["干支", 8], ["約略國曆", 15], ["十神", 13], ["主要作用", 22], ["重點", 25], ["評估", 9]],
+    breakNext = true;
+    add(h1(num(), y + " 流月運勢總覽") + '<div class="ln-line">' + lineChart(labels, ser) + "</div>" + callout(
+      "最佳是" + top.gz[1] + "月（" + md(top.start) + "–" + md(top.end) + "），最需小心的是" + low.gz[1] + "月（" + md(low.start) + "–" + md(low.end) + "）。月份以節氣劃分，從立春到隔年立春前，國曆日期為約略值。"));
+    add(table([["月令", 8], ["干支", 8], ["約略國曆", 15], ["十神", 13], ["主要作用", 22], ["重點", 25], ["評估", 9]],
       R.months.map((m) => {
         const main = m.rels.slice().sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).slice(0, 2).map((r) => r.label).concat(m.ss.filter((s) => s !== "驛馬")).slice(0, 3);
         const cat = m.parts[1].cat;
@@ -666,13 +823,70 @@
         if (m.rels.some((r) => r.kind === "沖" && has(r, "日支"))) phrase += "；感情居家易有變動";
         else if (m.rels.some((r) => r.kind === "三刑")) phrase += "；防口角與意外";
         return [m.gz[1] + "月", m.gz, md(m.start) + "–" + md(m.end), m.parts[0].ss + "、" + m.parts[1].ss, esc(main.join("、") || "—"), phrase, m.rating];
-      }), { rating: true }), true);
+      }), { rating: true }));
 
-    // 12 開運建議與總結
+    // ===== 12 逐月分析 =====
+    const fmt = (d) => (d.getMonth() + 1) + "/" + d.getDate();
+    const JQ_NAMES = LC.JIEQI.map((q) => q.name);
+    R.months.forEach((m, i) => {
+      const mp = monthPillars[i];
+      const mg = m.gz[0], mzc = m.gz[1];
+      const gElem = WUXING_OF_GAN[mg], zElem = WUXING_OF_ZHI[mzc];
+      const ganGood = N.fav(gElem) > 0, zhiGood = N.fav(zElem) > 0;
+      const mainGod = m.parts[1].ss, mainGood = m.score >= 0.3;
+      const strat = LC.MONTH_STRATEGY[mainGod] || LC.MONTH_STRATEGY[m.parts[0].ss];
+      const strat2 = LC.MONTH_STRATEGY[m.parts[0].ss];
+      breakNext = true;
+      add('<div class="ln-mhead" style="--mc:' + WX_COL[zElem] + '"><div class="ln-mhead-gz"><span style="color:' + WX_COL[gElem] + '">' + mg + '</span><span style="color:' + WX_COL[zElem] + '">' + mzc + '</span></div><div class="ln-mhead-t"><div class="ln-mhead-n">' + mzc + "月　<small>整體能量「" + m.rating + "」</small></div><div class=\"ln-mhead-d\">" + y + "/" + fmt(m.start) + " ～ " + (m.end.getFullYear()) + "/" + fmt(m.end) + "　｜　天干" + mg + "為" + m.parts[0].ss + "（" + favWord(N, gElem) + "）・地支" + mzc + "為" + mainGod + "（" + favWord(N, zElem) + "）" + (mp.shensha && mp.shensha.length ? "　｜　" + mp.shensha.slice(0, 4).join("、") : "") + "</div></div></div>" +
+        '<div class="ln-line small">' + lineChart(labels, ser, i) + "</div>" +
+        '<div class="ln-mg">' + gauge(pctOf(m.domains.career.score), COL.career, "事業 Career") + gauge(pctOf(m.domains.wealth.score), COL.wealth, "財運 Wealth") + gauge(pctOf(m.domains.health.score), COL.health, "健康 Health") + gauge(pctOf(m.domains.love.score), COL.love, "感情 Love") + "</div>");
+      // 整體與個人策略
+      const overall = "這個月天干" + mg + "為" + m.parts[0].ss + "、地支" + mzc + "為" + mainGod + "，" + (ganGood && zhiGood ? "干支皆為喜用，是今年能量較順的月份，適合推進重要的事。" : !ganGood && !zhiGood ? "干支皆非喜用，是需要放慢腳步、守成為主的月份。" : ganGood ? "天干帶來助力、地支帶來課題，前半月較順、後半月要留意。" : "天干帶來壓力、地支帶來助力，前半月多忍耐、後半月漸入佳境。") +
+        (m.rels.length ? "與本命、大運、流年的作用有" + m.rels.slice(0, 3).map((r) => r.label).join("、") + "。" : "與本命沒有明顯的合沖刑害，以干支喜忌為主。") + (m.ss.length ? "本月逢" + m.ss.join("、") + "。" : "");
+      add('<div class="ln-msec"><div class="ln-msec-t" style="color:' + WX_COL[zElem] + '">◎ ' + mzc + "月整體能量</div><p>" + esc(overall) + "</p></div>" +
+        '<div class="ln-msec"><div class="ln-msec-t" style="color:#D0413A">◎ ' + mzc + "月個人策略</div><p>" + esc(strat ? (mainGood ? strat.good : strat.bad) : "") + "</p>" + (strat2 && strat2 !== strat ? "<p>" + esc(ganGood ? strat2.good : strat2.bad) + "</p>" : "") +
+        "<p><b>事業：</b>" + esc(SUMMARY.career[m.domains.career.rating]) + "。<b>財運：</b>" + esc(SUMMARY.wealth[m.domains.wealth.rating]) + "。<b>感情：</b>" + esc(SUMMARY.love[m.domains.love.rating]) + "。<b>健康：</b>" + esc(SUMMARY.health[m.domains.health.rating]) + "。</p></div>");
+      // 附加能量
+      const extras = [];
+      uniq(m.rels.map((r) => r.kind)).forEach((k) => { const E = LC.EXTRA[k]; if (E) extras.push({ E, who: m.rels.filter((r) => r.kind === k).map((r) => r.who).join("；") }); });
+      m.ss.forEach((s) => { const E = LC.EXTRA[s]; if (E) extras.push({ E, who: "流月地支" + mzc }); });
+      extras.slice(0, 5).forEach((x, k) => add('<div class="ln-msec">' + (k === 0 ? '<div class="ln-msec-t" style="color:#6E46A8">◎ 附加能量</div>' : "") + '<div class="ln-extra"><b>' + esc(x.E.t) + "</b><small>" + esc(x.who) + "</small><p>" + esc(x.E.d) + '</p><div class="ln-tip">💡 小提示：' + esc(x.E.tip) + "</div></div></div>"));
+      // 節氣養生（本月的節與中氣）
+      const q1 = jq.find((q) => q.date >= new Date(m.start.getTime() - 2 * 864e5) && q.date <= new Date(m.start.getTime() + 3 * 864e5));
+      const i1 = q1 ? jq.indexOf(q1) : -1;
+      const qs = i1 >= 0 ? [jq[i1], jq[i1 + 1]].filter(Boolean) : [];
+      if (qs.length) add('<div class="ln-jq-wrap">' + qs.map((q, k) => {
+        const info = LC.JIEQI[JQ_NAMES.indexOf(q.name)];
+        const endD = jq[i1 + k + 1] ? new Date(jq[i1 + k + 1].date.getTime() - 864e5) : m.end;
+        return '<div class="ln-jq"><div class="ln-jq-h">🌿 節氣養生小貼士</div><div class="ln-jq-n">' + esc(q.name) + "　<small>" + q.date.getFullYear() + "/" + fmt(q.date) + " ～ " + endD.getFullYear() + "/" + fmt(endD) + "</small></div><p>" + esc(info ? info.text : "") + '</p><div class="ln-jq-f">養生食材：' + esc(info ? info.foods : "") + "</div></div>";
+      }).join("") + "</div>");
+    });
+
+    // ===== 13 流年風水佈局 =====
+    breakNext = true;
+    const C2 = window.MINGSHU_CONTENT2;
+    if (typeof zbYearStar === "function" && C2) {
+      const yStar = zbYearStar(y), pan = zbFly(yStar, true);
+      const POS = [[4, "東南"], [9, "南"], [2, "西南"], [3, "東"], [5, "中宮"], [7, "西"], [8, "東北"], [1, "北"], [6, "西北"]];
+      const STAR_SHORT = { 1: "一白", 2: "二黑", 3: "三碧", 4: "四綠", 5: "五黃", 6: "六白", 7: "七赤", 8: "八白", 9: "九紫" };
+      const kindCls = (F) => (F.kind === "大凶" || F.kind === "凶" ? "bad" : F.kind === "大吉" ? "best" : "good");
+      add(h1(num(), y + " 流年風水佈局") + callout(y + " 年" + STAR_SHORT[yStar] + "入中。九宮飛星每年變動，吉星的方位可以催旺，凶星的方位要化解；站在家或辦公室的中心點量出八方，再對照下表。") +
+        '<div class="mb-fx">' + POS.map((q) => { const st = pan[q[0]], F = C2.FLYING_STAR[st]; return '<div class="mb-fx-c mb-fx-' + kindCls(F) + '"><div class="mb-fx-d">' + q[1] + '</div><div class="mb-fx-n">' + st + '</div><div class="mb-fx-t">' + esc(F.name.slice(0, 4)) + '</div><div class="mb-fx-k">' + esc(F.theme.split("、").slice(0, 2).join("、")) + "</div></div>"; }).join("") + "</div>");
+      add(table([["方位", 12], ["飛星", 18], ["主事", 24], ["宜", 23], ["忌", 23]], POS.map((q) => { const st = pan[q[0]], F = C2.FLYING_STAR[st]; return [q[1], esc(F.name) + "（" + F.kind + "）", esc(F.theme), esc(F.good), esc(F.bad)]; }), { darkFirst: true }));
+      if (typeof zbLifeGua === "function") {
+        const by = Number(c.solarText.slice(0, 4)), bm = Number(c.solarText.slice(5, 7)), bd = Number(c.solarText.slice(8, 10));
+        const gua = zbLifeGua(by, bm, bd, c.gender === "male"), stars = zbGameStars(gua.num);
+        add(h2("個人吉凶方（命卦 " + gua.gua + "卦・" + gua.groupName + "）") + table([["吉凶", 14], ["遊年星", 18], ["方位", 16], ["主事", 52]], stars.map((s) => [s.tone === "good" ? "四吉" : "四凶", s.star + "（" + s.lv + "）", s.dirName, esc(s.note)]), { darkFirst: true }) +
+          '<div class="zr-note">太歲方位在' + yz + "（" + ({ 子: "正北", 丑: "東北", 寅: "東北", 卯: "正東", 辰: "東南", 巳: "東南", 午: "正南", 未: "西南", 申: "西南", 酉: "正西", 戌: "西北", 亥: "西北" }[yz]) + "），今年流年太歲在" + lz + "（" + ({ 子: "正北", 丑: "東北", 寅: "東北", 卯: "正東", 辰: "東南", 巳: "東南", 午: "正南", 未: "西南", 申: "西南", 酉: "正西", 戌: "西北", 亥: "西北" }[lz]) + "）、歲破在" + ZHI_CHONG.find((p) => p.indexOf(lz) >= 0).find((z) => z !== lz) + "方，這兩個方位今年不宜動土與裝修。</div>");
+      }
+    }
+
+    // ===== 14 開運建議與總結 =====
     const yong = N.elemOf("用神"), xi = N.elemOf("喜神"), ji = N.elemOf("忌神"), chou = N.elemOf("仇神");
+    breakNext = true;
     add(h1(num(), "開運建議與總結") + callout(
       y + " 年的策略：" + ["career", "wealth", "love", "health"].map((k) => DOMAIN_NAME[k] + "「" + D[k].rating + "」").join("、") + "。" +
-      "把握" + top.gz[1] + "月，" + low.gz[1] + "月放慢腳步；日常多補" + yong + "、" + xi + "，少沾" + ji + "、" + chou + "。"), true);
+      "把握" + top.gz[1] + "月，" + low.gz[1] + "月放慢腳步；日常多補" + yong + "、" + xi + "，少沾" + ji + "、" + chou + "。"));
     add(h2("五行開運（補" + yong + xi + "、避" + ji + chou + "）") + table([["項目", 14], ["宜", 50], ["避", 36]], [
       ["顏色", LUCK.color[yong] + "；" + LUCK.color[xi], "大面積的" + LUCK.color[ji]],
       ["方位", LUCK.dir[yong] + "、" + LUCK.dir[xi], LUCK.dir[ji] + "不宜久待"],
@@ -684,10 +898,10 @@
     todo.push(low.gz[1] + "月（" + md(low.start) + "–" + md(low.end) + "）重大決定放慢，" + top.gz[1] + "月（" + md(top.start) + "–" + md(top.end) + "）主動出擊");
     todo.push("每季回顧一次本報告的流月提醒，提前安排重要計畫");
     add(h2("行動清單") + ul(todo, "zr-check"));
-    add('<div class="zr-end">Aries 命理工作室　·　' + new Date().getFullYear() + "/" + (new Date().getMonth() + 1) + "/" + new Date().getDate() + " 產生</div>");
+    add('<div class="zr-end">本報告依本人八字以規則式推算自動產生，內容為通用解說，僅供參考。<br>Aries 命理工作室　·　' + new Date().getFullYear() + "/" + (new Date().getMonth() + 1) + "/" + new Date().getDate() + " 產生</div>");
     return root;
   }
 
-  // natal：本命喜忌分析，個人通勝（js/tongsheng.js）用來排每日的大吉／次吉／小吉五行
+  // natal：本命喜忌分析，個人通勝（js/tongsheng.js）與八字命書（js/mingshu-report.js）共用
   window.BaziReport = { analyze, render, natal: analyzeNatal };
 })();

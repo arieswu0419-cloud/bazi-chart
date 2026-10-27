@@ -3,3 +3,6 @@ cloudflare-pages-*.zip
 .claude/
 .wrangler/
 通勝/
+
+# 命書／流年報告參考範本（PDF，體積大，不入庫）
+/*.pdf
