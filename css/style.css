@@ -1988,6 +1988,7 @@ h2.change-pw-title { background: #5B5B5B; color: #fff; padding: 10px 14px; borde
 .xm-sx-item { padding: 5px 10px; font-size: 13px; border-top: 1px solid #eee5cc; line-height: 1.6; }
 .xm-sx-item b { display: inline-block; min-width: 22px; color: var(--gold-darker); font-size: 15px; }
 .xm-sx-summary { margin-top: 8px; font-size: 14px; }
+.xm-sx-why { font-size: 12px; color: var(--text-secondary); margin-left: 6px; }
 /* 選字產生器 */
 .xm-gen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 6px; }
 .xm-gen-item { border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 12px; background: #F7F3E6; text-align: center; }

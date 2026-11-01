@@ -4142,9 +4142,10 @@ function calcXingming(surname, given) {
   else wai = sk[0] + gk[gk.length - 1];
   const grids = { 天格: tian, 人格: ren, 地格: di, 外格: wai, 總格: zong };
   const sancaiWx = [xmNumWx(tian), xmNumWx(ren), xmNumWx(di)];
-  const sancaiTone = xmSancaiTone(sancaiWx[0], sancaiWx[1], sancaiWx[2]);
+  const sancaiSym = xmSancaiSymbol(sancaiWx[0], sancaiWx[1], sancaiWx[2]);
+  const sancaiTone = XM_SANCAI_SYM[sancaiSym][1];
   return {
-    S, G, sk, gk, grids, sancaiWx, sancaiTone,
+    S, G, sk, gk, grids, sancaiWx, sancaiSym, sancaiTone,
     charStrokes: S.map((c, i) => [c, sk[i]]).concat(G.map((c, i) => [c, gk[i]]))
   };
 }
@@ -4183,24 +4184,41 @@ function xmWuxingFavor(bazi, hasHour) {
     fuFav, fuAvoid, buFav, buAvoid, primaryFav, primaryAvoid };
 }
 
-// 生肖姓名法：逐「名」字偵測字根（XM_ROOT_CHARS），對照該生肖 XM_ZODIAC 的喜／忌字根。
-// 姓氏為承襲不計吉凶，只評名字。
-function xmShengxiaoEval(shengxiao, givenChars) {
+// 生肖派姓名學（《姓名學教科書》第 11 章）：主體＝生肖，客體＝姓名每個字（姓也要論，p.343）。
+// 逐字偵測字根（XM_ROOT_CHARS），對照該生肖 XM_ZODIAC 的喜／忌字根。
+// 位置：單姓雙名時姓＝天格（1–20 歲）、名一＝人格（21–40 歲）、名二＝地格（41–60 歲）（p.343–345）。
+function xmShengxiaoPos(S, G) {
+  if (S.length === 1 && G.length === 2) return ["姓・天格（1–20歲）", "名一・人格（21–40歲）", "名二・地格（41–60歲）"];
+  return S.map((c, i) => S.length > 1 ? "姓" + (i + 1) : "姓").concat(G.map((c, i) => G.length > 1 ? "名" + (i + 1) : "名"));
+}
+function xmShengxiaoEval(shengxiao, surnameChars, givenChars) {
   const z = XM_ZODIAC[shengxiao];
   if (!z) return null;
-  const perChar = givenChars.map((ch) => {
+  const pos = xmShengxiaoPos(surnameChars, givenChars);
+  const perChar = surnameChars.concat(givenChars).map((ch, i) => {
     const roots = xmCharRoots(ch);
     const xi = [], ji = [];
     roots.forEach((rt) => {
       const gx = z.xi.find((e) => e[0] === rt); if (gx) xi.push(gx);
       const gj = z.ji.find((e) => e[0] === rt); if (gj) ji.push(gj);
     });
-    return { ch, roots, xi, ji };
+    return { ch, pos: pos[i], roots, xi, ji };
   });
   const xiCount = perChar.reduce((a, c) => a + c.xi.length, 0);
   const jiCount = perChar.reduce((a, c) => a + c.ji.length, 0);
   const tone = jiCount > xiCount ? "bad" : (xiCount > jiCount ? "good" : "mixed");
   return { z, shengxiao, perChar, xiCount, jiCount, tone };
+}
+// 生肖派換生肖時點（p.342）：以農曆除夕晚上 11 點（子時）換生肖，與八字以「立春」分年不同。
+// ＝正月初一 00:00 往前一小時，故把時間加一小時後取農曆年（lunar-javascript 以正月初一換年）。
+function xmShengxiaoByBook(y, m, d, hour) {
+  const t = new Date(y, m - 1, d, hour + 1, 0, 0);
+  return ZHI_SHENGXIAO[Solar.fromDate(t).getLunar().getYearZhi()]; // getYearShengXiao() 回傳簡體（龙），改用正體對照表
+}
+// 當天是否為農曆除夕（隔天為正月初一）：時辰下拉的「子」換算為當天 0 點，除夕晚上 11 點後出生者需另外提醒。
+function xmIsChuxi(y, m, d) {
+  const n = Solar.fromYmd(y, m, d).next(1).getLunar();
+  return n.getMonth() === 1 && n.getDay() === 1;
 }
 
 // ===== 選字產生器 =====
@@ -4375,12 +4393,18 @@ function xmRelWord(a, b) {
   if (XM_WX_KE[a] === b) return a + "剋" + b + "（下剋）";
   return b + "剋" + a + "（受剋）";
 }
-function xmSancaiDetail(t, p, d, tone) {
+// 三才結論依書中三才格局表的五級符號（p.120–136），生剋關係只作說明。
+const XM_SANCAI_CONCL = {
+  "☆": "書中列為大吉的配置，主基礎穩固、身心安泰、運途少阻，一生較得長輩與環境之助。",
+  "○": "書中列為吉中帶凶：整體可成，但有隱憂，順境時宜節制、防範身心勞損。",
+  "□": "書中列為不吉不凶：配置本身助力與阻力都不明顯，成敗多在後天努力。",
+  "△": "書中列為凶中帶吉：過程多阻逆，但仍有轉機，宜穩紮穩打、靠人格修養化解。",
+  "X": "書中列為大凶的配置，主過程多阻逆、易生波折或身心壓力；宜以人格為主善加調和，後天靠修養與努力扭轉。"
+};
+function xmSancaiLabel(sym) { return sym + "　" + XM_SANCAI_SYM[sym][0]; }
+function xmSancaiDetail(t, p, d, sym) {
   const base = "天格屬" + t + "、人格屬" + p + "、地格屬" + d + "；天→人為" + xmRelWord(t, p) + "，人→地為" + xmRelWord(p, d) + "。";
-  const concl = tone === "good" ? "三才生化順暢、上下相扶，主基礎穩固、身心安泰、運途少阻，一生較得長輩與環境之助。"
-    : tone === "bad" ? "三才有相剋、氣機不順，主過程多阻逆、易生波折或身心壓力；宜以人格為主善加調和，後天靠修養與努力扭轉。"
-      : "三才生剋互見、吉凶參半，主際遇起伏、成敗在乎人為；把握吉處、化解剋處，仍大有可為。";
-  return base + concl;
+  return base + XM_SANCAI_CONCL[sym] + "（《姓名學教科書》三才格局表 p." + XM_SANCAI_PAGE[t] + "）";
 }
 function buildXingmingDetail(r) {
   const order = ["天格", "人格", "地格", "外格", "總格"];
@@ -4399,8 +4423,8 @@ function buildXingmingDetail(r) {
       "本格數理 " + red + " 屬" + toneTxt + "，主「" + info[1] + "」，" + advise + "</div></div>";
   });
   h += '<div class="xm-detail-item"><div class="xm-detail-h"><b>三才配置　' + r.sancaiWx.join("・") +
-    "</b>　" + xmToneTag(r.sancaiTone) + '　<span class="xm-detail-role">天人地五行生剋</span></div>' +
-    '<div class="xm-detail-b">' + xmSancaiDetail(r.sancaiWx[0], r.sancaiWx[1], r.sancaiWx[2], r.sancaiTone) + "</div></div>";
+    "</b>　" + xmToneTag(r.sancaiTone) + "　" + xmSancaiLabel(r.sancaiSym) + '　<span class="xm-detail-role">三才格局表</span></div>' +
+    '<div class="xm-detail-b">' + xmSancaiDetail(r.sancaiWx[0], r.sancaiWx[1], r.sancaiWx[2], r.sancaiSym) + "</div></div>";
   h += "</div>";
   return h;
 }
@@ -4429,10 +4453,9 @@ function buildXingmingHtml(r, gender, bazi) {
   // 三才配置
   h += '<div class="zibai-section-title" style="margin-top:16px">三才配置（天・人・地）</div>';
   h += '<div class="xm-sancai">三才：<b>' + r.sancaiWx.join("・") + "</b>　" + xmToneTag(r.sancaiTone) +
+    "　書中判定：<b>" + xmSancaiLabel(r.sancaiSym) + "</b>" +
     "　（天格" + r.sancaiWx[0] + "→人格" + r.sancaiWx[1] + "→地格" + r.sancaiWx[2] +
-    "；" + (r.sancaiTone === "good" ? "三才相生順暢，基礎穩固、運途順遂。" :
-      r.sancaiTone === "bad" ? "三才相剋，多阻逆、宜以人格為主善加調和。" :
-        "三才生剋參半，吉凶互見、成敗在人為。") + "</div>";
+    "；依《姓名學教科書》三才格局表 p." + XM_SANCAI_PAGE[r.sancaiWx[0]] + "）</div>";
   // 格局詳批（原創敘述型解讀）
   h += buildXingmingDetail(r);
   // ===== 八字五行喜忌配名（需出生年月日）=====
@@ -4482,37 +4505,45 @@ function buildXingmingHtml(r, gender, bazi) {
     h += '<div class="xm-bazi-tip"><b>氣運總評：</b>' + qiyun + "</div>";
     h += "</div>";
 
-    // ===== 生肖姓名法 =====
-    const sx = xmShengxiaoEval(bazi.shengxiao, r.G);
+    // ===== 生肖姓名法（《姓名學教科書》第 11 章生肖派）=====
+    const sx = xmShengxiaoEval(bazi.sxBook || bazi.shengxiao, r.S, r.G);
     if (sx) {
       h += '<div class="zibai-section-title" style="margin-top:18px">生肖姓名法（生肖' + sx.shengxiao + "）</div>";
+      if (bazi.sxBook && bazi.sxBook !== bazi.shengxiao) {
+        h += '<div class="xm-sx-note">生肖派以農曆除夕晚上 11 點換生肖（p.342），本例屬<b>' + bazi.sxBook +
+          "</b>；八字以立春分年，屬" + bazi.shengxiao + "。</div>";
+      }
+      if (bazi.sxChuxi) {
+        h += '<div class="xm-sx-note">出生日為農曆除夕：除夕晚上 11 點（子時）以後出生者，生肖派已屬下一個生肖（p.342），請確認出生時間。</div>';
+      }
       h += '<div class="xm-sx-note">' + sx.z.note + "</div>";
       h += '<div class="xm-sx-roots"><div class="xm-sx-col"><div class="xm-sx-h xm-good">喜用字根</div>' +
         sx.z.xi.map((e) => '<div class="xm-sx-item"><b>' + e[0] + "</b>　" + e[1] + "</div>").join("") + "</div>";
       h += '<div class="xm-sx-col"><div class="xm-sx-h xm-bad">忌用字根</div>' +
         sx.z.ji.map((e) => '<div class="xm-sx-item"><b>' + e[0] + "</b>　" + e[1] + "</div>").join("") + "</div></div>";
-      h += '<div class="xm-bazi-line" style="margin-top:10px">名字字根偵測（姓氏承襲不計，只評名字）：</div>';
-      h += '<div class="xm-table-wrap"><table class="xm-table"><thead><tr><th>名字</th><th>偵測字根</th><th>喜／忌</th></tr></thead><tbody>';
+      h += '<div class="xm-bazi-line" style="margin-top:10px">姓名字根偵測（姓也要論，p.343）：</div>';
+      h += '<div class="xm-table-wrap"><table class="xm-table"><thead><tr><th>位置</th><th>字</th><th>偵測字根</th><th>喜／忌（書中依據）</th></tr></thead><tbody>';
       sx.perChar.forEach((c) => {
         let cell;
         if (c.xi.length || c.ji.length) {
-          cell = c.xi.map((e) => '<span class="xm-tone xm-good">喜·' + e[0] + "</span>").join(" ") +
-            (c.xi.length && c.ji.length ? " " : "") +
-            c.ji.map((e) => '<span class="xm-tone xm-bad">忌·' + e[0] + "</span>").join(" ");
+          cell = c.xi.map((e) => '<span class="xm-tone xm-good" title="' + e[1] + '">喜·' + e[0] + "</span>" + '<span class="xm-sx-why">' + e[1] + "</span>").join("<br>") +
+            (c.xi.length && c.ji.length ? "<br>" : "") +
+            c.ji.map((e) => '<span class="xm-tone xm-bad" title="' + e[1] + '">忌·' + e[0] + "</span>" + '<span class="xm-sx-why">' + e[1] + "</span>").join("<br>");
         } else {
-          cell = '<span class="xm-tone xm-mixed">中性</span>';
+          cell = '<span class="xm-tone xm-mixed">未列</span>';
         }
-        h += "<tr><td><b>" + c.ch + "</b></td><td>" + (c.roots.length ? c.roots.join("、") : "—") + "</td><td>" + cell + "</td></tr>";
+        h += '<tr><td class="xm-role">' + c.pos + "</td><td><b>" + c.ch + "</b></td><td>" + (c.roots.length ? c.roots.join("、") : "—") + "</td><td>" + cell + "</td></tr>";
       });
       h += "</tbody></table></div>";
-      h += '<div class="xm-sx-summary">綜合：名字共偵測到 <b class="xm-good-txt">喜用 ' + sx.xiCount +
-        ' 處</b>、<b class="xm-bad-txt">忌用 ' + sx.jiCount + " 處</b>　" + xmToneTag(sx.tone) + "</div>";
+      h += '<div class="xm-sx-summary">綜合：姓名共有 <b class="xm-good-txt">喜用依據 ' + sx.xiCount +
+        ' 項</b>、<b class="xm-bad-txt">忌用依據 ' + sx.jiCount + " 項</b>　" + xmToneTag(sx.tone) + "</div>";
     }
   }
 
   h += '<div class="zibai-disclaimer">※ 姓名學以「人格」為命運中心、參「總格・地格・外格」與「三才配置」綜合，天格為姓不論吉凶；' +
-    "筆劃採康熙字典姓名學筆劃（部首以原形計，如氵作水4畫、艹作艸6畫）。八字喜忌採扶抑／缺補兩法並陳，生肖字根為通用版整理，" +
-    "字根偵測以常見用字對照、未收錄者以中性計。吉凶僅供參考，宜合八字喜忌綜斷。</div>";
+    "筆劃採康熙字典姓名學筆劃（部首以原形計，如氵作水4畫、艹作艸6畫）。三才吉凶依《姓名學教科書》三才格局表（p.120–136）；" +
+    "八字喜忌採扶抑／缺補兩法並陳；生肖姓名法依同書第 11 章生肖派（各生肖可用／忌用之字與字根適用表），" +
+    "字根偵測以常見用字對照、未收錄者以「未列」計。吉凶僅供參考，宜合八字喜忌綜斷。</div>";
   return h;
 }
 
@@ -4540,6 +4571,9 @@ function runXingming() {
         hour, minute: 0, gender: document.getElementById("xm-gender").value, name: surname + given
       });
       bazi.hasHour = hasHour;
+      // 生肖派另以除夕子時換生肖（p.342）；除夕當天選子時或未填時辰時另外提醒
+      bazi.sxBook = xmShengxiaoByBook(parseInt(by, 10), parseInt(bm, 10), parseInt(bd, 10), hour);
+      bazi.sxChuxi = xmIsChuxi(parseInt(by, 10), parseInt(bm, 10), parseInt(bd, 10)) && (!hasHour || bt === "0");
     } catch (e) { bazi = null; }
   }
   document.getElementById("xingmingResult").innerHTML = buildXingmingHtml(r, document.getElementById("xm-gender").value, bazi);
@@ -4577,7 +4611,7 @@ function runXingmingGen() {
         year: parseInt(by, 10), month: parseInt(bm, 10), day: parseInt(bd, 10),
         hour, minute: 0, gender: document.getElementById("xm-gender").value, name: surname
       });
-      shengxiao = bazi.shengxiao;
+      shengxiao = xmShengxiaoByBook(parseInt(by, 10), parseInt(bm, 10), parseInt(bd, 10), hour); // 生肖派以除夕子時換生肖（p.342）
       if (mode === "auto") {
         favSet = xmWuxingFavor(bazi, hasHour).primaryFav;
         note = "喜用五行：" + favSet.join("、") + "　生肖喜字根：" + shengxiao + "（已排除忌字根）";
