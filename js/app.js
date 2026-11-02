@@ -626,6 +626,47 @@ document.getElementById("ziweiReportGenBtn").addEventListener("click", async fun
   finally { if (box) box.remove(); btn.disabled = false; btn.textContent = orig; }
 });
 
+// 轉命盤分析報告（問測式；解讀與版面在 js/ziwei-mingpan-report.js）：
+// 選問測事項（可填問題描述），截本命／大限／流年三張盤圖，先「回覆內容」再「命盤解析及內容說明」，逐區塊轉 PDF
+document.getElementById("ziweiMingpanToggleBtn").addEventListener("click", function () {
+  if (!zwState) { showToast("請先排盤。", "error"); return; }
+  const panel = document.getElementById("ziweiMingpanPanel");
+  panel.style.display = panel.style.display === "none" ? "" : "none";
+});
+document.getElementById("ziweiMingpanGenBtn").addEventListener("click", async function () {
+  if (!zwState) { showToast("請先排盤。", "error"); return; }
+  const inp0 = zwState.input, t = document.getElementById("f-btime").value.split(":").map(Number);
+  const formNow = [document.getElementById("f-name").value.trim(), document.getElementById("f-gender").value,
+    +document.getElementById("f-byear").value, +document.getElementById("f-bmonth").value, +document.getElementById("f-bday").value, t[0], t[1]];
+  const charted = [inp0.name, inp0.gender, inp0.y, inp0.mo, inp0.d, inp0.h, inp0.mi];
+  if (formNow.some((v, i) => v !== charted[i])) {
+    showToast("姓名或出生資料已變更，請先按「紫微斗數報告」重新排盤，再產生命盤分析報告。", "error");
+    return;
+  }
+  const year = ziweiCurrentYear();
+  const btn = this, status = document.getElementById("mp-status"), orig = btn.textContent;
+  btn.disabled = true; btn.textContent = "編撰中...";
+  let box = null;
+  try {
+    status.textContent = "擷取命盤圖...";
+    const charts = await zrCaptureCharts(year);
+    status.textContent = "分析與排版中...";
+    const inp = zwState.input;
+    const B = ZiweiMingpan.build(zwState.a, { year, name: inp.name, gender: inp.gender, birth: inp, lunarText: inp.lunarText,
+      lunarMonth: inp.lunarMonth, lunarYear: inp.lunarYear, tIdx: inp.tIdx,
+      topic: document.getElementById("mp-topic").value, question: document.getElementById("mp-question").value });
+    box = ZiweiMingpan.render(B, charts);
+    document.body.appendChild(box);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    await addSectionsToPdf(pdf, Array.from(box.children), 12, 210, 297, 12, null, null, true);
+    addPageNumbers(pdf, 210, 297);
+    pdf.save(inp.name + "-紫微命盤分析報告.pdf");
+    status.textContent = "已下載（" + pdf.internal.getNumberOfPages() + " 頁）";
+  } catch (err) { status.textContent = ""; alert("產生失敗：" + err.message); }
+  finally { if (box) box.remove(); btn.disabled = false; btn.textContent = orig; }
+});
+
 function renderZiwei({ name, gender, y, mo, d, h, mi }) {
   const a = iztro.astro.bySolar(y + "-" + mo + "-" + d, zwTimeIndex(h), gender === "male" ? "男" : "女", true, "zh-TW");
   // 農曆與節氣四柱（lunar-javascript；晚子時進位日柱與全站一致）
@@ -683,7 +724,7 @@ function renderZiwei({ name, gender, y, mo, d, h, mi }) {
     "</div>";
 
   // 存狀態供盤別切換（本命/流年/流月/流日/流時）重繪使用；input 供「轉流年PDF分析報告」使用
-  zwState = { a, centerHtml: center, input: { name, gender, y, mo, d, h, mi, lunarText: lunar.toString(), lunarMonth, tIdx } };
+  zwState = { a, centerHtml: center, input: { name, gender, y, mo, d, h, mi, lunarText: lunar.toString(), lunarMonth, lunarYear: lunar.getYear(), tIdx } };
   // 流盤查詢時間預設＝現在
   const now = new Date();
   document.getElementById("zw-hdate").value = now.getFullYear() + "-" + pad2(now.getMonth() + 1) + "-" + pad2(now.getDate());

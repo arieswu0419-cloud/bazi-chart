@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=302">
+<link rel="stylesheet" href="css/style.css?v=303">
 <link rel="stylesheet" href="css/jigong-bugua.css?v=288">
 </head>
 <body>
@@ -277,8 +277,34 @@
     <div id="ziweiTabPanel" style="display:none">
     <div class="card" id="ziweiCard2">
       <div class="card-head" style="justify-content:flex-end;gap:8px">
+        <button class="btn secondary" id="ziweiMingpanToggleBtn" style="width:auto" data-html2canvas-ignore="true">轉命盤分析報告</button>
         <button class="btn secondary" id="ziweiReportToggleBtn" style="width:auto" data-html2canvas-ignore="true">轉流年PDF分析報告</button>
         <button class="btn secondary" id="exportZiweiPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
+      </div>
+      <div class="zr-panel" id="ziweiMingpanPanel" style="display:none" data-html2canvas-ignore="true">
+        <div class="zr-panel-row">
+          <span class="zr-panel-label">命盤分析報告</span>
+          <span class="zr-panel-hint">問測式解析：先回覆所問之事，再附本命盤、大限盤、流年盤逐層解析（PDF）</span>
+        </div>
+        <div class="zr-panel-row">
+          <label class="zr-panel-label" for="mp-topic">問測事項</label>
+          <select id="mp-topic">
+            <option value="綜合命盤">綜合命盤分析</option>
+            <option value="感情婚姻">感情婚姻</option>
+            <option value="事業工作">事業工作</option>
+            <option value="財運創業">財運創業</option>
+            <option value="健康">健康</option>
+            <option value="轉行出國">轉行／出外發展</option>
+          </select>
+        </div>
+        <div class="zr-panel-row" style="align-items:flex-start">
+          <label class="zr-panel-label" for="mp-question">問題描述（選填）</label>
+          <textarea id="mp-question" rows="2" placeholder="例如：單身多年沒有好桃花，工作也不順，想請老師幫忙看看。" style="flex:1;min-width:240px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:14px"></textarea>
+        </div>
+        <div class="zr-panel-row" style="margin:10px 0 0">
+          <button type="button" class="btn" id="ziweiMingpanGenBtn" style="width:auto">產生命盤分析報告（PDF）</button>
+          <span class="zr-panel-hint" id="mp-status"></span>
+        </div>
       </div>
       <div class="zr-panel" id="ziweiReportPanel" style="display:none" data-html2canvas-ignore="true">
         <div class="zr-panel-row">
@@ -1546,7 +1572,9 @@
 <script src="js/jigong-bugua.js?v=288"></script>
 <script src="js/qimen-engine.js?v=288"></script>
 <script src="js/iztro.min.js?v=288"></script>
-<script src="js/ziwei-report.js?v=290"></script>
+<script src="js/ziwei-report.js?v=303"></script>
+<script src="js/ziwei-mingpan-content.js?v=303"></script>
+<script src="js/ziwei-mingpan-report.js?v=303"></script>
 <script src="js/liunian-content.js?v=301"></script>
   <script src="js/bazi-report.js?v=301"></script>
   <script src="js/mingshu-content.js?v=301"></script>
@@ -1568,6 +1596,6 @@
 <script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=302"></script>
+<script src="js/app.js?v=303"></script>
 </body>
 </html>

@@ -404,5 +404,5 @@
     return root;
   }
 
-  window.ZiweiReport = { PALACES, DEFAULT_PICKS, analyze, render };
+  window.ZiweiReport = { PALACES, DEFAULT_PICKS, analyze, render, view, phrase, starsText, bulletsFor, STAR, PAL, MINOR };
 })();

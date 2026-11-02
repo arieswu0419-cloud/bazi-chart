@@ -2399,3 +2399,12 @@ h2.qsz-page-title { font-size: 22px; }
 .ln-jq-n small { font-size: 11px; color: #595959; font-weight: 400; }
 .ln-jq p { margin: 0 0 6px; font-size: 12px; text-align: justify; }
 .ln-jq-f { font-size: 12px; font-weight: 700; color: #1F5FA8; background: #fff; border-radius: 8px; padding: 4px 10px; }
+
+/* ===== 紫微「轉命盤分析報告」（問測式） ===== */
+.mp-report .mp-p { font-size: 13px; line-height: 1.95; text-indent: 2em; margin: 0 0 8px; color: #262626; text-align: justify; }
+.mp-report .mp-h1 { font-size: 18px; letter-spacing: 1px; }
+.mp-ask { background: #F7F7F7; border: 1px solid #E5E5E5; padding: 10px 14px; margin-top: 6px; }
+.mp-ask-h { font-weight: 700; color: #650707; margin-bottom: 6px; font-size: 13px; }
+.mp-ask-body { font-size: 13px; line-height: 1.8; color: #333; white-space: pre-wrap; }
+.mp-chart-title { text-align: center; font-size: 16px; font-weight: 700; margin: 2px 0 8px; color: #262626; }
+.mp-report .zr-h2 { margin-top: 12px; }

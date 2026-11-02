@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>紫微命盤分析報告測試頁</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { padding: 16px; background: #eee; }
+  #controls { margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  #preview .zr-report { position: static; margin: 0 auto; padding: 24px; box-shadow: 0 0 6px rgba(0,0,0,.2); }
+  #preview .zr-block { margin-bottom: 14px; }
+  .brand img { width: 48px; }
+</style>
+</head>
+<body>
+<!-- 測試頁（不會打包上線）：不需登入，用書中案例的出生資料驗證 js/ziwei-mingpan-report.js 的格局判斷、文字與 PDF 分頁 -->
+<div class="brand" style="display:none"><img src="assets/logo.png" alt=""></div>
+<div id="controls">
+  案例 <select id="t-case">
+    <option value="案例46|1982-02-20|08:00|female|感情婚姻">46 命不好（1982-02-20 辰 女）</option>
+    <option value="案例47|1987-09-08|00:30|female|感情婚姻">47 桃花婚姻（1987-09-08 子 女）</option>
+    <option value="案例48|1982-08-12|08:00|female|事業工作">48 工作運（1982-08-12 辰 女）</option>
+    <option value="案例49|1980-01-11|07:30|female|轉行出國">49 轉行（1980-01-11 辰 女）</option>
+    <option value="案例50|1981-09-27|19:30|male|財運創業">50 事業攻守（1981-09-27 戌 男）</option>
+  </select>
+  姓名 <input id="t-name" value="案例46" size="6">
+  出生 <input id="t-date" value="1982-02-20" size="10"> <input id="t-time" value="08:00" size="5">
+  <select id="t-gender"><option value="female">女</option><option value="male">男</option></select>
+  年度 <input id="t-year" value="2009" size="5">
+  問測 <select id="t-topic"><option>綜合命盤</option><option>感情婚姻</option><option>事業工作</option><option>財運創業</option><option>健康</option><option>轉行出國</option></select>
+  <button id="t-render">預覽</button>
+  <button id="t-pdf">產生 PDF</button>
+  <span id="t-status"></span>
+</div>
+<div id="preview"></div>
+
+<script src="js/vendor/lunar-javascript-1.7.7.js"></script>
+<script src="js/iztro.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="js/ziwei-report.js"></script>
+<script src="js/ziwei-mingpan-content.js"></script>
+<script src="js/ziwei-mingpan-report.js"></script>
+<script>
+iztro.astro.config({ mutagens: {
+  甲: ["廉貞", "破軍", "武曲", "太陽"], 乙: ["天機", "天梁", "紫微", "太陰"],
+  丙: ["天同", "天機", "文昌", "廉貞"], 丁: ["太陰", "天同", "天機", "巨門"],
+  戊: ["貪狼", "太陰", "右弼", "天機"], 己: ["武曲", "貪狼", "天梁", "文曲"],
+  庚: ["太陽", "武曲", "天府", "天同"], 辛: ["巨門", "太陽", "文曲", "文昌"],
+  壬: ["天梁", "紫微", "左輔", "武曲"], 癸: ["破軍", "巨門", "太陰", "貪狼"]
+} });
+document.getElementById("t-case").onchange = function () {
+  const [name, date, time, gender, topic] = this.value.split("|");
+  document.getElementById("t-name").value = name; document.getElementById("t-date").value = date; document.getElementById("t-time").value = time;
+  document.getElementById("t-gender").value = gender; document.getElementById("t-topic").value = topic;
+};
+async function loadPdfHelpers() {
+  const src = await (await fetch("js/app.js", { cache: "reload" })).text();
+  const names = ["function textToImage", "function fillPdfPageBg", "function addCanvasToPdf", "async function addSectionsToPdf", "function addPageNumbers"];
+  names.forEach((head) => {
+    const start = src.indexOf(head);
+    let i = src.indexOf("{", start), depth = 0;
+    for (; i < src.length; i++) { if (src[i] === "{") depth++; else if (src[i] === "}" && --depth === 0) break; }
+    (0, eval)(src.slice(start, i + 1));
+  });
+}
+function sampleChart(label) {
+  const c = document.createElement("canvas"); c.width = 1500; c.height = 1130;
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, 1500, 1130);
+  g.strokeStyle = "#650707"; g.lineWidth = 6; g.strokeRect(10, 10, 1480, 1110);
+  g.fillStyle = "#650707"; g.font = "bold 64px sans-serif"; g.fillText(label + "（測試頁示意）", 420, 580);
+  return c.toDataURL("image/jpeg", 0.9);
+}
+function buildModel() {
+  const [y, mo, d] = document.getElementById("t-date").value.split("-").map(Number);
+  const [h, mi] = document.getElementById("t-time").value.split(":").map(Number);
+  const gender = document.getElementById("t-gender").value;
+  const year = Number(document.getElementById("t-year").value);
+  const tIdx = h === 23 ? 12 : Math.floor((h + 1) / 2);
+  const a = iztro.astro.bySolar(y + "-" + mo + "-" + d, tIdx, gender === "male" ? "男" : "女", true, "zh-TW");
+  const lunar = Solar.fromYmdHms(y, mo, d, h, mi, 0).getLunar();
+  const name = document.getElementById("t-name").value;
+  const B = ZiweiMingpan.build(a, { year, name, gender, birth: { y, mo, d, h, mi }, lunarText: lunar.toString(), lunarMonth: Math.abs(lunar.getMonth()), lunarYear: lunar.getYear(),
+    tIdx: (h === 23 ? 0 : Math.floor((h + 1) / 2) % 12), topic: document.getElementById("t-topic").value, question: "" });
+  const charts = ["本命盤", "大限盤", "流年盤"].map((l, k) => ({ src: sampleChart(l), caption: "圖 " + (k + 1) + "　" + l }));
+  return { B, charts, name };
+}
+document.getElementById("t-render").onclick = function () {
+  const { B, charts } = buildModel();
+  window.lastB = B;
+  const root = ZiweiMingpan.render(B, charts);
+  const pv = document.getElementById("preview"); pv.innerHTML = ""; pv.appendChild(root);
+  document.getElementById("t-status").textContent = root.children.length + " 個區塊；格局：" + B.pats.map((p) => p.id + (p.where ? "(" + p.where + ")" : "")).join("、");
+};
+document.getElementById("t-pdf").onclick = async function () {
+  const st = document.getElementById("t-status");
+  st.textContent = "產生中...";
+  try {
+    await loadPdfHelpers();
+    const { B, charts, name } = buildModel();
+    const root = ZiweiMingpan.render(B, charts);
+    document.body.appendChild(root);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4", true);
+    const t0 = Date.now();
+    document.getElementById("preview").innerHTML = "";
+    await addSectionsToPdf(pdf, Array.from(root.children), 12, 210, 297, 12, null, null, true);
+    addPageNumbers(pdf, 210, 297);
+    root.remove();
+    const port = new URLSearchParams(location.search).get("upload");
+    if (port) {
+      const blob = pdf.output("blob");
+      await fetch("http://127.0.0.1:" + port + "/save", { method: "POST", body: blob });
+      st.textContent = "已上傳 " + pdf.internal.getNumberOfPages() + " 頁，" + Math.round((Date.now() - t0) / 1000) + " 秒";
+    } else {
+      pdf.save(name + "-紫微命盤分析報告.pdf");
+      st.textContent = "完成 " + pdf.internal.getNumberOfPages() + " 頁";
+    }
+  } catch (e) { st.textContent = "失敗：" + e.message; console.error(e); }
+};
+</script>
+</body>
+</html>
