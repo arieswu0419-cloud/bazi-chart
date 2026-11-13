@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>八宅東四命西四命測試頁</title>
+<link rel="stylesheet" href="css/style.css?v=304">
+<style> body { padding: 16px; background: #eee; } #controls { margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } </style>
+</head>
+<body>
+<!-- 測試頁（不會打包上線）：不需登入，驗證 js/bazhai-dongxi.js（東四命・西四命，整理自《八宅秘籍》）的推算與版面 -->
+<div id="controls">
+  命卦 <select id="t-gua"></select>
+  宅卦（坐山） <select id="t-zhai"></select>
+</div>
+<div class="card"><div id="bazhaiDongxiResult"></div></div>
+<script src="js/fengshui-zibai-engine.js?v=288"></script>
+<script src="js/bazhai-dongxi.js?v=304"></script>
+<script>
+// app.js 內的九宮位置類別（測試頁不載 app.js）
+function zbPosClass(r, c) {
+  const map = { "1,1": "tl", "1,2": "tc", "1,3": "tr", "2,1": "ml", "2,2": "c", "2,3": "mr", "3,1": "bl", "3,2": "bc", "3,3": "br" };
+  return "zb-" + map[r + "," + c];
+}
+const opts = [1, 2, 3, 4, 6, 7, 8, 9].map((g) => '<option value="' + g + '">' + g + " " + ZB_GUA_CHAR[g] + "</option>").join("");
+document.getElementById("t-gua").innerHTML = opts;
+document.getElementById("t-zhai").innerHTML = opts;
+// 網址參數 ?gua=1&zhai=2 可直接指定
+const qs = new URLSearchParams(location.search);
+const st = { gua: Number(qs.get("gua") || 1), zhai: Number(qs.get("zhai") || 1) };
+document.getElementById("t-gua").value = st.gua;
+document.getElementById("t-zhai").value = st.zhai;
+function render() {
+  const user = Number(document.getElementById("t-gua").value), form = Number(document.getElementById("t-zhai").value);
+  document.getElementById("bazhaiDongxiResult").innerHTML = buildBazhaiDongxiHtml(st.gua, user, st.zhai, form);
+}
+["t-gua", "t-zhai"].forEach((id) => document.getElementById(id).onchange = function () {
+  st.gua = Number(document.getElementById("t-gua").value); st.zhai = Number(document.getElementById("t-zhai").value); render();
+});
+document.getElementById("bazhaiDongxiResult").addEventListener("click", function (e) {
+  const card = e.target.closest("[data-bzdx-gua]");
+  if (card) { st.gua = Number(card.dataset.bzdxGua); render(); return; }
+  const row = e.target.closest("[data-bzdx-zhai]");
+  if (row) { st.zhai = Number(row.dataset.bzdxZhai); render(); }
+});
+render();
+</script>
+</body>
+</html>
