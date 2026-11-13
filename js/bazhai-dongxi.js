@@ -313,8 +313,10 @@ function bzdxGridHtml(m, kind, sp, wealth) {
   const okTxt = m.okDirs.map((d) => ZB_DIR_NAME[d]).join("、");
   const ingotLg = '<svg class="bzdx-ingot-lg" viewBox="-15 -11 30 22" xmlns="http://www.w3.org/2000/svg">' + bzdxIngotPath() + "</svg>";
   const legend = kind === "cai"
-    ? ingotLg + "本命＝" + ZB_GUA_CHAR[m.mingGua] + "命生氣方　" + ingotLg + "流年＝" + wealth.year + " 年八白" +
-      (wealth.sp ? "　" + ingotLg + "配偶＝" + ZB_GUA_CHAR[sp] + "命生氣方" : "")
+    // 每項（元寶＋文字）包成不可拆的一組，整列過寬時以組為單位換行
+    ? [["本命", ZB_GUA_CHAR[m.mingGua] + "命生氣方"], ["流年", wealth.year + " 年八白"]]
+        .concat(wealth.sp ? [["配偶", ZB_GUA_CHAR[sp] + "命生氣方"]] : [])
+        .map((it) => '<span class="bzdx-lgi">' + ingotLg + it[0] + "＝" + it[1] + "</span>").join("")
     : xt
     ? '<span class="bzdx-lg" style="background:#DDF0D3;border:1px solid #9cc98a"></span>先天兩全　' +
       '<span class="bzdx-lg" style="border:1.5px dashed #1f5fa8"></span>本人先天卦位（中平）　' +

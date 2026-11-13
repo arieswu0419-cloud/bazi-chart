@@ -2468,6 +2468,9 @@ h2.qsz-page-title { font-size: 22px; }
 /* 四張（大門／主臥／灶頭／財位）：排成 2×2 */
 .bzdx-grids.four { --bzdx-w: min(640px, calc(100vw - 48px)); }
 .bzdx-ingot-lg { width: 18px; height: 13px; vertical-align: middle; }
+/* 圖例不可把圖撐寬（否則 2×2 會被擠成三列）：限制在圖寬內，以「元寶＋文字」為一組換行 */
+.bzdx-grids.four .bzdx-gridbox { width: min(86vw, 300px); }
+.bzdx-lgi { white-space: nowrap; display: inline-flex; align-items: center; gap: 2px; margin: 0 5px; }
 .bzdx-gridbox { display: flex; flex-direction: column; align-items: center; }
 .bzdx-gridtitle { font-size: 15px; font-weight: 800; color: #fff; background: #7a1f1f; border-radius: 4px; padding: 2px 14px; margin-bottom: 6px; }
 .bzdx-svg { display: block; width: min(86vw, 300px); height: auto; }
