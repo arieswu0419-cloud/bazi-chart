@@ -3950,8 +3950,10 @@ function bzRingText(cx, cy, r, angDeg, text, size, color, bold) {
 // 四凶（絕命/五鬼/六煞/禍害）黑底白字（紫白頁宅主命卦盤用；八宅頁維持原綠底配色）
 // topDeg（選填）：置於圖正上方的羅盤度數；未給＝向首所在之山的中心度數。
 // 平面圖套圖時傳入實測面向度數（如 130°），圓圖即依實際度數轉正，而非取整到 24 山中心。
-function buildBazhaiRingSvg(gua, angle, redBlack, topDeg) {
-  const games = zbGameStars(gua.num);
+// baseGua（選填）：起遊年的卦數；未給＝命卦（命卦 24 山）。給宅卦即為「宅向 24 山」（以坐山之卦起遊年、24 山納甲歸卦）。
+// center（選填）：中心文字 { title, sub }；未給＝「N X命／東(西)四命」。
+function buildBazhaiRingSvg(gua, angle, redBlack, topDeg, baseGua, center) {
+  const games = zbGameStars(baseGua || gua.num);
   const byGua = {};
   games.forEach((s) => { byGua[s.gua] = s; });
 
@@ -3990,8 +3992,8 @@ function buildBazhaiRingSvg(gua, angle, redBlack, topDeg) {
   }
   // 中心：命卦
   s += '<circle cx="' + C + '" cy="' + C + '" r="' + R_CTR + '" fill="#FEFDF7" stroke="#c19a2e" stroke-width="2"/>';
-  s += '<text x="' + C + '" y="' + (C - 10) + '" font-size="26" font-weight="800" fill="#8a7943" text-anchor="middle">' + gua.num + " " + gua.gua + "命</text>";
-  s += '<text x="' + C + '" y="' + (C + 18) + '" font-size="13" fill="#666" text-anchor="middle">' + gua.groupName + "</text>";
+  s += '<text x="' + C + '" y="' + (C - 10) + '" font-size="26" font-weight="800" fill="#8a7943" text-anchor="middle">' + (center ? center.title : gua.num + " " + gua.gua + "命") + "</text>";
+  s += '<text x="' + C + '" y="' + (C + 18) + '" font-size="13" fill="#666" text-anchor="middle">' + (center ? center.sub : gua.groupName) + "</text>";
   // 坐山紅框
   {
     const a1 = sIdx * 15 - 7.5 - fa, a2 = sIdx * 15 + 7.5 - fa;
@@ -4117,7 +4119,8 @@ function runBazhai() {
 //   面向角度（實測度數）置於正上方；可拖曳對準房屋中心、調整大小與透明度；紅色虛線為八宮分界延伸線。
 // base＝縮圖後的原始畫布；turn＝平面圖順時針旋轉 90° 的次數；cx/cy＝圓心在圖上的比例位置；
 // size＝圓圖直徑占圖短邊的比例；alpha＝透明度（0＝不透明）。
-const bzPlan = { gua: null, angle: 0, base: null, turn: 0, src: null, w: 0, h: 0, cx: 0.5, cy: 0.5, size: 0.8, alpha: 0.4 };
+// mode＝套用圖："zhai" 宅向 24 山／"ming" 命卦 24 山
+const bzPlan = { gua: null, angle: 0, base: null, turn: 0, src: null, w: 0, h: 0, cx: 0.5, cy: 0.5, size: 0.8, alpha: 0.4, mode: "zhai" };
 const BZ_PLAN_MAX = 1600; // 上傳圖長邊上限（px）：手機照片動輒 4000px，縮小後畫面與 PDF 才不會過重
 
 // 面向實測度數：角度欄與面向下拉所指為同一山時用角度欄的值，否則用該山中心度數
@@ -4170,13 +4173,24 @@ function renderBazhaiPlan() {
   if (!bzPlan.src || !bzPlan.gua) { sec.style.display = "none"; return; }
   const idx = zbMountainIndex(bzPlan.angle), top = bzPlanTopDeg();
   const name = ZB_MOUNTAINS[(idx + 12) % 24].name + "山" + ZB_MOUNTAINS[idx].name + "向";
-  document.getElementById("bazhaiPlanTitle").textContent = "平面圖套宅向 24 山（" + name + "・面向 " + top + "°）";
+  // 套用圖二選一：宅向 24 山（以宅卦＝坐山之卦起遊年）／命卦 24 山（以宅主命卦起遊年）
+  const zhai = bzPlan.mode === "zhai";
+  const zhaiGua = ZB_DIR_TO_PALACE[ZB_MOUNTAINS[(idx + 12) % 24].dir];
+  const zhaiEast = ZB_EAST_GUA.includes(zhaiGua);
+  document.getElementById("bazhaiPlanTitle").textContent = "平面圖套" +
+    (zhai ? "宅向 24 山（" + ZB_GUA_CHAR[zhaiGua] + "宅・" : "命卦 24 山（" + bzPlan.gua.num + " " + bzPlan.gua.gua + "命・") + name + "・面向 " + top + "°）";
   document.getElementById("bz-plan-img").src = bzPlan.src;
   document.getElementById("bz-plan-ring").innerHTML =
-    buildBazhaiRingSvg(bzPlan.gua, bzPlan.angle, false, top).replace('class="bz-ring-svg"', 'class="bz-plan-ring-svg"');
+    (zhai
+      ? buildBazhaiRingSvg(bzPlan.gua, bzPlan.angle, false, top, zhaiGua, { title: ZB_GUA_CHAR[zhaiGua] + "宅", sub: name + "・" + (zhaiEast ? "東" : "西") + "四宅" })
+      : buildBazhaiRingSvg(bzPlan.gua, bzPlan.angle, false, top)
+    ).replace('class="bz-ring-svg"', 'class="bz-plan-ring-svg"');
+  document.querySelectorAll("#bz-plan-mode button").forEach((b) => b.classList.toggle("active", b.dataset.mode === bzPlan.mode));
   document.getElementById("bazhaiPlanNote").textContent =
     "平面圖以宅向（" + ZB_MOUNTAINS[idx].name + "向 " + top + "°）朝上擺放，24 山圖向首置頂、圓心對準房屋中心。" +
-    "紅色虛線為八宮分界，可對照各房間落在哪一宮、哪一山；綠底為宅主 " + bzPlan.gua.gua + "命之吉方。";
+    "紅色虛線為八宮分界，可對照各房間落在哪一宮、哪一山；" +
+    (zhai ? "外圈遊年以宅卦（" + ZB_GUA_CHAR[zhaiGua] + "宅）起，綠底為宅之吉山。"
+          : "外圈遊年以宅主命卦（" + bzPlan.gua.gua + "命）起，綠底為宅主之吉方。");
   layoutBazhaiPlan();
   sec.style.display = "";
 }
@@ -4241,6 +4255,13 @@ document.getElementById("bz-floor").addEventListener("change", function () {
   reader.readAsDataURL(file);
 });
 
+// 套用圖切換：宅向 24 山／命卦 24 山
+document.getElementById("bz-plan-mode").addEventListener("click", function (e) {
+  const b = e.target.closest("button[data-mode]");
+  if (!b || b.dataset.mode === bzPlan.mode) return;
+  bzPlan.mode = b.dataset.mode;
+  renderBazhaiPlan();
+});
 document.getElementById("bz-plan-alpha").addEventListener("input", function () {
   bzPlan.alpha = Number(this.value) / 100;
   document.getElementById("bz-plan-alpha-out").textContent = this.value + "%";

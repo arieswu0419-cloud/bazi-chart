@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=317">
+<link rel="stylesheet" href="css/style.css?v=318">
 <link rel="stylesheet" href="css/jigong-bugua.css?v=288">
 </head>
 <body>
@@ -1334,7 +1334,7 @@
               <button type="button" class="btn" id="bazhaiRunBtn">排盤</button>
             </div>
           </div>
-          <div class="zibai-hint">上傳平面圖後，會把宅向 24 山圖套在平面圖上（向首朝上，平面圖請以宅向朝上擺放，可在圖上方按「旋轉 90°」調整）。</div>
+          <div class="zibai-hint">上傳平面圖後，會把 24 山圖套在平面圖上，可選「宅向 24 山」或「命卦 24 山」（向首朝上，平面圖請以宅向朝上擺放，可在圖上方按「旋轉 90°」調整）。</div>
         </div>
       </div>
     </div>
@@ -1347,6 +1347,12 @@
       <!-- 平面圖套宅向 24 山圖（上傳平面圖後顯示；工具列不進 PDF） -->
       <div class="zibai-section bz-plan" id="bazhaiPlanSection" style="display:none">
         <div class="zibai-section-title" id="bazhaiPlanTitle">平面圖套宅向 24 山</div>
+        <div class="bz-plan-tools" data-html2canvas-ignore="true">
+          <span class="bz-plan-mode" id="bz-plan-mode">套用圖
+            <button type="button" class="active" data-mode="zhai">宅向 24 山</button>
+            <button type="button" data-mode="ming">命卦 24 山</button>
+          </span>
+        </div>
         <div class="bz-plan-tools" data-html2canvas-ignore="true">
           <label>24 山圖透明度
             <input type="range" id="bz-plan-alpha" min="0" max="90" step="5" value="40">
@@ -1660,6 +1666,6 @@
 <script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=315"></script>
+<script src="js/app.js?v=318"></script>
 </body>
 </html>
