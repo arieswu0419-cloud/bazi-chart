@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>八宅東四命西四命測試頁</title>
-<link rel="stylesheet" href="css/style.css?v=311">
+<link rel="stylesheet" href="css/style.css?v=313">
 <style> body { padding: 16px; background: #eee; } #controls { margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } </style>
 </head>
 <body>
@@ -15,7 +15,7 @@
 </div>
 <div class="card"><div id="bazhaiDongxiResult"></div></div>
 <script src="js/fengshui-zibai-engine.js?v=288"></script>
-<script src="js/bazhai-dongxi.js?v=311"></script>
+<script src="js/bazhai-dongxi.js?v=313"></script>
 <script>
 // app.js 內的九宮位置類別（測試頁不載 app.js）
 function zbPosClass(r, c) {
@@ -32,7 +32,7 @@ document.getElementById("t-gua").value = st.gua;
 document.getElementById("t-zhai").value = st.zhai;
 function render() {
   const user = Number(document.getElementById("t-gua").value), form = Number(document.getElementById("t-zhai").value);
-  document.getElementById("bazhaiDongxiResult").innerHTML = buildBazhaiDongxiHtml(st.gua, user, st.zhai, form, st.sp);
+  document.getElementById("bazhaiDongxiResult").innerHTML = buildBazhaiDongxiHtml(st.gua, user, st.zhai, form, st.sp, Number(qs.get("year")) || 0); // ?year=流年財位年份
 }
 ["t-gua", "t-zhai"].forEach((id) => document.getElementById(id).onchange = function () {
   st.gua = Number(document.getElementById("t-gua").value); st.zhai = Number(document.getElementById("t-zhai").value); render();

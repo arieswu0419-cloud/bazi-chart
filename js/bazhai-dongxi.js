@@ -157,8 +157,33 @@ const BZDX_XIANTIAN_AT = {};
 Object.keys(BZDX_XIANTIAN_DIR).forEach((g) => { BZDX_XIANTIAN_AT[BZDX_XIANTIAN_DIR[g]] = Number(g); });
 const BZDX_TONE_TXT = { good: ["吉", "#2e9e4b"], ping: ["平", "#1f5fa8"], bad: ["凶", "#d13b3b"] };
 
-// kind＝door / bed / stove / xt（先天八卦宅卦圖；sp＝配偶命卦，可為 null）
-function bzdxGridHtml(m, kind, sp) {
+// ---- 財位 ----
+// 本命財位＝命卦生氣方（《八宅秘籍》：生氣貪狼最吉，「可帶來財氣、活力」）。
+// 流年財位＝流年紫白八白左輔星所飛到之方（與個人命書九宮飛星說明一致）；year 為立春年，八白入中時為 "C"。
+function bzdxWealth(mingGua, spouseGua, year) {
+  const pan = zbFly(zbYearStar(year), true);
+  const pal = Object.keys(pan).find((k) => pan[k] === 8);
+  return {
+    year,
+    ben: bzdxStarMap(mingGua).byStar.生氣.dir,
+    sp: spouseGua && spouseGua !== mingGua ? bzdxStarMap(spouseGua).byStar.生氣.dir : null,
+    liu: ZB_PALACE_TO_DIR[pal]
+  };
+}
+// 金元寶圖示（中心 cx,cy；寬約 26）＋下方標籤
+function bzdxIngotPath() {
+  return '<path d="M-13,-2 C-11,-9 -7,-4 -5,-3 L5,-3 C7,-4 11,-9 13,-2 C12,6 6,9 0,9 C-6,9 -12,6 -13,-2 Z" fill="#F5C21B" stroke="#A8720A" stroke-width="1.1" stroke-linejoin="round"/>' +
+    '<ellipse cx="0" cy="-4" rx="5.6" ry="4.6" fill="#FFE27A" stroke="#A8720A" stroke-width="1.1"/>' +
+    '<path d="M-8,3 C-4,6 4,6 8,3" fill="none" stroke="#fff3b0" stroke-width="1.2" stroke-linecap="round"/>';
+}
+function bzdxIngotSvg(cx, cy, label, color) {
+  return '<g transform="translate(' + cx.toFixed(1) + "," + cy.toFixed(1) + ') scale(1.35)">' + bzdxIngotPath() + "</g>" +
+    bzdxText(cx, cy + 22, label, 11, color, true);
+}
+const BZDX_WEALTH_COLOR = { 本命: "#C8161D", 流年: "#1f5fa8", 配偶: "#7B1FA2" };
+
+// kind＝door / bed / stove / cai（財位；wealth＝bzdxWealth 結果）/ xt（先天八卦宅卦圖）；sp＝配偶命卦，可為 null
+function bzdxGridHtml(m, kind, sp, wealth) {
   const S = BZDX_SVG;
   const facing = BZDX_OPP[m.sitDir];
   const fi = ZB_COMPASS_CW.indexOf(facing);
@@ -182,6 +207,10 @@ function bzdxGridHtml(m, kind, sp) {
     (xt
       ? bzdxText(c0 + S.C / 2, c0 + S.C / 2 - 12, ZB_GUA_CHAR[BZDX_XIANTIAN_AT[m.sitDir]], 30, "#fff", true) +
         bzdxText(c0 + S.C / 2, c0 + S.C / 2 + 24, "後天" + ZB_GUA_CHAR[m.zhaiGua] + "宅", 11, "#f3dcc0", true)
+      : kind === "cai" && wealth.liu === "C"
+      // 流年八白入中：財位在宅之中央
+      ? bzdxText(c0 + S.C / 2, c0 + S.C / 2 - 20, ZB_GUA_CHAR[m.zhaiGua], 26, "#fff", true) +
+        bzdxIngotSvg(c0 + S.C / 2, c0 + S.C / 2 + 8, "流年", "#FFE9A8")
       : '<text x="' + (c0 + S.C / 2) + '" y="' + (c0 + S.C / 2) + '" font-size="32" font-weight="800" fill="#fff" text-anchor="middle" dominant-baseline="central">' +
         ZB_GUA_CHAR[m.zhaiGua] + "</text>");
 
@@ -207,6 +236,17 @@ function bzdxGridHtml(m, kind, sp) {
         if (BZDX_XIANTIAN_DIR[g] === dir) svg += '<rect x="' + (x + 2.5) + '" y="' + (y + 2.5) + '" width="' + (S.C - 5) + '" height="' + (S.C - 5) +
           '" fill="none" stroke="#1f5fa8" stroke-width="1.6" stroke-dasharray="4 2"/>';
       });
+    } else if (kind === "cai") {
+      // 財位圖：本命（生氣方）、流年（八白）、配偶本命各畫一顆金元寶；財位宮底色淡金
+      const tags = [];
+      if (wealth.ben === dir) tags.push("本命");
+      if (wealth.liu === dir) tags.push("流年");
+      if (wealth.sp === dir) tags.push("配偶");
+      const cx = x + S.C / 2, cy = y + S.C / 2;
+      svg += '<rect x="' + x + '" y="' + y + '" width="' + S.C + '" height="' + S.C + '" fill="' +
+        (tags.length ? "#FFF1BF" : (p.good ? "#fff" : "#D6D6D6")) + '" stroke="' + BZDX_RED + '" stroke-width="1"/>' +
+        bzdxText(cx, tags.length ? cy - 27 : cy, p.star, tags.length ? 13 : 15, "#333", true);
+      tags.forEach((t, i) => { svg += bzdxIngotSvg(cx + (i - (tags.length - 1) / 2) * 40, cy + 3, t, BZDX_WEALTH_COLOR[t]); });
     } else {
       svg += '<rect x="' + x + '" y="' + y + '" width="' + S.C + '" height="' + S.C + '" fill="' + (p.good ? "#fff" : "#D6D6D6") +
         '" stroke="' + BZDX_RED + '" stroke-width="1"/>' + bzdxText(x + S.C / 2, y + S.C / 2, p.star, 15, "#333", true);
@@ -260,7 +300,7 @@ function bzdxGridHtml(m, kind, sp) {
           icons += bzdxPlace(sl.pt, sl.side, bzdxDoorSvg(okSides.includes(sl.side) ? BZDX_RED : BZDX_ORANGE));
         });
       }
-    } else if (!xt && (kind === "bed" ? p.good : !p.good)) {
+    } else if ((kind === "bed" && p.good) || (kind === "stove" && !p.good)) {
       okSides.forEach((sd) => {
         // 床：床頭板靠 sd 側牆（頭朝 sd）；灶：灶口朝 sd，故背靠對側牆
         const wall = kind === "bed" ? sd : (sd + 2) % 4;
@@ -269,9 +309,13 @@ function bzdxGridHtml(m, kind, sp) {
     }
   }
 
-  const title = { door: "大門", bed: "主臥", stove: "灶頭", xt: "先天八卦宅卦" }[kind];
+  const title = { door: "大門", bed: "主臥", stove: "灶頭", cai: "財位", xt: "先天八卦宅卦" }[kind];
   const okTxt = m.okDirs.map((d) => ZB_DIR_NAME[d]).join("、");
-  const legend = xt
+  const ingotLg = '<svg class="bzdx-ingot-lg" viewBox="-15 -11 30 22" xmlns="http://www.w3.org/2000/svg">' + bzdxIngotPath() + "</svg>";
+  const legend = kind === "cai"
+    ? ingotLg + "本命＝" + ZB_GUA_CHAR[m.mingGua] + "命生氣方　" + ingotLg + "流年＝" + wealth.year + " 年八白" +
+      (wealth.sp ? "　" + ingotLg + "配偶＝" + ZB_GUA_CHAR[sp] + "命生氣方" : "")
+    : xt
     ? '<span class="bzdx-lg" style="background:#DDF0D3;border:1px solid #9cc98a"></span>先天兩全　' +
       '<span class="bzdx-lg" style="border:1.5px dashed #1f5fa8"></span>本人先天卦位（中平）　' +
       '<span class="bzdx-lg" style="background:#E4E4E4"></span>宅之凶宮'
@@ -353,9 +397,10 @@ function bzdxCoupleHtml(userGua, spouseGua) {
 }
 
 // selGua：目前檢視之命卦；userGua：表單算出之宅主命卦；zhaiGua：表單座向之宅卦（可被總覽表點選覆寫）；
-// spouseGua：配偶命卦（未填為 null）
-function buildBazhaiDongxiHtml(selGua, userGua, zhaiGua, formZhaiGua, spouseGua) {
+// spouseGua：配偶命卦（未填為 null）；year：流年財位之立春年（未給則取今天所屬立春年）
+function buildBazhaiDongxiHtml(selGua, userGua, zhaiGua, formZhaiGua, spouseGua, year) {
   spouseGua = spouseGua || null;
+  if (!year) { const now = new Date(); year = zbYuanYear(now.getFullYear(), now.getMonth() + 1, now.getDate()); }
   const ming = bzdxStarMap(selGua);
   const east = BZDX_EAST.includes(selGua);
   let h = "";
@@ -449,9 +494,21 @@ function buildBazhaiDongxiHtml(selGua, userGua, zhaiGua, formZhaiGua, spouseGua)
         '吉宮，<b class="bz-good">' + ZB_DIR_NAME[xd] + "宮宜作" + ZB_GUA_CHAR[selGua] + "命之臥房</b>。"
       : "";
   }
+  // 財位：本命（生氣方）、流年（八白）、配偶本命
+  const wealth = bzdxWealth(selGua, spouseGua, year);
+  const palAt = (d) => m.palaces.find((p) => p.dir === d);
+  const inZhai = (d) => { const p = palAt(d); return "宅之" + p.star + (p.good ? "吉宮" : "凶宮"); };
+  const benP = palAt(wealth.ben);
+  let caiTxt = "本命財位在 <b>" + ZB_DIR_NAME[wealth.ben] + "</b>（" + ZB_GUA_CHAR[selGua] + "命生氣方，主財氣與活力），落在" + inZhai(wealth.ben) + "，" +
+    (benP.good ? "宜作客廳、辦公桌、收銀或放保險箱之處，保持明亮整潔。" : "宅氣不助，宜保持整潔少堆雜物，改以座位、辦公桌面向此方取用。");
+  if (wealth.sp) caiTxt += "配偶 " + ZB_GUA_CHAR[spouseGua] + "命本命財位在 <b>" + ZB_DIR_NAME[wealth.sp] + "</b>（" + inZhai(wealth.sp) + "）。";
+  caiTxt += wealth.year + " 年流年財位在 <b>" + (wealth.liu === "C" ? "中宮" : ZB_DIR_NAME[wealth.liu]) + "</b>（八白左輔星飛臨" +
+    (wealth.liu === "C" ? "，入中宮，宅之中央宜保持明亮整潔" : "，" + inZhai(wealth.liu)) + "），可擺聚寶盆、水晶或紅紫色物品催旺；流年財位每年立春更換。" +
+    (wealth.liu === wealth.ben ? '<b class="bz-good">今年本命財位與流年財位同在' + ZB_DIR_NAME[wealth.ben] + "，財氣最旺，宜重點佈置。</b>" : "");
   h +='<div class="zibai-section"><div class="zibai-section-title">' + ZB_GUA_CHAR[selGua] + "命配" + ZB_GUA_CHAR[zhaiGua] + "宅（" +
     (m.match ? "宅命相配" : "東西相混，宅命不配") + "）</div>" +
-    '<div class="bzdx-grids">' + bzdxGridHtml(m, "door") + bzdxGridHtml(m, "bed") + bzdxGridHtml(m, "stove") + "</div>" +
+    '<div class="bzdx-grids four">' + bzdxGridHtml(m, "door") + bzdxGridHtml(m, "bed") + bzdxGridHtml(m, "stove") +
+      bzdxGridHtml(m, "cai", spouseGua, wealth) + "</div>" +
     '<div class="zibai-block"><div class="zibai-block-b">' +
       "<b>大門</b>：可開於" + doorPal + "宮" +
         (pj ? "，凶宮中可取" + pj + "（該山納甲屬宅之吉卦）" : "") + "；" +
@@ -461,6 +518,7 @@ function buildBazhaiDongxiHtml(selGua, userGua, zhaiGua, formZhaiGua, spouseGua)
         "<div class=\"zibai-hr\"></div>" +
       "<b>灶頭</b>：坐凶向吉，灶安於" + badPal + "宮壓凶，灶口（火門）朝 " + bzdxDirList(m.okDirs, m.mingByDir) +
         "，灶背靠" + m.okDirs.map((d) => ZB_DIR_NAME[BZDX_OPP[d]]).join("／") + "側牆。" +
+        "<div class=\"zibai-hr\"></div><b>財位</b>：" + caiTxt +
       (m.match ? "" : '<div class="zibai-hr"></div><span class="bz-bad">宅命不配</span>：宅之吉宮多落在本命凶方，宜以床頭、灶口、書桌座向取本命吉方補救，並多用宅中吉山。' + xtSingle) +
     "</div></div></div>";
 
