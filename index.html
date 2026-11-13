@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=314">
+<link rel="stylesheet" href="css/style.css?v=317">
 <link rel="stylesheet" href="css/jigong-bugua.css?v=288">
 </head>
 <body>
@@ -1312,7 +1312,11 @@
 
         <div class="form-block">
           <h2>陽宅面向</h2>
-          <div class="form-date-row">
+          <div class="form-date-row zbfx-face-row">
+            <div class="field zbfx-angle-num-field">
+              <label for="bz-angle-num">面向角度（0–359°）</label>
+              <input type="number" id="bz-angle-num" min="0" max="359" step="1" value="0">
+            </div>
             <div class="field zibai-angle-field">
               <label for="bz-angle">面向（人在室內往大門／大窗看出去的方向）</label>
               <select id="bz-angle"></select>
@@ -1321,11 +1325,16 @@
               <label>座向</label>
               <div class="zibai-mountain-out" id="bazhaiMountainOut">—</div>
             </div>
+            <div class="field zbfx-floor-field">
+              <label for="bz-floor">上傳平面圖</label>
+              <input type="file" id="bz-floor" accept="image/*">
+            </div>
             <div class="field zibai-run-field" data-html2canvas-ignore="true">
               <label>&nbsp;</label>
               <button type="button" class="btn" id="bazhaiRunBtn">排盤</button>
             </div>
           </div>
+          <div class="zibai-hint">上傳平面圖後，會把宅向 24 山圖套在平面圖上（向首朝上，平面圖請以宅向朝上擺放，可在圖上方按「旋轉 90°」調整）。</div>
         </div>
       </div>
     </div>
@@ -1335,6 +1344,32 @@
         <button class="btn secondary" id="exportBazhaiPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
       </div>
       <div class="zibai-plate-wrap" id="bazhaiResult"></div>
+      <!-- 平面圖套宅向 24 山圖（上傳平面圖後顯示；工具列不進 PDF） -->
+      <div class="zibai-section bz-plan" id="bazhaiPlanSection" style="display:none">
+        <div class="zibai-section-title" id="bazhaiPlanTitle">平面圖套宅向 24 山</div>
+        <div class="bz-plan-tools" data-html2canvas-ignore="true">
+          <label>24 山圖透明度
+            <input type="range" id="bz-plan-alpha" min="0" max="90" step="5" value="40">
+            <b id="bz-plan-alpha-out">40%</b>
+          </label>
+          <label>24 山圖大小
+            <input type="range" id="bz-plan-size" min="20" max="160" step="2" value="80">
+            <b id="bz-plan-size-out">80%</b>
+          </label>
+          <button type="button" class="btn secondary" id="bz-plan-turn">平面圖旋轉 90°</button>
+          <button type="button" class="btn secondary" id="bz-plan-center">圓圖置中</button>
+          <button type="button" class="btn secondary" id="bz-plan-remove">移除平面圖</button>
+        </div>
+        <div class="bz-plan-tip" data-html2canvas-ignore="true">拖曳圓圖可移動，請把圓心對準房屋的中心點。</div>
+        <div class="bz-plan-stage" id="bz-plan-stage">
+          <img id="bz-plan-img" alt="平面圖">
+          <div class="bz-plan-layer" id="bz-plan-layer">
+            <svg class="bz-plan-lines" id="bz-plan-lines" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"></svg>
+            <div class="bz-plan-ring" id="bz-plan-ring"></div>
+          </div>
+        </div>
+        <div class="zibai-note" id="bazhaiPlanNote"></div>
+      </div>
       <div id="bazhaiDongxiResult"></div>
     </div>
     </div>
@@ -1625,6 +1660,6 @@
 <script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=311"></script>
+<script src="js/app.js?v=315"></script>
 </body>
 </html>

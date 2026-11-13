@@ -3893,6 +3893,7 @@ function showBazhaiView() {
   document.getElementById("bz-oday").value = "1";
   document.getElementById("bz-ogender").value = "male";
   document.getElementById("bz-angle").value = "0";
+  document.getElementById("bz-angle-num").value = "0";
   // 配偶（選填）：預設不勾選
   document.getElementById("bz-sp-on").checked = false;
   document.getElementById("bz-sp-row").style.display = "none";
@@ -3947,13 +3948,15 @@ function bzRingText(cx, cy, r, angDeg, text, size, color, bold) {
 
 // redBlack＝true 時改「教材命卦-X.pdf 羅盤」配色：四吉（生氣/延年/天醫/伏位）紅底白字、
 // 四凶（絕命/五鬼/六煞/禍害）黑底白字（紫白頁宅主命卦盤用；八宅頁維持原綠底配色）
-function buildBazhaiRingSvg(gua, angle, redBlack) {
+// topDeg（選填）：置於圖正上方的羅盤度數；未給＝向首所在之山的中心度數。
+// 平面圖套圖時傳入實測面向度數（如 130°），圓圖即依實際度數轉正，而非取整到 24 山中心。
+function buildBazhaiRingSvg(gua, angle, redBlack, topDeg) {
   const games = zbGameStars(gua.num);
   const byGua = {};
   games.forEach((s) => { byGua[s.gua] = s; });
 
   const fIdx = zbMountainIndex(angle);
-  const fa = fIdx * 15;                 // 向首羅盤角（置頂）
+  const fa = topDeg != null ? topDeg : fIdx * 15;   // 向首羅盤角（置頂）
   const sIdx = (fIdx + 12) % 24;        // 坐山
   const C = 210, R_STAR2 = 205, R_STAR1 = 162, R_MT2 = 162, R_MT1 = 122, R_DIR2 = 122, R_DIR1 = 78, R_CTR = 78;
 
@@ -4102,7 +4105,80 @@ function runBazhai() {
     spHint.textContent = "";
   }
   renderBazhaiDongxi();
+  // 平面圖套宅向 24 山：命卦、面向變動即重畫
+  bzPlan.gua = gua;
+  bzPlan.angle = f.angle;
+  renderBazhaiPlan();
   document.getElementById("bazhaiCard").style.display = "block";
+}
+
+// ---- 八宅頁：平面圖套宅向 24 山圖 ----
+// 平面圖以宅向朝上擺放（與本頁 24 山圓圖「向首朝上」一致），圓圖疊在平面圖上：
+//   面向角度（實測度數）置於正上方；可拖曳對準房屋中心、調整大小與透明度；紅色虛線為八宮分界延伸線。
+// base＝縮圖後的原始畫布；turn＝平面圖順時針旋轉 90° 的次數；cx/cy＝圓心在圖上的比例位置；
+// size＝圓圖直徑占圖短邊的比例；alpha＝透明度（0＝不透明）。
+const bzPlan = { gua: null, angle: 0, base: null, turn: 0, src: null, w: 0, h: 0, cx: 0.5, cy: 0.5, size: 0.8, alpha: 0.4 };
+const BZ_PLAN_MAX = 1600; // 上傳圖長邊上限（px）：手機照片動輒 4000px，縮小後畫面與 PDF 才不會過重
+
+// 面向實測度數：角度欄與面向下拉所指為同一山時用角度欄的值，否則用該山中心度數
+function bzPlanTopDeg() {
+  const num = Number(document.getElementById("bz-angle-num").value);
+  const sel = Number(document.getElementById("bz-angle").value) || 0;
+  return Number.isFinite(num) && zbMountainIndex(num) * 15 === sel ? ((num % 360) + 360) % 360 : sel;
+}
+
+// 依 turn 把 base 畫布轉正輸出成 JPEG（白底）
+function bzPlanApplyTurn() {
+  const b = bzPlan.base, t = bzPlan.turn % 4, swap = t % 2 === 1;
+  const c = document.createElement("canvas");
+  c.width = swap ? b.height : b.width; c.height = swap ? b.width : b.height;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.translate(c.width / 2, c.height / 2); ctx.rotate(t * Math.PI / 2);
+  ctx.drawImage(b, -b.width / 2, -b.height / 2);
+  bzPlan.src = c.toDataURL("image/jpeg", 0.9);
+  bzPlan.w = c.width; bzPlan.h = c.height;
+}
+
+// 圓圖位置、大小與八宮分界線（只動樣式，不重畫圓圖）
+function layoutBazhaiPlan() {
+  const p = bzPlan, minDim = Math.min(p.w, p.h), d = p.size * minDim;
+  const ring = document.getElementById("bz-plan-ring");
+  ring.style.width = (d / p.w * 100) + "%";
+  ring.style.height = (d / p.h * 100) + "%";
+  ring.style.left = ((p.cx - d / p.w / 2) * 100) + "%";
+  ring.style.top = ((p.cy - d / p.h / 2) * 100) + "%";
+  document.getElementById("bz-plan-layer").style.opacity = String(1 - p.alpha);
+  // 分界線：以圖的像素座標畫（viewBox＝圖尺寸），自圓圖外緣延伸到圖外
+  const top = bzPlanTopDeg(), cx = p.cx * p.w, cy = p.cy * p.h, r0 = d / 2 * (205 / 210), r1 = p.w + p.h;
+  const sw = Math.max(1.5, minDim / 420);
+  let s = "";
+  for (let i = 0; i < 24; i++) {
+    const a = (i * 15 + 7.5 - top - 90) * Math.PI / 180, palace = i % 3 === 1; // 22.5°、67.5°…為八宮分界
+    s += '<line x1="' + (cx + r0 * Math.cos(a)).toFixed(1) + '" y1="' + (cy + r0 * Math.sin(a)).toFixed(1) +
+      '" x2="' + (cx + r1 * Math.cos(a)).toFixed(1) + '" y2="' + (cy + r1 * Math.sin(a)).toFixed(1) + '" stroke="' +
+      (palace ? "#C8161D" : "#8a7943") + '" stroke-width="' + (palace ? sw * 1.6 : sw * 0.7).toFixed(2) + '"' +
+      (palace ? ' stroke-dasharray="' + (sw * 6).toFixed(1) + " " + (sw * 4).toFixed(1) + '"' : ' stroke-opacity="0.55"') + "/>";
+  }
+  const lines = document.getElementById("bz-plan-lines");
+  lines.setAttribute("viewBox", "0 0 " + p.w + " " + p.h);
+  lines.innerHTML = s;
+}
+
+function renderBazhaiPlan() {
+  const sec = document.getElementById("bazhaiPlanSection");
+  if (!bzPlan.src || !bzPlan.gua) { sec.style.display = "none"; return; }
+  const idx = zbMountainIndex(bzPlan.angle), top = bzPlanTopDeg();
+  const name = ZB_MOUNTAINS[(idx + 12) % 24].name + "山" + ZB_MOUNTAINS[idx].name + "向";
+  document.getElementById("bazhaiPlanTitle").textContent = "平面圖套宅向 24 山（" + name + "・面向 " + top + "°）";
+  document.getElementById("bz-plan-img").src = bzPlan.src;
+  document.getElementById("bz-plan-ring").innerHTML =
+    buildBazhaiRingSvg(bzPlan.gua, bzPlan.angle, false, top).replace('class="bz-ring-svg"', 'class="bz-plan-ring-svg"');
+  document.getElementById("bazhaiPlanNote").textContent =
+    "平面圖以宅向（" + ZB_MOUNTAINS[idx].name + "向 " + top + "°）朝上擺放，24 山圖向首置頂、圓心對準房屋中心。" +
+    "紅色虛線為八宮分界，可對照各房間落在哪一宮、哪一山；綠底為宅主 " + bzPlan.gua.gua + "命之吉方。";
+  layoutBazhaiPlan();
+  sec.style.display = "";
 }
 
 // ---- 八宅頁：八宅明鏡（九宮＋24 山）之下接東四命・西四命（八宅秘籍），同一頁呈現 ----
@@ -4126,6 +4202,97 @@ document.getElementById("bz-sp-on").addEventListener("change", function () {
   runBazhai();
 });
 
+// 面向角度輸入（0–359°）→ 自動換算 24 山、同步面向下拉與座向、重排（做法同紫白流年流月盤）
+document.getElementById("bz-angle-num").addEventListener("change", function () {
+  let a = Math.round(Number(this.value) || 0);
+  a = ((a % 360) + 360) % 360;
+  this.value = a;
+  document.getElementById("bz-angle").value = String(zbMountainIndex(a) * 15);
+  runBazhai();
+});
+// 面向下拉變更 → 回填角度欄（該山中心度數）
+document.getElementById("bz-angle").addEventListener("change", function () {
+  document.getElementById("bz-angle-num").value = this.value;
+  renderBazhaiPlan();
+});
+
+// 上傳平面圖：縮到長邊 BZ_PLAN_MAX 以內存成畫布，再依旋轉次數輸出
+document.getElementById("bz-floor").addEventListener("change", function () {
+  const file = this.files && this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onerror = () => showToast("無法讀取這個檔案。", "error");
+  reader.onload = function () {
+    const img = new Image();
+    img.onerror = () => showToast("這個檔案不是可用的圖片，請改用 JPG 或 PNG。", "error");
+    img.onload = function () {
+      const k = Math.min(1, BZ_PLAN_MAX / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      bzPlan.base = c; bzPlan.turn = 0; bzPlan.cx = 0.5; bzPlan.cy = 0.5;
+      bzPlanApplyTurn();
+      if (!bzPlan.gua) runBazhai(); else renderBazhaiPlan();
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById("bz-plan-alpha").addEventListener("input", function () {
+  bzPlan.alpha = Number(this.value) / 100;
+  document.getElementById("bz-plan-alpha-out").textContent = this.value + "%";
+  layoutBazhaiPlan();
+});
+document.getElementById("bz-plan-size").addEventListener("input", function () {
+  bzPlan.size = Number(this.value) / 100;
+  document.getElementById("bz-plan-size-out").textContent = this.value + "%";
+  layoutBazhaiPlan();
+});
+document.getElementById("bz-plan-turn").addEventListener("click", function () {
+  if (!bzPlan.base) return;
+  // 圖順時針轉 90°，圓心跟著轉到對應位置
+  const cx = bzPlan.cx, cy = bzPlan.cy;
+  bzPlan.turn = (bzPlan.turn + 1) % 4;
+  bzPlan.cx = 1 - cy; bzPlan.cy = cx;
+  bzPlanApplyTurn();
+  renderBazhaiPlan();
+});
+document.getElementById("bz-plan-center").addEventListener("click", function () {
+  bzPlan.cx = 0.5; bzPlan.cy = 0.5;
+  layoutBazhaiPlan();
+});
+document.getElementById("bz-plan-remove").addEventListener("click", function () {
+  bzPlan.base = null; bzPlan.src = null; bzPlan.turn = 0;
+  document.getElementById("bz-floor").value = "";
+  document.getElementById("bz-plan-img").removeAttribute("src");
+  renderBazhaiPlan();
+});
+
+// 拖曳圓圖（滑鼠、觸控共用 pointer events）
+(function () {
+  const ring = document.getElementById("bz-plan-ring"), stage = document.getElementById("bz-plan-stage");
+  let drag = null;
+  ring.addEventListener("pointerdown", function (e) {
+    const r = stage.getBoundingClientRect();
+    drag = { x: e.clientX, y: e.clientY, cx: bzPlan.cx, cy: bzPlan.cy, w: r.width, h: r.height };
+    ring.setPointerCapture(e.pointerId);
+    ring.classList.add("dragging");
+    e.preventDefault();
+  });
+  ring.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    bzPlan.cx = Math.min(1, Math.max(0, drag.cx + (e.clientX - drag.x) / drag.w));
+    bzPlan.cy = Math.min(1, Math.max(0, drag.cy + (e.clientY - drag.y) / drag.h));
+    layoutBazhaiPlan();
+  });
+  const end = function () { drag = null; ring.classList.remove("dragging"); };
+  ring.addEventListener("pointerup", end);
+  ring.addEventListener("pointercancel", end);
+})();
+
 document.getElementById("exportBazhaiPdfBtn").addEventListener("click", async function () {
   const btn = this;
   const originalLabel = btn.textContent;
@@ -4139,8 +4306,10 @@ document.getElementById("exportBazhaiPdfBtn").addEventListener("click", async fu
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
     const title = textToImage("Aries 八宅風水", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
-    // 八宅明鏡盤（整塊）＋東四命・西四命各段（分段排頁，避免整塊過長被切）
+    // 八宅明鏡盤（整塊）＋平面圖套 24 山（有上傳才有）＋東四命・西四命各段（分段排頁，避免整塊過長被切）
+    const planSec = document.getElementById("bazhaiPlanSection");
     const sections = [document.getElementById("bazhaiResult")]
+      .concat(planSec.style.display === "none" ? [] : [planSec])
       .concat(Array.from(document.querySelectorAll("#bazhaiDongxiResult > .zibai-section")));
     await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
     addPageNumbers(pdf, pageWidth, pageHeight);
