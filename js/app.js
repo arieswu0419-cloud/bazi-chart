@@ -309,7 +309,7 @@ const SOLAR_DATE_SELECTS = [
   ["shuzi-lunar-year", "shuzi-lunar-month", "shuzi-lunar-day"],
   ["qd-byear", "qd-bmonth", "qd-bday"], ["ss-byear", "ss-bmonth", "ss-bday"], ["hp-byear", "hp-bmonth", "hp-bday"],
   ["zb-byear", "zb-bmonth", "zb-bday"], ["zb-oyear", "zb-omonth", "zb-oday"], ["zbfx-oyear", "zbfx-omonth", "zbfx-oday"],
-  ["bz-oyear", "bz-omonth", "bz-oday"], ["xm-byear", "xm-bmonth", "xm-bday"], ["xm-co-byear", "xm-co-bmonth", "xm-co-bday"],
+  ["bz-oyear", "bz-omonth", "bz-oday"], ["bz-syear", "bz-smonth", "bz-sday"], ["xm-byear", "xm-bmonth", "xm-bday"], ["xm-co-byear", "xm-co-bmonth", "xm-co-bday"],
   ["zeri-year", "zeri-month", "zeri-day"]
 ];
 // 年未選（姓名學的選填欄位）時用閏年 2000 計算，2/29 仍可選
@@ -3866,12 +3866,15 @@ function fillBazhaiSelects() {
   let oy = "";
   for (let y = 1920; y <= nowY; y++) oy += '<option value="' + y + '">' + y + "</option>";
   sel.innerHTML = oy;
+  document.getElementById("bz-syear").innerHTML = oy;
   let m = "";
   for (let i = 1; i <= 12; i++) m += '<option value="' + i + '">' + i + "</option>";
   document.getElementById("bz-omonth").innerHTML = m;
+  document.getElementById("bz-smonth").innerHTML = m;
   let d = "";
   for (let i = 1; i <= 31; i++) d += '<option value="' + i + '">' + i + "</option>";
   document.getElementById("bz-oday").innerHTML = d;
+  document.getElementById("bz-sday").innerHTML = d;
   let a = "";
   ZB_MOUNTAINS.forEach((mt, i) => {
     a += '<option value="' + (i * 15) + '">' + mt.name + "（" + zbDegText(i) + "）</option>";
@@ -3890,6 +3893,13 @@ function showBazhaiView() {
   document.getElementById("bz-oday").value = "1";
   document.getElementById("bz-ogender").value = "male";
   document.getElementById("bz-angle").value = "0";
+  // 配偶（選填）：預設不勾選
+  document.getElementById("bz-sp-on").checked = false;
+  document.getElementById("bz-sp-row").style.display = "none";
+  document.getElementById("bz-syear").value = "1980";
+  document.getElementById("bz-smonth").value = "1";
+  document.getElementById("bz-sday").value = "1";
+  document.getElementById("bz-sgender").value = "female";
   runBazhai();
 }
 function hideBazhaiView() {
@@ -4077,26 +4087,30 @@ function runBazhai() {
   bzdxState.formZhai = ZB_DIR_TO_PALACE[ZB_MOUNTAINS[(idx + 12) % 24].dir];
   bzdxState.gua = gua.num;
   bzdxState.zhai = bzdxState.formZhai;
+  // 配偶命卦（選填）：勾選「一併考量配偶」才計算
+  const spHint = document.getElementById("bazhaiSpouseHint");
+  if (document.getElementById("bz-sp-on").checked) {
+    const sg = zbLifeGua(Number(document.getElementById("bz-syear").value),
+      Number(document.getElementById("bz-smonth").value),
+      Number(document.getElementById("bz-sday").value),
+      document.getElementById("bz-sgender").value === "male");
+    bzdxState.spouseGua = sg.num;
+    spHint.textContent = "配偶命卦：" + sg.num + " " + sg.gua + "卦（" + sg.group + "命人・" + sg.groupName + "・五行屬" + sg.wx + "）" +
+      (sg.group === gua.group ? "　夫妻同為" + gua.group + "命，宅向易兩全" : "　夫妻東西命不同，主臥宜依下方「夫妻命卦合參」取先天兩全之位");
+  } else {
+    bzdxState.spouseGua = null;
+    spHint.textContent = "";
+  }
   renderBazhaiDongxi();
-  setBazhaiTab(bzdxState.tab);
+  document.getElementById("bazhaiCard").style.display = "block";
 }
 
-// ---- 八宅頁籤：八宅明鏡（九宮＋24 山）／東四命・西四命（八宅秘籍）----
-const bzdxState = { tab: "plate", gua: 1, userGua: 1, zhai: 1, formZhai: 1 };
+// ---- 八宅頁：八宅明鏡（九宮＋24 山）之下接東四命・西四命（八宅秘籍），同一頁呈現 ----
+const bzdxState = { gua: 1, userGua: 1, zhai: 1, formZhai: 1, spouseGua: null };
 function renderBazhaiDongxi() {
   document.getElementById("bazhaiDongxiResult").innerHTML =
-    buildBazhaiDongxiHtml(bzdxState.gua, bzdxState.userGua, bzdxState.zhai, bzdxState.formZhai);
+    buildBazhaiDongxiHtml(bzdxState.gua, bzdxState.userGua, bzdxState.zhai, bzdxState.formZhai, bzdxState.spouseGua);
 }
-function setBazhaiTab(which) {
-  bzdxState.tab = which;
-  const plate = which === "plate";
-  document.getElementById("bazhaiCard").style.display = plate ? "block" : "none";
-  document.getElementById("bazhaiDongxiCard").style.display = plate ? "none" : "block";
-  document.getElementById("bazhaiTabPlate").classList.toggle("active", plate);
-  document.getElementById("bazhaiTabDongxi").classList.toggle("active", !plate);
-}
-document.getElementById("bazhaiTabPlate").addEventListener("click", function () { setBazhaiTab("plate"); });
-document.getElementById("bazhaiTabDongxi").addEventListener("click", function () { setBazhaiTab("dongxi"); });
 document.getElementById("bazhaiDongxiResult").addEventListener("click", function (e) {
   const card = e.target.closest("[data-bzdx-gua]");
   if (card) { bzdxState.gua = Number(card.dataset.bzdxGua); renderBazhaiDongxi(); return; }
@@ -4105,8 +4119,12 @@ document.getElementById("bazhaiDongxiResult").addEventListener("click", function
 });
 
 document.getElementById("bazhaiRunBtn").addEventListener("click", runBazhai);
-["bz-oyear", "bz-omonth", "bz-oday", "bz-ogender", "bz-angle"].forEach((id) =>
+["bz-oyear", "bz-omonth", "bz-oday", "bz-ogender", "bz-angle", "bz-syear", "bz-smonth", "bz-sday", "bz-sgender"].forEach((id) =>
   document.getElementById(id).addEventListener("change", runBazhai));
+document.getElementById("bz-sp-on").addEventListener("change", function () {
+  document.getElementById("bz-sp-row").style.display = this.checked ? "" : "none";
+  runBazhai();
+});
 
 document.getElementById("exportBazhaiPdfBtn").addEventListener("click", async function () {
   const btn = this;
@@ -4121,36 +4139,12 @@ document.getElementById("exportBazhaiPdfBtn").addEventListener("click", async fu
     pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
     const title = textToImage("Aries 八宅風水", 20, "#212529");
     pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
-    const sections = Array.from(document.querySelectorAll("#bazhaiCard > *:not(.card-head)"))
-      .filter((el) => getComputedStyle(el).display !== "none");
+    // 八宅明鏡盤（整塊）＋東四命・西四命各段（分段排頁，避免整塊過長被切）
+    const sections = [document.getElementById("bazhaiResult")]
+      .concat(Array.from(document.querySelectorAll("#bazhaiDongxiResult > .zibai-section")));
     await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
     addPageNumbers(pdf, pageWidth, pageHeight);
     pdf.save("八宅風水.pdf");
-  } catch (err) {
-    alert("匯出失敗：" + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalLabel;
-  }
-});
-
-document.getElementById("exportBazhaiDongxiPdfBtn").addEventListener("click", async function () {
-  const btn = this;
-  const originalLabel = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "匯出中...";
-  try {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p", "mm", "a4", true);
-    const pageWidth = 210, pageHeight = 297, margin = 10;
-    const logoImg = document.querySelector(".brand img");
-    pdf.addImage(logoImg, "PNG", margin, 8, 12, 12);
-    const title = textToImage("Aries 八宅風水・東四命西四命", 20, "#212529");
-    pdf.addImage(title.dataUrl, "PNG", margin + 16, 8 + (12 - title.heightMM) / 2, title.widthMM, title.heightMM);
-    const sections = Array.from(document.querySelectorAll("#bazhaiDongxiResult > .zibai-section"));
-    await addSectionsToPdf(pdf, sections, margin, pageWidth, pageHeight, 26);
-    addPageNumbers(pdf, pageWidth, pageHeight);
-    pdf.save("八宅風水_東四命西四命.pdf");
   } catch (err) {
     alert("匯出失敗：" + err.message);
   } finally {

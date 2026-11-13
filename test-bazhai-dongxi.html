@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>八宅東四命西四命測試頁</title>
-<link rel="stylesheet" href="css/style.css?v=304">
+<link rel="stylesheet" href="css/style.css?v=311">
 <style> body { padding: 16px; background: #eee; } #controls { margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } </style>
 </head>
 <body>
@@ -15,7 +15,7 @@
 </div>
 <div class="card"><div id="bazhaiDongxiResult"></div></div>
 <script src="js/fengshui-zibai-engine.js?v=288"></script>
-<script src="js/bazhai-dongxi.js?v=304"></script>
+<script src="js/bazhai-dongxi.js?v=311"></script>
 <script>
 // app.js 內的九宮位置類別（測試頁不載 app.js）
 function zbPosClass(r, c) {
@@ -27,12 +27,12 @@ document.getElementById("t-gua").innerHTML = opts;
 document.getElementById("t-zhai").innerHTML = opts;
 // 網址參數 ?gua=1&zhai=2 可直接指定
 const qs = new URLSearchParams(location.search);
-const st = { gua: Number(qs.get("gua") || 1), zhai: Number(qs.get("zhai") || 1) };
+const st = { gua: Number(qs.get("gua") || 1), zhai: Number(qs.get("zhai") || 1), sp: Number(qs.get("sp")) || null }; // ?sp=配偶命卦
 document.getElementById("t-gua").value = st.gua;
 document.getElementById("t-zhai").value = st.zhai;
 function render() {
   const user = Number(document.getElementById("t-gua").value), form = Number(document.getElementById("t-zhai").value);
-  document.getElementById("bazhaiDongxiResult").innerHTML = buildBazhaiDongxiHtml(st.gua, user, st.zhai, form);
+  document.getElementById("bazhaiDongxiResult").innerHTML = buildBazhaiDongxiHtml(st.gua, user, st.zhai, form, st.sp);
 }
 ["t-gua", "t-zhai"].forEach((id) => document.getElementById(id).onchange = function () {
   st.gua = Number(document.getElementById("t-gua").value); st.zhai = Number(document.getElementById("t-zhai").value); render();

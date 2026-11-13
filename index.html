@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=304">
+<link rel="stylesheet" href="css/style.css?v=311">
 <link rel="stylesheet" href="css/jigong-bugua.css?v=288">
 </head>
 <body>
@@ -1255,10 +1255,6 @@
         <button type="button" class="btn secondary" id="bazhaiBackBtn" style="width:auto" data-html2canvas-ignore="true">← 返回</button>
       </div>
       <h2 class="zibai-title">八宅風水</h2>
-      <div class="zibai-tabs" data-html2canvas-ignore="true">
-        <button type="button" class="zibai-tab-btn active" id="bazhaiTabPlate">八宅明鏡</button>
-        <button type="button" class="zibai-tab-btn" id="bazhaiTabDongxi">東四命・西四命</button>
-      </div>
 
       <div id="bazhaiForm">
         <div class="form-block">
@@ -1288,6 +1284,33 @@
         </div>
 
         <div class="form-block">
+          <h2>配偶命卦（選填）</h2>
+          <label class="bz-sp-toggle"><input type="checkbox" id="bz-sp-on"> 一併考量配偶（另一半）命卦</label>
+          <div class="form-date-row" id="bz-sp-row" style="display:none">
+            <div class="field">
+              <label for="bz-syear">出生西元年</label>
+              <select id="bz-syear"></select>
+            </div>
+            <div class="field">
+              <label for="bz-smonth">月</label>
+              <select id="bz-smonth"></select>
+            </div>
+            <div class="field">
+              <label for="bz-sday">日</label>
+              <select id="bz-sday"></select>
+            </div>
+            <div class="field">
+              <label for="bz-sgender">性別</label>
+              <select id="bz-sgender">
+                <option value="male">男</option>
+                <option value="female">女</option>
+              </select>
+            </div>
+          </div>
+          <div class="zibai-hint" id="bazhaiSpouseHint"></div>
+        </div>
+
+        <div class="form-block">
           <h2>陽宅面向</h2>
           <div class="form-date-row">
             <div class="field zibai-angle-field">
@@ -1312,12 +1335,6 @@
         <button class="btn secondary" id="exportBazhaiPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
       </div>
       <div class="zibai-plate-wrap" id="bazhaiResult"></div>
-    </div>
-
-    <div class="card" id="bazhaiDongxiCard" style="display:none">
-      <div class="card-head" style="justify-content:flex-end">
-        <button class="btn secondary" id="exportBazhaiDongxiPdfBtn" style="width:auto" data-html2canvas-ignore="true">匯出 PDF</button>
-      </div>
       <div id="bazhaiDongxiResult"></div>
     </div>
     </div>
@@ -1601,13 +1618,13 @@
 <script src="js/qimen-hongpan-engine.js?v=288"></script>
 <script src="js/qimen-sansheng-engine.js?v=288"></script>
 <script src="js/fengshui-zibai-engine.js?v=288"></script>
-<script src="js/bazhai-dongxi.js?v=304"></script>
+<script src="js/bazhai-dongxi.js?v=311"></script>
 <script src="js/name-kangxi-strokes.js?v=288"></script>
 <script src="js/name-xingming-content.js?v=302"></script>
 <script src="js/name-pinyin.js?v=288"></script>
 <script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=304"></script>
+<script src="js/app.js?v=311"></script>
 </body>
 </html>
