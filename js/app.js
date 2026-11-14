@@ -5219,7 +5219,11 @@ function renderZeri() {
   const chongDesc = l.getDayChongDesc();
   const chongGz = (chongDesc.match(/\((.+?)\)/) || [])[1] || "";
   h += '<div class="zeri-grid">';
-  h += cell("干支", T(l.getYearInGanZhi()) + "年 " + T(l.getMonthInGanZhi()) + "月 " + T(l.getDayInGanZhi()) + "日");
+  // 干支行直接取自上方四柱，兩處永遠一致。原本用 l.getYearInGanZhi()（農曆春節換年）＋l.getMonthInGanZhi()（節氣當日換月），
+  // 立春與春節之間年柱會與四柱不同（如 2027/2/4 四柱丁未、此行丙午年壬寅月，年月對不起來），
+  // 節氣時刻在正午之後的當天月柱也不同（2024–2031 年共 58 天年柱、50 天月柱不一致）。農曆年仍顯示在上方「農曆」那一行。
+  const gz = (i) => bazi.pillars[i].gan.char + bazi.pillars[i].zhi.char;
+  h += cell("干支", gz(3) + "年 " + gz(2) + "月 " + gz(1) + "日");
   h += cell("日納音", T(l.getDayNaYin()));
   h += cell("值神", T(l.getDayTianShen()) + "（" + T(l.getDayTianShenType()) + "・" + T(l.getDayTianShenLuck()) + "）");
   h += cell("建除", T(l.getZhiXing()) + "日");
