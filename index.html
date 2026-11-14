@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aries 命理/卜卦/風水系統</title>
 <link rel="icon" href="assets/logo.png">
-<link rel="stylesheet" href="css/style.css?v=319">
+<link rel="stylesheet" href="css/style.css?v=322">
 <link rel="stylesheet" href="css/jigong-bugua.css?v=288">
 </head>
 <body>
@@ -1523,12 +1523,15 @@
     <div class="card" id="zeriCard">
       <h2 class="zibai-title">擇日・電子農民曆</h2>
       <div class="form-block" data-html2canvas-ignore="true">
-        <div class="form-date-row">
+        <div class="form-date-row zeri-row">
           <div class="field"><label for="zeri-year">西元年</label><select id="zeri-year"></select></div>
           <div class="field"><label for="zeri-month">月</label><select id="zeri-month"></select></div>
           <div class="field"><label for="zeri-day">日</label><select id="zeri-day"></select></div>
+          <div class="field zeri-time-field"><label for="zeri-time">時間（時：分）</label><input type="time" id="zeri-time" value="12:00"></div>
           <div class="field zibai-run-field"><label>&nbsp;</label><button type="button" class="btn" id="zeriGoBtn">查詢</button></div>
+          <div class="field zibai-run-field"><label>&nbsp;</label><button type="button" class="btn secondary" id="zeriNowBtn">現在</button></div>
         </div>
+        <div class="zibai-hint">四柱、干支、建除、值神、宜忌依所選時間精確計算：節氣交接那一刻之前算舊月，之後算新月（立春則年柱同換）。</div>
       </div>
       <div id="zeriResult"></div>
     </div>
@@ -1666,6 +1669,6 @@
 <script src="js/almanac-s2t.js?v=288"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="js/app.js?v=320"></script>
+<script src="js/app.js?v=321"></script>
 </body>
 </html>

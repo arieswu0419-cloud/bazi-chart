@@ -5176,6 +5176,13 @@ function zeriSyncPicker() {
   document.getElementById("zeri-year").value = zeriDate.y;
   document.getElementById("zeri-month").value = zeriDate.m;
   document.getElementById("zeri-day").value = zeriDate.d;
+  const p2 = (n) => String(n).padStart(2, "0");
+  document.getElementById("zeri-time").value = p2(zeriDate.h == null ? 12 : zeriDate.h) + ":" + p2(zeriDate.mi || 0);
+}
+// 現在的年月日時分
+function zeriNow() {
+  const t = new Date();
+  return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate(), h: t.getHours(), mi: t.getMinutes() };
 }
 function showZeriView() {
   hideAllFeatureViews();
@@ -5183,21 +5190,32 @@ function showZeriView() {
   document.getElementById("zeriView").style.display = "";
   setActiveNav("擇日");
   zeriEnsureSelects();
-  if (!zeriDate) { const t = new Date(); zeriDate = { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() }; }
+  if (!zeriDate) zeriDate = zeriNow(); // 第一次開啟：今天、現在的時分
   zeriSyncPicker();
   renderZeri();
 }
+// 依「年月日＋時分」精確計算。zeriDate.h／mi 未給時以正午計（與舊版相同）。
+//   ・四柱（calculateBazi）、干支行的年月：以所選時刻判斷，節氣交接那一刻（到秒）之前算舊月、之後算新月，立春則年柱同換。
+//   ・建除、值神、宜忌：改用同一個「精確月支」計算（函式庫內建的是節氣當日整天算新月）。
+//   ・日干支與其他只看「日」的項目（納音、廿八宿、沖煞、吉神方位、彭祖百忌、時辰吉凶）以曆日為準，不受時間影響。
+//   ・23:00 之後為晚子時：四柱的日柱、時柱依本系統八字規則算隔日，另加說明；干支行與當日宜忌仍為本曆日。
 function renderZeri() {
   const y = zeriDate.y, m = zeriDate.m, d = zeriDate.d;
-  const solar = Solar.fromYmd(y, m, d);
+  const hh = zeriDate.h == null ? 12 : zeriDate.h, mi = zeriDate.mi || 0;
+  const p2 = (n) => String(n).padStart(2, "0");
+  const solar = Solar.fromYmdHms(y, m, d, hh, mi, 0);
   const l = solar.getLunar();
   const T = (v) => s2t(String(v == null ? "" : v));
   const list = (arr) => (arr && arr.length ? arr.map(T).join("、") : "無");
   const cell = (k, v) => '<div class="zeri-cell"><span class="zeri-k">' + k + '</span><span class="zeri-v">' + v + "</span></div>";
   let h = "";
-  // 當日八字四柱＋日柱地支五行→今日穿衣開運色（置於最上方）。時柱固定以正午（午時）計，
-  // 確保年月日柱＝該曆日（與農民曆日干支一致，不受晚子時 23:00 進位影響）。
-  const bazi = calculateBazi({ year: y, month: m, day: d, hour: 12, minute: 0, gender: "male", name: "擇日" });
+  // 所選時刻的八字四柱＋日柱地支五行→今日穿衣開運色（置於最上方）。
+  const bazi = calculateBazi({ year: y, month: m, day: d, hour: hh, minute: mi, gender: "male", name: "擇日" });
+  // 曆日的日柱（不受晚子時進位影響）：23:00 後四柱日柱已算隔日，這裡另取正午的日柱代表「本曆日」
+  const lateZi = hh >= 23;
+  const dayP = lateZi ? calculateBazi({ year: y, month: m, day: d, hour: 12, minute: 0, gender: "male", name: "擇日" }).pillars[1] : bazi.pillars[1];
+  const ZHI12 = "子丑寅卯辰巳午未申酉戌亥";
+  const mZhi = bazi.pillars[2].zhi.char, dZhi = dayP.zhi.char; // 精確月支、曆日日支
   const cols = [
     { k: "時柱", p: bazi.pillars[0] }, { k: "日柱", p: bazi.pillars[1] },
     { k: "月柱", p: bazi.pillars[2] }, { k: "年柱", p: bazi.pillars[3] }
@@ -5207,32 +5225,51 @@ function renderZeri() {
   h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.gan.cls + '">' + c.p.gan.char + "</span></td>").join("") + "</tr>";
   h += "<tr>" + cols.map((c) => '<td><span class="bz-char ' + c.p.zhi.cls + '">' + c.p.zhi.char + "</span></td>").join("") + "</tr>";
   h += "</tbody></table></div>";
-  const dz = bazi.pillars[1].zhi;
+  if (lateZi) h += '<div class="zeri-note">23:00 起為晚子時：上方四柱的日柱、時柱依八字規則已算隔日；以下干支與當日宜忌仍為 ' + m + " 月 " + d + " 日。</div>";
+  // 節氣日：標出交節時刻（到分），並說明所選時間在交節之前或之後
+  const jqName = l.getJieQi();
+  if (jqName) {
+    const jqSolar = l.getJieQiTable()[jqName];
+    const jh = jqSolar.getHour(), jm = jqSolar.getMinute(), js = jqSolar.getSecond();
+    const before = hh * 3600 + mi * 60 < jh * 3600 + jm * 60 + js;
+    const isJie = !!l.getJie(); // 「節」才換月（立春另換年）；「中氣」不換
+    const at = (h2, m2) => { const b = calculateBazi({ year: y, month: m, day: d, hour: h2, minute: m2, gender: "male", name: "擇日" }); return b.pillars[3].gan.char + b.pillars[3].zhi.char + "年" + b.pillars[2].gan.char + b.pillars[2].zhi.char + "月"; };
+    h += '<div class="zeri-note zeri-note-jq">今日 <b>' + p2(jh) + ":" + p2(jm) + "</b> 交<b>" + T(jqName) + "</b>" +
+      (isJie
+        ? "：交節前為 " + at(0, 0) + "，交節後為 " + at(Math.floor(Math.min(jh * 60 + jm + 1, 1439) / 60), Math.min(jh * 60 + jm + 1, 1439) % 60) + "。所選時間 " + p2(hh) + ":" + p2(mi) + " 在交節<b>" + (before ? "之前" : "之後") + "</b>，以下依此計算。"
+        : "（中氣，不換月）。") + "</div>";
+  }
+  const dz = dayP.zhi;
   const color = ZERI_WUXING_COLOR[dz.wuxing] || "";
   h += '<div class="zeri-color">👕 <b>今日開運穿衣色</b>：日柱地支「<span class="' + dz.cls + '">' + dz.char +
     '</span>」五行屬「<span class="' + dz.cls + '">' + dz.wuxing + '</span>」，宜穿 <b class="zeri-color-hl ' + dz.cls + '">' + color +
     "</b> 等色系服飾，增添今日能量。</div>";
   h += '<div class="zeri-head">' +
-    '<div class="zeri-solar">' + y + " 年 " + m + " 月 " + d + " 日　星期" + solar.getWeekInChinese() + "</div>" +
+    '<div class="zeri-solar">' + y + " 年 " + m + " 月 " + d + " 日　星期" + solar.getWeekInChinese() + "　" + p2(hh) + ":" + p2(mi) + "</div>" +
     '<div class="zeri-lunar">農曆 ' + T(l.getYearInGanZhi()) + " 年（" + T(l.getYearShengXiao()) + "）" +
     T(l.getMonthInChinese()) + "月" + T(l.getDayInChinese()) + "</div></div>";
   const chongDesc = l.getDayChongDesc();
   const chongGz = (chongDesc.match(/\((.+?)\)/) || [])[1] || "";
   h += '<div class="zeri-grid">';
-  // 干支行直接取自上方四柱，兩處永遠一致。原本用 l.getYearInGanZhi()（農曆春節換年）＋l.getMonthInGanZhi()（節氣當日換月），
-  // 立春與春節之間年柱會與四柱不同（如 2027/2/4 四柱丁未、此行丙午年壬寅月，年月對不起來），
-  // 節氣時刻在正午之後的當天月柱也不同（2024–2031 年共 58 天年柱、50 天月柱不一致）。農曆年仍顯示在上方「農曆」那一行。
+  // 干支行的年、月取自上方四柱（同一時刻、精確到交節那一刻），日為本曆日的日柱；農曆年仍顯示在上方「農曆」那一行。
+  // 原本用 l.getYearInGanZhi()（農曆春節換年）＋l.getMonthInGanZhi()（節氣當日整天換月），
+  // 立春與春節之間年柱會與四柱不同（如 2027/2/4 四柱丁未、此行丙午年壬寅月，年月對不起來）。
   const gz = (i) => bazi.pillars[i].gan.char + bazi.pillars[i].zhi.char;
-  h += cell("干支", gz(3) + "年 " + gz(2) + "月 " + gz(1) + "日");
+  h += cell("干支", gz(3) + "年 " + gz(2) + "月 " + dayP.gan.char + dayP.zhi.char + "日");
   h += cell("日納音", T(l.getDayNaYin()));
-  h += cell("值神", T(l.getDayTianShen()) + "（" + T(l.getDayTianShenType()) + "・" + T(l.getDayTianShenLuck()) + "）");
-  h += cell("建除", T(l.getZhiXing()) + "日");
+  // 值神（黃黑道十二神）、建除十二神：皆由「月支×日支」決定。函式庫用節氣當日整天算新月，
+  // 這裡改用精確月支 mZhi（公式與函式庫相同，只換月支），交節前後才會與四柱一致。
+  const tianShen = LunarUtil.TIAN_SHEN[(ZHI12.indexOf(dZhi) + LunarUtil.ZHI_TIAN_SHEN_OFFSET[mZhi]) % 12 + 1];
+  const tsType = LunarUtil.TIAN_SHEN_TYPE[tianShen];
+  h += cell("值神", T(tianShen) + "（" + T(tsType) + "・" + T(LunarUtil.TIAN_SHEN_TYPE_LUCK[tsType]) + "）");
+  h += cell("建除", T(LunarUtil.ZHI_XING[(ZHI12.indexOf(dZhi) - ZHI12.indexOf(mZhi) + 12) % 12 + 1]) + "日");
   h += cell("廿八宿", T(l.getXiu()) + T(l.getZheng()) + T(l.getAnimal()) + "・" + T(l.getGong()) + "方" + T(l.getShou()) + "（" + T(l.getXiuLuck()) + "）");
   h += cell("沖煞", "沖" + T(l.getDayChongShengXiao()) + "（" + T(chongGz) + "）　煞" + T(l.getDaySha()));
   h += "</div>";
   h += '<div class="zeri-yiji">' +
-    '<div class="zeri-yi"><div class="zeri-yiji-h">宜</div><div class="zeri-yiji-b">' + list(l.getDayYi()) + "</div></div>" +
-    '<div class="zeri-ji"><div class="zeri-yiji-h">忌</div><div class="zeri-yiji-b">' + list(l.getDayJi()) + "</div></div></div>";
+    // 宜忌同樣由月支×日干支查表：sect 2＝以交節時刻起算月（函式庫預設 sect 1 是交節當日整天算新月）
+    '<div class="zeri-yi"><div class="zeri-yiji-h">宜</div><div class="zeri-yiji-b">' + list(l.getDayYi(2)) + "</div></div>" +
+    '<div class="zeri-ji"><div class="zeri-yiji-h">忌</div><div class="zeri-yiji-b">' + list(l.getDayJi(2)) + "</div></div></div>";
   h += '<div class="zeri-grid">';
   h += cell("財神", T(l.getDayPositionCaiDesc()));
   h += cell("喜神", T(l.getDayPositionXiDesc()));
@@ -5252,17 +5289,36 @@ function renderZeri() {
       '<td style="text-align:left">' + list(t.getYi()) + "</td></tr>";
   });
   h += "</tbody></table></div>";
+  // 節氣：上一／下一節氣連同交節時刻（到分）
   const pj = l.getPrevJieQi(true), nj = l.getNextJieQi(true), jToday = l.getJieQi();
+  const jqAt = (j) => { const s = j.getSolar(); return s.toYmd() + " " + p2(s.getHour()) + ":" + p2(s.getMinute()); };
   h += '<div class="zeri-jieqi">節氣：' + (jToday ? "<b>今日交" + T(jToday) + "</b>　" : "") +
-    "上一節氣 " + T(pj.getName()) + "（" + pj.getSolar().toYmd() + "）　下一節氣 " + T(nj.getName()) + "（" + nj.getSolar().toYmd() + "）</div>";
+    "上一節氣 " + T(pj.getName()) + "（" + jqAt(pj) + "）　下一節氣 " + T(nj.getName()) + "（" + jqAt(nj) + "）</div>";
   document.getElementById("zeriResult").innerHTML = h;
 }
-document.getElementById("zeriGoBtn").addEventListener("click", function () {
-  zeriDate = {
+// 讀取表單的年月日與時分（時間欄清空時以正午計）
+function zeriReadForm() {
+  const tm = (document.getElementById("zeri-time").value || "12:00").split(":");
+  return {
     y: parseInt(document.getElementById("zeri-year").value, 10),
     m: parseInt(document.getElementById("zeri-month").value, 10),
-    d: parseInt(document.getElementById("zeri-day").value, 10)
+    d: parseInt(document.getElementById("zeri-day").value, 10),
+    h: Math.min(23, Math.max(0, parseInt(tm[0], 10) || 0)),
+    mi: Math.min(59, Math.max(0, parseInt(tm[1], 10) || 0))
   };
+}
+document.getElementById("zeriGoBtn").addEventListener("click", function () {
+  zeriDate = zeriReadForm();
+  renderZeri();
+});
+// 改時間即重算（日期仍按「查詢」）
+document.getElementById("zeri-time").addEventListener("change", function () {
+  zeriDate = zeriReadForm();
+  renderZeri();
+});
+document.getElementById("zeriNowBtn").addEventListener("click", function () {
+  zeriDate = zeriNow();
+  zeriSyncPicker();
   renderZeri();
 });
 // 命理諮詢已非首頁：其頁面左上「返回」鍵回到首頁（擇日）。

@@ -2526,3 +2526,17 @@ h2.qsz-page-title { font-size: 22px; }
 .bz-plan-mode button { border: 1px solid var(--gold); background: #fff; color: var(--gold-darker); border-radius: 999px;
   padding: 5px 14px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
 .bz-plan-mode button.active { background: var(--gold-dark); color: #fff; }
+
+/* ---- 擇日：時間欄與交節／晚子時說明 ---- */
+.zeri-time-field input[type="time"] { width: 100%; height: 44px; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 15px; background: #fff; }
+.zeri-note { margin-top: 10px; padding: 9px 12px; border-radius: var(--radius); font-size: 13.5px; line-height: 1.75;
+  background: #FFF7E0; border: 1px solid #E7C76A; color: #6b4e00; }
+.zeri-note-jq b { color: #B03030; }
+/* 擇日查詢列共六欄（年、月、日、時間、查詢、現在）：各給基本寬度，手機放不下就換行（原本四欄不換行，加欄後每欄只剩 35px） */
+.zeri-row { flex-wrap: wrap; align-items: flex-end; }
+.zeri-row .field { flex: 1 1 80px; min-width: 0; margin-bottom: 0; }
+.zeri-row .zeri-time-field { flex: 1 1 130px; }
+.zeri-row .zibai-run-field { flex: 1 1 60px; }
+.zeri-row .zibai-run-field .btn { white-space: nowrap; height: 44px; padding-left: 8px; padding-right: 8px; }
+.zeri-row select { height: 44px; box-sizing: border-box; }
