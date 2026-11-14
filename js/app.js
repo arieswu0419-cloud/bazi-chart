@@ -855,6 +855,40 @@ function textToImage(text, fontPx, color) {
   return { dataUrl: canvas.toDataURL("image/png"), widthMM: width * PX_TO_MM, heightMM: height * PX_TO_MM };
 }
 
+// html2canvas 每擷取一次都會複製整份文件。使用者看過的功能頁結果都還留在頁面上（只是隱藏），頁面越用越大：
+// 實測剛開網頁約 3,400 個元素時八字命書 23 秒，所有功能都用過一輪（約 18,000 個元素）後超過 200 秒。
+// 這裡包一層：複製時略過「目前隱藏（display:none）、且不包含擷取目標」的容器內容——只丟掉它的子元素，
+// 容器外殼保留，兄弟元素的順序與 :first-child／相鄰選擇器的結果都不變；隱藏內容本來就不會被畫出來，輸出不受影響。
+(function () {
+  const orig = window.html2canvas;
+  if (typeof orig !== "function") return;
+  // 擷取 el 時可略過的隱藏容器：依文件順序掃有 id 的元素（功能頁、頁籤面板、結果卡片都有 id），
+  // 已在某個隱藏容器內的不必再看
+  function hiddenShells(el) {
+    const shells = new Set();
+    let last = null;
+    document.querySelectorAll("main [id]").forEach((c) => {
+      if (last && last.contains(c)) return;
+      if (c === el || c.contains(el) || el.contains(c) || !c.firstElementChild) return;
+      if (getComputedStyle(c).display === "none") { shells.add(c); last = c; }
+    });
+    return shells;
+  }
+  const wrapped = function (el, opts) {
+    opts = Object.assign({}, opts);
+    const user = opts.ignoreElements;
+    let shells = null;
+    try { shells = el && el.nodeType === 1 ? hiddenShells(el) : null; } catch (e) { shells = null; }
+    if (shells && shells.size) {
+      opts.ignoreElements = (node) => shells.has(node.parentElement) || (typeof user === "function" ? user(node) : false);
+    }
+    return orig.call(this, el, opts);
+  };
+  Object.keys(orig).forEach((k) => { wrapped[k] = orig[k]; });
+  wrapped.__orig = orig; // 保留原函式，供比對測試（略過前後輸出應完全相同）
+  window.html2canvas = wrapped;
+})();
+
 // 整頁鋪滿底色（用在頁面本身有主題色的報告，例如人格解碼的金黃色），要在該頁任何文字／圖片
 // 畫上去之前呼叫，不然會蓋掉已經畫好的內容
 function fillPdfPageBg(pdf, pageWidth, pageHeight, color) {

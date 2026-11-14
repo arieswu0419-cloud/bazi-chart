@@ -1022,6 +1022,9 @@ footer {
 .qimen-info-table tr:last-child td { border-bottom: none; }
 .qimen-info-table .qi-label { background: #EAC100; color: #1a1a1a; font-weight: 700; width: 1%; text-align: center; }
 .qimen-info-table .qi-value { font-weight: 600; }
+/* 左側內容欄（姓名／陽曆／農曆／時間／格局）允許換行：格局同時有多個時（如「八門伏吟，九星反吟，天干反吟，天網四張」）
+   整列不換行會把表格撐出卡片、手機上造成橫向捲動。右側短欄（性別／符首…）維持不換行，免得被擠成一字一行。 */
+.qimen-info-table td.qi-value:nth-child(2) { white-space: normal; }
 
 /* 外層羅盤：7x7 格，最外一圈放方位＋宮位數字（深藍底、白字），第二圈放十二地支（金色底、深字），
    中間 3x3 才是原本的九宮格。方位／地支都是固定位置，不隨局數變動。 */
